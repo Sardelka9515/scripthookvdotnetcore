@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-namespace SHVDNC;
+namespace SHVDN;
 public static unsafe class ScriptHookV
 {
     public static readonly IntPtr ShvModule = NativeLibrary.Load("ScriptHookV.dll");

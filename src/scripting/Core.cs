@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SHVDNC;
+namespace SHVDN;
 internal static unsafe class Core
 {
     public static readonly IntPtr CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");

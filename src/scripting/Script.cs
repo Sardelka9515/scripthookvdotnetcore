@@ -5,20 +5,20 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SHVDNC;
+namespace SHVDN;
 public unsafe class Script
 {
     public delegate void ScriptEntryDelegate(IntPtr lParam);
     internal readonly ScriptEntryDelegate ScriptEntry;
     public event Action Tick; 
-    public Script()
+    public Script(IntPtr module)
     {
         // Need to store it somewhere to prevent GC from messing with it.
         ScriptEntry = ScriptMain;
         Core.ScheduleCallback(Marshal.GetFunctionPointerForDelegate(() =>
         {
-            Core.RegisterScript(Main.CurrentModule, (delegate* unmanaged<IntPtr, void>)Marshal.GetFunctionPointerForDelegate(ScriptEntry));
-            Logger.Info($"Script registered: {this.GetType()}");
+            Core.RegisterScript(module, (delegate* unmanaged<IntPtr, void>)System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(ScriptEntry));
+            Logger.Info($"Script registered: {GetType()}");
         }));
     }
 

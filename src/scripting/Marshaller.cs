@@ -1,13 +1,15 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
-using static SHVDNC.Logger;
+using static SHVDN.Logger;
 
-namespace SHVDNC;
+namespace SHVDN;
 /// <summary>
 ///     General marshalling helpers for calling natives
 /// </summary>
-internal static unsafe class Marshaller
+public static unsafe class Marshaller
 {
+
+
     private static readonly List<IntPtr> _pinnedStrings = new();
     public static IntPtr String => StringToCoTaskMemASCII("STRING");
     public static IntPtr NullString => StringToCoTaskMemASCII(string.Empty);
@@ -40,10 +42,11 @@ internal static unsafe class Marshaller
         _pinnedStrings.Add(handle);
         return handle;
     }
+    
 
 
     /// <summary>
-    ///     Allocate a memory to store ASCII encoded string using <see cref="Marshal.AllocCoTaskMem" />
+    ///     Allocate a memory to store ASCII encoded string using <see cref="System.Runtime.InteropServices.Marshal.AllocCoTaskMem" />
     /// </summary>
     /// <param name="s"></param>
     /// <returns>Pointer to the allocated memory</returns>

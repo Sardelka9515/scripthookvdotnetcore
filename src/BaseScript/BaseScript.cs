@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SHVDNC;
+﻿using System.Drawing;
+using SHVDN;
+namespace BaseScript;
 
 internal unsafe class BaseScript : Script
 {
-    public BaseScript()
+    public BaseScript(IntPtr module):base(module)
     {
         Tick += OnTick;
     }

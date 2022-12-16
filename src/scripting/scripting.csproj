@@ -1,14 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+	  <TargetName>ScriptHookVDotNetCore</TargetName>
+	  <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>SHVDNC</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <AssemblyName>ScriptHookVDotNetCore</AssemblyName>
+	  <OutDir>$(SolutionDir)bin</OutDir>
   </PropertyGroup>
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)' != '*Undefined*'">
-		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(SolutionDir)bin\obj&quot;  -p:PublishAOT=true -r win-x64 " />
-	</Target>
 	<ItemGroup>
 	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
 	  <PackageReference Include="PInvoke.User32" Version="0.7.124" />

@@ -4,7 +4,7 @@
 //
 using System.Text;
 
-namespace SHVDNC;
+namespace SHVDN;
 /// <summary>
 ///     Class responsible for executing script functions.
 /// </summary>

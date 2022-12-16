@@ -29,7 +29,7 @@ using namespace spdlog;
 namespace fs = std::filesystem;
 
 #define MAX_UNLOAD_RETRIES 256
-#define BASE_SCRIPT_NAME "ScriptHookVDotNet.BaseScript.dll"
+#define BASE_SCRIPT_NAME "ScriptHookVDotNetCore.BaseScript.dll"
 #define UNLOAD_KEY 35 // End
 #define RELOAD_KEY 36 // Home
 

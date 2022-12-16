@@ -2,13 +2,14 @@
 using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using SHVDN;
 
-namespace SHVDNC;
+namespace BaseScript;
 public static unsafe class Main
 {
     public static HMODULE CurrentModule;
     public static List<Script> Scripts = new();
-    // public static readonly Type[] ScriptTypes = { typeof(BaseScript) };
+    public static readonly Type[] ScriptTypes = { typeof(BaseScript) };
 
 
     [UnmanagedCallersOnly(EntryPoint = "OnInit")]
@@ -17,28 +18,7 @@ public static unsafe class Main
         CurrentModule = module;
         try
         {
-            Scripts.Add(new BaseScript());
-            /*
-             * 
-            foreach (var t in ScriptTypes)
-            {
-                if (t.IsAssignableTo(typeof(Script)) && !t.IsAbstract)
-                {
-                    Logger.Info($"Starting script: {t.Name}");
-                    try
-                    {
-                        Scripts.Add(t.GetConstructor(
-                            BindingFlags.Instance | BindingFlags.Public, null,
-                            CallingConventions.HasThis, Type.EmptyTypes, null).Invoke(new object[] { }) as Script);
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error($"Failed to instantiate script {t.Name}:\n{ex}");
-                    }
-                }
-            }
-             */
+            Scripts.Add(new BaseScript(module));
         }
         catch (Exception ex)
         {

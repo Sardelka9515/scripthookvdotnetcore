@@ -147,7 +147,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	case DLL_PROCESS_ATTACH:
 
 		Logger = basic_logger_st("Core", "ScriptHookVDotNetCore.log", true);
-		Logger->set_level(spdlog::level::trace);
+		Logger->set_level(level::trace);
+		Logger->flush_on(level::err);
 		set_default_logger(Logger);
 		info("Logging system initilized");
 
