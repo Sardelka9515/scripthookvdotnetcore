@@ -1,9 +1,9 @@
-# ScriptHookVDotNetCore
+# ScriptHookV .NET Core
 ScriptHookV for .NET Core using NativeAOT technology.
 
 WIP, not ready yet!
 
-# Building the project
+## Building the project
 - Install .NET 7 SDK, C++ desktop development workload and build tools v143
 - Clone the repo
 - Install [scoop](https://scoop.sh)
