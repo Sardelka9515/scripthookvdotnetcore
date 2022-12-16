@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)' != '*Undefined*'">
-		<Exec Command="dotnet publish -o $(SolutionDir)bin\obj  -p:PublishAOT=true -r win-x64 " />
+		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(SolutionDir)bin\obj&quot;  -p:PublishAOT=true -r win-x64 " />
 	</Target>
 	<ItemGroup>
 	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />

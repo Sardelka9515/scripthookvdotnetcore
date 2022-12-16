@@ -33,9 +33,16 @@ namespace fs = std::filesystem;
 #define UNLOAD_KEY 35 // End
 #define RELOAD_KEY 36 // Home
 
-
-// Unicode/ANSI convertion macros
-#define STW(s) wstring(s.begin(), s.end())
-#define WTS(ws) string(ws.begin(), ws.end())
-
 #define LOCK(mtx) std::scoped_lock lock(mtx)
+
+// Converr Unicode string to ANSI string
+static string WTS(wstring ws) {
+	return string(ws.begin(), ws.end());
+}
+
+// Convert ANSI string to Unicode string
+static wstring STW(string s) {
+	return wstring(s.begin(), s.end());
+}
+
+
