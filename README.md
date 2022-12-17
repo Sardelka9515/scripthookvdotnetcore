@@ -19,3 +19,7 @@ vcpkg install boost:x64-windows-static
 ```
 - Download and extract ScriptHookV SDK to **sdk** folder
 - Build the solution with Visual Studio 2022
+
+
+## License
+The C++ core is written by Sardelka9515, while most parts of the scripting API are from [ScriptHookVDotNet](https://github.com/crosire/scripthookvdotnet). For simplicity codes are under the same license.
