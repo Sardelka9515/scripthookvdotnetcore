@@ -1,5 +1,6 @@
 # ScriptHookV .NET Core
 ScriptHookV for .NET Core using NativeAOT technology.
+![image](https://user-images.githubusercontent.com/106232474/208249914-7fbccc41-48ac-420b-b532-561963dd5c46.png)
 
 WIP, not ready yet!
 
