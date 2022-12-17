@@ -2,10 +2,11 @@
 
   <PropertyGroup>
 	  <TargetName>ScriptHookVDotNetCore</TargetName>
-	  <TargetFramework>net7.0</TargetFramework>
+	  <TargetFramework>net7.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <AssemblyName>ScriptHookVDotNetCore</AssemblyName>
+	  <LangVersion>preview</LangVersion>
 	  <OutDir>$(SolutionDir)bin</OutDir>
   </PropertyGroup>
 	<ItemGroup>

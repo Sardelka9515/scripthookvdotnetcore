@@ -10,7 +10,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "src\core\core.vcxpr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scripting", "src\scripting\scripting.csproj", "{F2EFD4EC-8EC0-46AC-8BA4-887B051B52FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BaseScript", "src\BaseScript\BaseScript.csproj", "{8DE2AC7F-995C-4BF0-9024-46946080D04B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BaseScript", "src\BaseScript\BaseScript.csproj", "{8DE2AC7F-995C-4BF0-9024-46946080D04B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeGen", "tools\MethodGen\CodeGen.csproj", "{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +46,14 @@ Global
 		{8DE2AC7F-995C-4BF0-9024-46946080D04B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8DE2AC7F-995C-4BF0-9024-46946080D04B}.Release|x64.ActiveCfg = Release|Any CPU
 		{8DE2AC7F-995C-4BF0-9024-46946080D04B}.Release|x64.Build.0 = Release|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Debug|x64.Build.0 = Debug|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Release|x64.ActiveCfg = Release|Any CPU
+		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

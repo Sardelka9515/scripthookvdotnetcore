@@ -107,7 +107,9 @@ static DWORD Worker(LPVOID lparam) {
 	while (true) {
 		Sleep(200);
 		Logger->flush();
-		VoidFunc job = NULL;
+		VoidFunc job;
+		doWork:
+		job = NULL;
 		// Only lock the mutex in this scope so we can schedule another callback inside the current one
 		{
 			LOCK(JobMutex);
@@ -120,6 +122,7 @@ static DWORD Worker(LPVOID lparam) {
 			catch (exception ex) {
 				error(format("Failed to execute queued job: {}", ex.what()));
 			}
+			goto doWork;
 		}
 	}
 	return 0;

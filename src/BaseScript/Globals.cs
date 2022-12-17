@@ -7,7 +7,7 @@ global using HANDLE = System.IntPtr;
 global using LPVOID = System.IntPtr;
 global using HINSTANCE = System.IntPtr;
 global using HMODULE = System.IntPtr;
-global using static SHVDN.Globals;
+global using static BaseScript.Globals;
 global using static SHVDN.NativeFunc;
 global using static SHVDN.Marshaller;
 
@@ -22,4 +22,8 @@ public class Globals
 
     public const int BASE_WIDTH = 1280;
     public const int BASE_HEIGHT = 720;
+
+
+    public const int VK_CONTROL = 0x11;
+    public const int VK_SHIFT = 0x10;
 }

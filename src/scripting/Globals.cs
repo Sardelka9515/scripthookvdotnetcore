@@ -1,4 +1,5 @@
-﻿global using static PInvoke.Kernel32;
+﻿global using SHVDN;
+global using static PInvoke.Kernel32;
 global using static PInvoke.User32;
 global using static SHVDN.ScriptHookV;
 global using DWORD = System.Int32;

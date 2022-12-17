@@ -1,17 +1,53 @@
 ﻿using System.Drawing;
+using System.Runtime.InteropServices;
 using SHVDN;
-namespace BaseScript;
+using GTA;
+using GTA.Native;
+using static GTA.Native.Function;
+using System.Reflection.Metadata;
+
+namespace SHVDN;
 
 internal unsafe class BaseScript : Script
 {
     public BaseScript(IntPtr module):base(module)
     {
         Tick += OnTick;
+        Start += OnStart;
+        KeyDown += OnKeyDown;
+    }
+
+    private void OnKeyDown(KeyEventArgs e)
+    {
+        var P = Game.Player.Character;
+        var V = P.CurrentVehicle;
+        if (e.KeyCode == Keys.U)
+        {
+            if (V != null)
+            {
+                P.Task.LeaveVehicle(LeaveVehicleFlags.BailOut);
+            }
+        }
+        else if (e.KeyCode == Keys.T)
+        {
+            P.Task.LeaveVehicle();
+        }
+    }
+
+    private void OnStart()
+    {
+        GTA.UI.Notification.Show("Started");
     }
 
     private void OnTick()
     {
-        DrawText(300, 200, "blahblahblahblahblahblahblahblahblahblah", Color.CornflowerBlue);
+        var player = Call<Ped>(Hash.GET_PLAYER_PED, 0);
+        var vehicle = player?.CurrentVehicle;
+        if(vehicle != null)
+        {
+            var stuff = Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, vehicle);
+            DrawText(300, 200, $"player:{player.Handle}, veh:{vehicle.Handle}, {stuff}", Color.CornflowerBlue);
+        }
         CleanupStrings();
     }
     private static void DrawText(float x, float y, string text, Color color, float scaleX = 0.5f,

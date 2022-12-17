@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetName>ScriptHookVDotNetCore.BaseScript</TargetName>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net7.0-windows</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>

@@ -19,9 +19,9 @@ public static unsafe class NativeFunc
     /// <param name="str">The string to push.</param>
     private static void PushString(ReadOnlySpan<char> str)
     {
-        var len = Encoding.ASCII.GetByteCount(str);
+        var len = Encoding.UTF8.GetByteCount(str);
         var buf = stackalloc byte[len + 1];
-        Encoding.ASCII.GetBytes(str, new Span<byte>(buf, len));
+        Encoding.UTF8.GetBytes(str, new Span<byte>(buf, len));
         buf[len] = 0; // '\0'
         Invoke(0x6C188BE134E074AA /*ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME*/, (ulong)buf, 1);
     }

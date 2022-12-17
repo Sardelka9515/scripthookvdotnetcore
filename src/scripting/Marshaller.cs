@@ -11,9 +11,9 @@ public static unsafe class Marshaller
 
 
     private static readonly List<IntPtr> _pinnedStrings = new();
-    public static IntPtr String => StringToCoTaskMemASCII("STRING");
-    public static IntPtr NullString => StringToCoTaskMemASCII(string.Empty);
-    public static IntPtr CellEmailBcon => StringToCoTaskMemASCII("CELL_EMAIL_BCON");
+    public static IntPtr StringString => StringToCoTaskMemUTF8("STRING");
+    public static IntPtr NullString => StringToCoTaskMemUTF8(string.Empty);
+    public static IntPtr CellEmailBcon => StringToCoTaskMemUTF8("CELL_EMAIL_BCON");
 
 
     /// <summary>
@@ -26,16 +26,43 @@ public static unsafe class Marshaller
         _pinnedStrings.Clear();
     }
 
+    public static string PtrToStringUTF8(IntPtr ptr)
+    {
+        if (ptr == IntPtr.Zero)
+            return string.Empty;
+
+        var data = (byte*)ptr.ToPointer();
+
+        // Calculate length of null-terminated string
+        int len = 0;
+        while (data[len] != 0)
+            ++len;
+
+        return PtrToStringUTF8(ptr, len);
+    }
+    public static string PtrToStringUTF8(IntPtr ptr, int len)
+    {
+        if (len < 0)
+            throw new ArgumentException(null, nameof(len));
+
+        if (ptr == IntPtr.Zero)
+            return null;
+        if (len == 0)
+            return string.Empty;
+
+        return Encoding.UTF8.GetString((byte*)ptr, len);
+    }
+
     /// <summary>
     ///     Pins the memory of a string so that it can be used in native calls without worrying about the GC invalidating its
     ///     pointer.
     /// </summary>
     /// <param name="str">The string to pin to a fixed pointer.</param>
     /// <returns>A pointer to the pinned memory containing the string.</returns>
-    /// <remarks>Memory will be freed after each tick, use <see cref="StringToCoTaskMemASCII"/> if you want to pin string in a persistent memory</remarks>
+    /// <remarks>Memory will be freed after each tick, use <see cref="StringToCoTaskMemUTF8"/> if you want to pin string in a persistent memory</remarks>
     public static IntPtr PinString(string str)
     {
-        var handle = StringToCoTaskMemASCII(str);
+        var handle = StringToCoTaskMemUTF8(str);
 
         if (handle == IntPtr.Zero) return IntPtr.Zero;
 
@@ -46,7 +73,7 @@ public static unsafe class Marshaller
 
 
     /// <summary>
-    ///     Allocate a memory to store ASCII encoded string using <see cref="System.Runtime.InteropServices.Marshal.AllocCoTaskMem" />
+    ///     Allocate a memory to store UTF8 encoded string using <see cref="System.Runtime.InteropServices.Marshal.AllocCoTaskMem" />
     /// </summary>
     /// <param name="s"></param>
     /// <returns>Pointer to the allocated memory</returns>
@@ -55,16 +82,16 @@ public static unsafe class Marshaller
     ///     Users are responsible for cleaning up the allocated memory themselves, use <see cref="PinString" /> if you
     ///     want the memory be cleaned up automatically after each tick
     /// </remarks>
-    public static IntPtr StringToCoTaskMemASCII(ReadOnlySpan<char> s)
+    public static IntPtr StringToCoTaskMemUTF8(ReadOnlySpan<char> s)
     {
         if (s == null)
             return NullString;
 
         fixed (char* pChar = s)
         {
-            var byteCount = Encoding.ASCII.GetByteCount(s);
+            var byteCount = Encoding.UTF8.GetByteCount(s);
             var buf = stackalloc byte[byteCount + 1];
-            Encoding.ASCII.GetBytes(pChar, s.Length, buf, byteCount);
+            Encoding.UTF8.GetBytes(pChar, s.Length, buf, byteCount);
             var dest = Marshal.AllocCoTaskMem(byteCount + 1);
 
             if (dest == IntPtr.Zero)
