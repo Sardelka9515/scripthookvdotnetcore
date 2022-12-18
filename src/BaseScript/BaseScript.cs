@@ -12,13 +12,6 @@ internal class BaseScript : Script
     private readonly TextElement _textE = new("blah", default, 0.5f);
     private readonly Stopwatch _sw = new();
 
-    public BaseScript()
-    {
-        Tick += OnTick;
-        Start += OnStart;
-        KeyDown += OnKeyDown;
-    }
-
     protected override void OnStart()
     {
         base.OnStart();
