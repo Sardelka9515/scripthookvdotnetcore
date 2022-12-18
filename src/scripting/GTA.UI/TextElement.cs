@@ -188,7 +188,7 @@ namespace GTA.UI
 				}
 				_pinnedText.Clear();
 
-				SHVDN.NativeFunc.PushLongString(value, (str) => {
+				PushLongString(value, (str) => {
 					byte[] data = Encoding.UTF8.GetBytes(str.ToArray() + "\0");
 					IntPtr next = Marshal.AllocCoTaskMem(data.Length);
 					Marshal.Copy(data, 0, next, data.Length);
@@ -312,7 +312,7 @@ namespace GTA.UI
 		public static float GetStringWidth(string text, Font font = Font.ChaletLondon, float scale = 1.0f)
 		{
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(text);
+			PushLongString(text);
 			Function.Call(Hash.SET_TEXT_FONT, font);
 			Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
 
@@ -330,7 +330,7 @@ namespace GTA.UI
 		public static float GetScaledStringWidth(string text, Font font = Font.ChaletLondon, float scale = 1.0f)
 		{
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(text);
+			PushLongString(text);
 			Function.Call(Hash.SET_TEXT_FONT, font);
 			Function.Call(Hash.SET_TEXT_SCALE, scale, scale);
 

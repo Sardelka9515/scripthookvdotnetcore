@@ -145,8 +145,8 @@ namespace GTA
 		/// </value>
 		public static ShapeTestHandle StartTestMouseCursorLOSProbe(out Vector3 probeStartPosition, out Vector3 probeEndPosition, IntersectFlags intersectFlags = IntersectFlags.Map, Entity excludeEntity = null, ShapeTestOptions options = ShapeTestOptions.Default)
 		{
-			NativeVector3 outProbeStartPositionNative;
-			NativeVector3 outProbeEndPositionNative;
+			Vector3 outProbeStartPositionNative;
+			Vector3 outProbeEndPositionNative;
 			ShapeTestHandle handle;
 
 			unsafe

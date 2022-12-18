@@ -349,7 +349,7 @@ namespace GTA
 		{
 			get
 			{
-				NativeVector3 min, max;
+				Vector3 min, max;
 				unsafe
 				{
 					Function.Call(Native.Hash.GET_MODEL_DIMENSIONS, Hash, &min, &max);

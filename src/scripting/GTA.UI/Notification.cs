@@ -60,7 +60,7 @@ namespace GTA.UI
 		public static int Show(string message, bool blinking = false)
 		{
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(message);
+			PushLongString(message);
 			return Function.Call<int>(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, blinking, true);
 		}
 
@@ -79,7 +79,7 @@ namespace GTA.UI
 			string iconName = iconNames[(int)icon];
 
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(message);
+			PushLongString(message);
 			Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_MESSAGETEXT, iconName, iconName, fadeIn, 1, sender, subject);
 
 			return Function.Call<int>(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, blinking, true);

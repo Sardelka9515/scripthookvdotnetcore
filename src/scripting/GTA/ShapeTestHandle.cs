@@ -56,10 +56,10 @@ namespace GTA
 		/// </remarks>
 		public ShapeTestStatus GetResult(out ShapeTestResult result)
 		{
-			NativeVector3 hitPositionArg;
+			Vector3 hitPositionArg;
 			bool hitSomethingArg;
 			int guidHandleArg;
-			NativeVector3 surfaceNormalArg;
+			Vector3 surfaceNormalArg;
 			ShapeTestStatus shapeTestStatus;
 			unsafe
 			{
@@ -94,11 +94,11 @@ namespace GTA
 		/// </remarks>
 		public ShapeTestStatus GetResultIncludingMaterial(out ShapeTestResult result, out MaterialHash materialHash)
 		{
-			NativeVector3 hitPositionArg;
+			Vector3 hitPositionArg;
 			bool hitSomethingArg;
 			int materialHashArg;
 			int guidHandleArg;
-			NativeVector3 surfaceNormalArg;
+			Vector3 surfaceNormalArg;
 			ShapeTestStatus shapeTestStatus;
 
 			unsafe

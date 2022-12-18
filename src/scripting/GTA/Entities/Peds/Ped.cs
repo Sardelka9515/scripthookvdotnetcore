@@ -1101,7 +1101,7 @@ namespace GTA
 		{
 			get
 			{
-				NativeVector3 position;
+				Vector3 position;
 				unsafe
 				{
 					if (Function.Call<bool>(Hash.GET_PED_LAST_WEAPON_IMPACT_COORD, Handle, &position))

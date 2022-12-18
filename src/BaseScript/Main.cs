@@ -46,7 +46,7 @@ public static unsafe class Main
     [UnmanagedCallersOnly(EntryPoint = "OnKeyboard")]
     public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt, bool wasDownBefore, bool isUpNow)
     {
-        ScriptHookVDotnet_ManagedKeyboardMessage(
+        keyboardMessage(
         key,
         !isUpNow,
         (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
@@ -54,7 +54,7 @@ public static unsafe class Main
         isWithAlt);
 
     }
-    static void ScriptHookVDotnet_ManagedKeyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
+    static void keyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
     {
         // Filter out invalid key codes
         if (keycode <= 0 || keycode >= 256)
@@ -62,9 +62,9 @@ public static unsafe class Main
 
         // Convert message into a key event
         var keys = (Keys)keycode;
-        if (ctrl) keys = keys | Keys.Control;
-        if (shift) keys = keys | Keys.Shift;
-        if (alt) keys = keys | Keys.Alt;
+        if (ctrl) keys |= Keys.Control;
+        if (shift) keys |= Keys.Shift;
+        if (alt) keys |= Keys.Alt;
         Core.DoKeyEvent(keys, keydown);
     }
 }

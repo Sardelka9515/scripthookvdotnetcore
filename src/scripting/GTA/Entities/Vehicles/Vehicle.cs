@@ -1831,7 +1831,7 @@ namespace GTA
 		public void PlaceOnNextStreet()
 		{
 			Vector3 currentPosition = Position;
-			NativeVector3 newPosition;
+			Vector3 newPosition;
 			float heading;
 			long unkn;
 

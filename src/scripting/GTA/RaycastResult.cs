@@ -12,11 +12,11 @@ namespace GTA
 	{
 		public RaycastResult(int handle) : this()
 		{
-			NativeVector3 hitPositionArg;
+			Vector3 hitPositionArg;
 			bool hitSomethingArg;
 			int materialHashArg;
 			int entityHandleArg;
-			NativeVector3 surfaceNormalArg;
+			Vector3 surfaceNormalArg;
 			unsafe
 			{
 				Result = Function.Call<int>(Hash.GET_SHAPE_TEST_RESULT_INCLUDING_MATERIAL, handle, &hitSomethingArg, &hitPositionArg, &surfaceNormalArg, &materialHashArg, &entityHandleArg);

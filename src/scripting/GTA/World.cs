@@ -1774,7 +1774,7 @@ namespace GTA
 		/// <param name="flags">The flags.</param>
 		public static Vector3 GetSafeCoordForPed(Vector3 position, bool sidewalk = true, int flags = 0)
 		{
-			NativeVector3 outPos;
+			Vector3 outPos;
 			unsafe
 			{
 				if (Function.Call<bool>(Hash.GET_SAFE_COORD_FOR_PED, position.X, position.Y, position.Z, sidewalk, &outPos, flags))
@@ -1801,7 +1801,7 @@ namespace GTA
 		/// <param name="unoccupied">if set to <see langword="true" /> only find positions that dont already have a vehicle in them.</param>
 		public static Vector3 GetNextPositionOnStreet(Vector3 position, bool unoccupied = false)
 		{
-			NativeVector3 outPos;
+			Vector3 outPos;
 
 			unsafe
 			{
@@ -1844,7 +1844,7 @@ namespace GTA
 		/// <param name="position">The position to check around.</param>
 		public static Vector3 GetNextPositionOnSidewalk(Vector3 position)
 		{
-			NativeVector3 outPos;
+			Vector3 outPos;
 
 			unsafe
 			{

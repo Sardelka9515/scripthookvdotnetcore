@@ -70,7 +70,7 @@ public unsafe readonly ref struct InputArgument
     public static implicit operator InputArgument(nint* val) => FromPtr(val);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator InputArgument(nuint* val) => FromPtr(val);
-    public static implicit operator InputArgument(NativeVector3* val) => FromPtr(val);
+    public static implicit operator InputArgument(Vector3* val) => FromPtr(val);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator InputArgument(DlcWeaponComponentData* val) => FromPtr(val);
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

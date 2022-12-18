@@ -261,7 +261,7 @@ namespace GTA.UI
 		public static void ShowSubtitle(string message, int duration, bool drawImmediately = true)
 		{
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_PRINT, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(message);
+			PushLongString(message);
 			Function.Call(Hash.END_TEXT_COMMAND_PRINT, duration, drawImmediately);
 		}
 
@@ -295,7 +295,7 @@ namespace GTA.UI
 		public static void ShowHelpText(string helpText, int duration = -1, bool beep = true, bool looped = false)
 		{
 			Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_HELP, CellEmailBcon);
-			SHVDN.NativeFunc.PushLongString(helpText);
+			PushLongString(helpText);
 			Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_HELP, 0, looped, beep, duration);
 		}
 		/// <summary>
