@@ -34,7 +34,7 @@ public class Program
         {
             args += ", InputArgument arg" + i;
         }
-        sw.WriteLine(ret?$"public static T Call<T>(Hash hash{args})": $"public static void Call(Hash hash{args})");
+        sw.WriteLine(ret?$"public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash{args})": $"public static void Call(Hash hash{args})");
         string push = "";
         for (int i = 0; i < argCount; i++)
         {

@@ -1,16 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	  <TargetName>ScriptHookVDotNetCore</TargetName>
-	  <TargetFramework>net7.0-windows</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <AssemblyName>ScriptHookVDotNetCore</AssemblyName>
-	  <LangVersion>preview</LangVersion>
-	  <OutDir>$(SolutionDir)bin</OutDir>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0-windows</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<AssemblyName>ScriptHookVDotNetCore</AssemblyName>
+		<LangVersion>preview</LangVersion>
+	</PropertyGroup>
 	<ItemGroup>
-	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
-	  <PackageReference Include="PInvoke.User32" Version="0.7.124" />
+		<PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
+		<PackageReference Include="PInvoke.User32" Version="0.7.124" />
 	</ItemGroup>
 </Project>

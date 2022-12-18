@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace GTA.Native;
@@ -43,7 +44,7 @@ public unsafe readonly struct GlobalVariable
     /// <summary>
     /// Gets the value stored in the <see cref="GlobalVariable"/>.
     /// </summary>
-    public T Read<T>()
+    public T Read<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>()
     {
         return ConvertFromNative<T>((ulong*)MemoryAddress);
     }
