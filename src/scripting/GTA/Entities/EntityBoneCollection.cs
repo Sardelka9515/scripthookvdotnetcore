@@ -3,108 +3,109 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace GTA
 {
-	public class EntityBoneCollection : IEnumerable<EntityBone>
-	{
-		public class Enumerator : IEnumerator<EntityBone>
-		{
-			#region Fields
-			readonly EntityBoneCollection collection;
-			int currentIndex = -1; // Skip the CORE bone index(-1)
-			#endregion
+    public class EntityBoneCollection : IEnumerable<EntityBone>
+    {
+        public class Enumerator : IEnumerator<EntityBone>
+        {
+            #region Fields
 
-			public Enumerator(EntityBoneCollection collection)
-			{
-				this.collection = collection;
-			}
+            readonly EntityBoneCollection collection;
+            int currentIndex = -1; // Skip the CORE bone index(-1)
 
-			public EntityBone Current => collection[currentIndex];
+            #endregion
 
-			object IEnumerator.Current => collection[currentIndex];
+            public Enumerator(EntityBoneCollection collection)
+            {
+                this.collection = collection;
+            }
 
-			public void Reset()
-			{
-				currentIndex = -1;
-			}
+            public EntityBone Current => collection[currentIndex];
 
-			public bool MoveNext()
-			{
-				return ++currentIndex < collection.Count;
-			}
+            object IEnumerator.Current => collection[currentIndex];
 
-			void IDisposable.Dispose()
-			{
-			}
-		}
+            public void Reset()
+            {
+                currentIndex = -1;
+            }
 
-		#region Fields
-		protected readonly Entity _owner;
-		#endregion
+            public bool MoveNext()
+            {
+                return ++currentIndex < collection.Count;
+            }
 
-		internal EntityBoneCollection(Entity owner)
-		{
-			_owner = owner;
-		}
+            void IDisposable.Dispose()
+            {
+            }
+        }
 
-		/// <summary>
-		/// Gets the <see cref="EntityBone"/> at the specified bone index.
-		/// </summary>
-		/// <param name="boneIndex">The bone index.</param>
-		public EntityBone this[int boneIndex]
-		{
-			get => new EntityBone(_owner, boneIndex);
-		}
+        #region Fields
 
-		/// <summary>
-		/// Gets the <see cref="EntityBone"/> with the specified bone name.
-		/// </summary>
-		/// <param name="boneName">Name of the bone.</param>
-		public EntityBone this[string boneName]
-		{
-			get => new EntityBone(_owner, boneName);
-		}
+        protected readonly Entity _owner;
 
-		/// <summary>
-		/// Gets the number of bones that this <see cref="Entity"/> has.
-		/// </summary>
-		public int Count => SHVDN.NativeMemory.GetEntityBoneCount(_owner.Handle);
+        #endregion
 
-		/// <summary>
-		/// Determines whether this <see cref="Entity"/> has a bone with the specified bone name
-		/// </summary>
-		/// <param name="boneName">Name of the bone.</param>
-		/// <returns>
-		///   <see langword="true" /> if this <see cref="Entity"/> has a bone with the specified bone name; otherwise, <see langword="false" />.
-		/// </returns>
-		public bool Contains(string boneName)
-		{
-			return Function.Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, _owner.Handle, boneName) != -1;
-		}
+        internal EntityBoneCollection(Entity owner)
+        {
+            _owner = owner;
+        }
 
-		/// <summary>
-		/// Gets the core bone of this <see cref="Entity"/>.
-		/// </summary>
-		public EntityBone Core => new EntityBone(_owner, -1);
+        /// <summary>
+        /// Gets the <see cref="EntityBone"/> at the specified bone index.
+        /// </summary>
+        /// <param name="boneIndex">The bone index.</param>
+        public EntityBone this[int boneIndex]
+        {
+            get => new(_owner, boneIndex);
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
+        /// <summary>
+        /// Gets the <see cref="EntityBone"/> with the specified bone name.
+        /// </summary>
+        /// <param name="boneName">Name of the bone.</param>
+        public EntityBone this[string boneName]
+        {
+            get => new(_owner, boneName);
+        }
 
-		public IEnumerator<EntityBone> GetEnumerator()
-		{
-			return new Enumerator(this);
-		}
+        /// <summary>
+        /// Gets the number of bones that this <see cref="Entity"/> has.
+        /// </summary>
+        public int Count => NativeMemory.GetEntityBoneCount(_owner.Handle);
 
-		public override int GetHashCode()
-		{
-			return _owner.GetHashCode() ^ Count.GetHashCode();
-		}
-	}
+        /// <summary>
+        /// Determines whether this <see cref="Entity"/> has a bone with the specified bone name
+        /// </summary>
+        /// <param name="boneName">Name of the bone.</param>
+        /// <returns>
+        ///   <see langword="true" /> if this <see cref="Entity"/> has a bone with the specified bone name; otherwise, <see langword="false" />.
+        /// </returns>
+        public bool Contains(string boneName)
+        {
+            return Call<int>(Hash.GET_ENTITY_BONE_INDEX_BY_NAME, _owner.Handle, boneName) != -1;
+        }
+
+        /// <summary>
+        /// Gets the core bone of this <see cref="Entity"/>.
+        /// </summary>
+        public EntityBone Core => new(_owner, -1);
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public IEnumerator<EntityBone> GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        public override int GetHashCode()
+        {
+            return _owner.GetHashCode() ^ Count.GetHashCode();
+        }
+    }
 }

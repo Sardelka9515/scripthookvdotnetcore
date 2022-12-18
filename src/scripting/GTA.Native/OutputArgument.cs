@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace scripting.GTA.GTA.Native;
 
-namespace scripting.GTA.GTA.Native;
 public unsafe readonly ref struct OutputArgument
 {
     public readonly IntPtr Ptr;

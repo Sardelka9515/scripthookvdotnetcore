@@ -3,205 +3,209 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GTA
 {
-	public sealed class WeaponCollection
-	{
-		#region Fields
-		readonly Ped owner;
-		readonly Dictionary<WeaponHash, Weapon> weapons = new Dictionary<WeaponHash, Weapon>();
-		#endregion
+    public sealed class WeaponCollection
+    {
+        #region Fields
 
-		internal WeaponCollection(Ped owner)
-		{
-			this.owner = owner;
-		}
+        readonly Ped owner;
+        readonly Dictionary<WeaponHash, Weapon> weapons = new();
 
-		public Weapon this[WeaponHash hash]
-		{
-			get
-			{
-				if (!weapons.TryGetValue(hash, out Weapon weapon))
-				{
-					if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, hash, 0))
-					{
-						return null;
-					}
+        #endregion
 
-					weapon = new Weapon(owner, hash);
-					weapons.Add(hash, weapon);
-				}
+        internal WeaponCollection(Ped owner)
+        {
+            this.owner = owner;
+        }
 
-				return weapon;
-			}
-		}
+        public Weapon this[WeaponHash hash]
+        {
+            get
+            {
+                if (!weapons.TryGetValue(hash, out Weapon weapon))
+                {
+                    if (!Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, hash, 0))
+                    {
+                        return null;
+                    }
 
-		public Weapon Current
-		{
-			get
-			{
-				int currentWeapon;
-				unsafe
-				{
-					Function.Call(Hash.GET_CURRENT_PED_WEAPON, owner.Handle, &currentWeapon, true);
-				}
+                    weapon = new Weapon(owner, hash);
+                    weapons.Add(hash, weapon);
+                }
 
-				var hash = (WeaponHash)currentWeapon;
+                return weapon;
+            }
+        }
 
-				if (weapons.ContainsKey(hash))
-				{
-					return weapons[hash];
-				}
-				else
-				{
-					var weapon = new Weapon(owner, hash);
-					weapons.Add(hash, weapon);
+        public Weapon Current
+        {
+            get
+            {
+                int currentWeapon;
+                unsafe
+                {
+                    Call(Hash.GET_CURRENT_PED_WEAPON, owner.Handle, &currentWeapon, true);
+                }
 
-					return weapon;
-				}
-			}
-		}
+                var hash = (WeaponHash)currentWeapon;
 
-		public Weapon BestWeapon
-		{
-			get
-			{
-				WeaponHash hash = Function.Call<WeaponHash>(Hash.GET_BEST_PED_WEAPON, owner.Handle, 0);
+                if (weapons.ContainsKey(hash))
+                {
+                    return weapons[hash];
+                }
+                else
+                {
+                    var weapon = new Weapon(owner, hash);
+                    weapons.Add(hash, weapon);
 
-				if (weapons.ContainsKey(hash))
-				{
-					return weapons[hash];
-				}
-				else
-				{
-					var weapon = new Weapon(owner, (WeaponHash)hash);
-					weapons.Add(hash, weapon);
+                    return weapon;
+                }
+            }
+        }
 
-					return weapon;
-				}
-			}
-		}
+        public Weapon BestWeapon
+        {
+            get
+            {
+                WeaponHash hash = Call<WeaponHash>(Hash.GET_BEST_PED_WEAPON, owner.Handle, 0);
 
-		public bool HasWeapon(WeaponHash weaponHash)
-		{
-			return Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, weaponHash);
-		}
+                if (weapons.ContainsKey(hash))
+                {
+                    return weapons[hash];
+                }
+                else
+                {
+                    var weapon = new Weapon(owner, (WeaponHash)hash);
+                    weapons.Add(hash, weapon);
 
-		public bool IsWeaponValid(WeaponHash hash)
-		{
-			return Function.Call<bool>(Hash.IS_WEAPON_VALID, hash);
-		}
+                    return weapon;
+                }
+            }
+        }
 
-		public Prop CurrentWeaponObject
-		{
-			get
-			{
-				if (Current.Hash == WeaponHash.Unarmed)
-				{
-					return null;
-				}
+        public bool HasWeapon(WeaponHash weaponHash)
+        {
+            return Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, weaponHash);
+        }
 
-				return new Prop(Function.Call<int>(Hash.GET_CURRENT_PED_WEAPON_ENTITY_INDEX, owner.Handle));
-			}
-		}
+        public bool IsWeaponValid(WeaponHash hash)
+        {
+            return Call<bool>(Hash.IS_WEAPON_VALID, hash);
+        }
 
-		public bool Select(Weapon weapon)
-		{
-			if (!weapon.IsPresent)
-			{
-				return false;
-			}
+        public Prop CurrentWeaponObject
+        {
+            get
+            {
+                if (Current.Hash == WeaponHash.Unarmed)
+                {
+                    return null;
+                }
 
-			Function.Call(Hash.SET_CURRENT_PED_WEAPON, owner.Handle, weapon.Hash, true);
+                return new Prop(Call<int>(Hash.GET_CURRENT_PED_WEAPON_ENTITY_INDEX, owner.Handle));
+            }
+        }
 
-			return true;
-		}
-		public bool Select(WeaponHash weaponHash)
-		{
-			return Select(weaponHash, true);
-		}
-		public bool Select(WeaponHash weaponHash, bool equipNow)
-		{
-			if (!Function.Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, weaponHash))
-			{
-				return false;
-			}
+        public bool Select(Weapon weapon)
+        {
+            if (!weapon.IsPresent)
+            {
+                return false;
+            }
 
-			Function.Call(Hash.SET_CURRENT_PED_WEAPON, owner.Handle, weaponHash, equipNow);
+            Call(Hash.SET_CURRENT_PED_WEAPON, owner.Handle, weapon.Hash, true);
 
-			return true;
-		}
+            return true;
+        }
+
+        public bool Select(WeaponHash weaponHash)
+        {
+            return Select(weaponHash, true);
+        }
+
+        public bool Select(WeaponHash weaponHash, bool equipNow)
+        {
+            if (!Call<bool>(Hash.HAS_PED_GOT_WEAPON, owner.Handle, weaponHash))
+            {
+                return false;
+            }
+
+            Call(Hash.SET_CURRENT_PED_WEAPON, owner.Handle, weaponHash, equipNow);
+
+            return true;
+        }
 
 
-		/// <summary>
-		/// Gives the speficied weapon if the owner <see cref="Ped"/> does not have one, or selects the weapon if they have one and <paramref name="equipNow"/> is set to <see langword="true" />.
-		/// </summary>
-		/// <param name="weaponHash">The weapon hash.</param>
-		/// <param name="ammoCount">The ammo count to be added to the weapon inventory of the owner <see cref="Ped"/>.</param>
-		/// <param name="equipNow">If set to <see langword="true" />, the owner <see cref="Ped"/> will switch their weapon to the weapon of <paramref name="weaponHash"/> as soon as they can (not instantly).</param>
-		/// <param name="isAmmoLoaded">
-		/// Does not work since the ammo in clip is always full if not selected unless the game code related to auto-reload is modified.
-		/// This was supposed to determine if the ammo will be loaded after the weapon is given to the owner <see cref="Ped"/>.
-		/// </param>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter")]
-		public Weapon Give(WeaponHash weaponHash, int ammoCount, bool equipNow, bool isAmmoLoaded)
-		{
-			if (!weapons.TryGetValue(weaponHash, out Weapon weapon))
-			{
-				weapon = new Weapon(owner, weaponHash);
-				weapons.Add(weaponHash, weapon);
-			}
+        /// <summary>
+        /// Gives the speficied weapon if the owner <see cref="Ped"/> does not have one, or selects the weapon if they have one and <paramref name="equipNow"/> is set to <see langword="true" />.
+        /// </summary>
+        /// <param name="weaponHash">The weapon hash.</param>
+        /// <param name="ammoCount">The ammo count to be added to the weapon inventory of the owner <see cref="Ped"/>.</param>
+        /// <param name="equipNow">If set to <see langword="true" />, the owner <see cref="Ped"/> will switch their weapon to the weapon of <paramref name="weaponHash"/> as soon as they can (not instantly).</param>
+        /// <param name="isAmmoLoaded">
+        /// Does not work since the ammo in clip is always full if not selected unless the game code related to auto-reload is modified.
+        /// This was supposed to determine if the ammo will be loaded after the weapon is given to the owner <see cref="Ped"/>.
+        /// </param>
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        public Weapon Give(WeaponHash weaponHash, int ammoCount, bool equipNow, bool isAmmoLoaded)
+        {
+            if (!weapons.TryGetValue(weaponHash, out Weapon weapon))
+            {
+                weapon = new Weapon(owner, weaponHash);
+                weapons.Add(weaponHash, weapon);
+            }
 
-			if (weapon.IsPresent)
-			{
-				if (equipNow)
-				{
-					Select(weapon);
-				}
-			}
-			else
-			{
-				// Set the 4th argument to false for consistency. If 4th argument is set to true when 5th one is set to true, the ped will instantly select the added weapon in any case.
-				Function.Call(Hash.GIVE_WEAPON_TO_PED, owner.Handle, weapon.Hash, ammoCount, false, equipNow);
-			}
+            if (weapon.IsPresent)
+            {
+                if (equipNow)
+                {
+                    Select(weapon);
+                }
+            }
+            else
+            {
+                // Set the 4th argument to false for consistency. If 4th argument is set to true when 5th one is set to true, the ped will instantly select the added weapon in any case.
+                Call(Hash.GIVE_WEAPON_TO_PED, owner.Handle, weapon.Hash, ammoCount, false, equipNow);
+            }
 
-			return weapon;
-		}
+            return weapon;
+        }
 
-		public Weapon Give(string name, int ammoCount, bool equipNow, bool isAmmoLoaded)
-		{
-			return Give((WeaponHash)Game.GenerateHash(name), ammoCount, equipNow, isAmmoLoaded);
-		}
+        public Weapon Give(string name, int ammoCount, bool equipNow, bool isAmmoLoaded)
+        {
+            return Give((WeaponHash)Game.GenerateHash(name), ammoCount, equipNow, isAmmoLoaded);
+        }
 
-		public void Drop()
-		{
-			Function.Call(Hash.SET_PED_DROPS_WEAPON, owner.Handle);
-		}
+        public void Drop()
+        {
+            Call(Hash.SET_PED_DROPS_WEAPON, owner.Handle);
+        }
 
-		public void Remove(Weapon weapon)
-		{
-			WeaponHash hash = weapon.Hash;
+        public void Remove(Weapon weapon)
+        {
+            WeaponHash hash = weapon.Hash;
 
-			if (weapons.ContainsKey(hash))
-			{
-				weapons.Remove(hash);
-			}
+            if (weapons.ContainsKey(hash))
+            {
+                weapons.Remove(hash);
+            }
 
-			Remove(weapon.Hash);
-		}
-		public void Remove(WeaponHash weaponHash)
-		{
-			Function.Call(Hash.REMOVE_WEAPON_FROM_PED, owner.Handle, weaponHash);
-		}
+            Remove(weapon.Hash);
+        }
 
-		public void RemoveAll()
-		{
-			Function.Call(Hash.REMOVE_ALL_PED_WEAPONS, owner.Handle, true);
+        public void Remove(WeaponHash weaponHash)
+        {
+            Call(Hash.REMOVE_WEAPON_FROM_PED, owner.Handle, weaponHash);
+        }
 
-			weapons.Clear();
-		}
-	}
+        public void RemoveAll()
+        {
+            Call(Hash.REMOVE_ALL_PED_WEAPONS, owner.Handle, true);
+
+            weapons.Clear();
+        }
+    }
 }

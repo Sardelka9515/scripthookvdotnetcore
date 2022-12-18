@@ -5,14 +5,14 @@
 
 namespace GTA
 {
-	public enum Relationship
-	{
-		Companion,
-		Respect,
-		Like,
-		Neutral,
-		Dislike,
-		Hate,
-		Pedestrians = 255
-	}
+    public enum Relationship
+    {
+        Companion,
+        Respect,
+        Like,
+        Neutral,
+        Dislike,
+        Hate,
+        Pedestrians = 255
+    }
 }

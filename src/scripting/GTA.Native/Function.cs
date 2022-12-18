@@ -1,6 +1,4 @@
-﻿using GTA.Math;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -8,11 +6,9 @@ namespace GTA.Native;
 
 public interface INativeValue
 {
-    ulong NativeValue
-    {
-        get; set;
-    }
+    ulong NativeValue { get; set; }
 }
+
 public static unsafe class Function
 {
     #region Push string
@@ -122,6 +118,7 @@ public static unsafe class Function
         else
             action(str.Slice(startPos, str.Length - startPos));
     }
+
     #endregion
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,16 +130,19 @@ public static unsafe class Function
             if (type == typeof(double))
             {
                 // Additional convertion required since double is invalid in native functions
-                var tmp = (double)Unsafe.As<ulong,float>(ref *pNative);
+                var tmp = (double)Unsafe.As<ulong, float>(ref *pNative);
                 return Unsafe.As<double, T>(ref tmp); // Bypass type checking
             }
+
             return Unsafe.As<ulong, T>(ref *pNative);
         }
+
         if (type == typeof(string))
         {
             var obj = (T)(object)PtrToStringUTF8((IntPtr)(*pNative));
             return obj;
         }
+
         if (type.IsAssignableTo(typeof(INativeValue)))
         {
             // Edge case. Warning: Requires classes implementing 'INativeValue' to repeat all constructor work in the setter of 'NativeValue'
@@ -162,12 +162,14 @@ public static unsafe class Function
         NativeInit((ulong)hash);
         NativeCall();
     }
+
     public static void Call(Hash hash, InputArgument arg0)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
         NativeCall();
     }
+
     public static void Call(Hash hash, InputArgument arg0, InputArgument arg1)
     {
         NativeInit((ulong)hash);
@@ -175,6 +177,7 @@ public static unsafe class Function
         NativePush64(arg1.Value);
         NativeCall();
     }
+
     public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2)
     {
         NativeInit((ulong)hash);
@@ -183,6 +186,7 @@ public static unsafe class Function
         NativePush64(arg2.Value);
         NativeCall();
     }
+
     public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3)
     {
         NativeInit((ulong)hash);
@@ -192,7 +196,9 @@ public static unsafe class Function
         NativePush64(arg3.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -202,7 +208,9 @@ public static unsafe class Function
         NativePush64(arg4.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -213,7 +221,9 @@ public static unsafe class Function
         NativePush64(arg5.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -225,7 +235,9 @@ public static unsafe class Function
         NativePush64(arg6.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -238,7 +250,9 @@ public static unsafe class Function
         NativePush64(arg7.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -252,7 +266,10 @@ public static unsafe class Function
         NativePush64(arg8.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -267,7 +284,10 @@ public static unsafe class Function
         NativePush64(arg9.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -283,7 +303,10 @@ public static unsafe class Function
         NativePush64(arg10.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -300,7 +323,10 @@ public static unsafe class Function
         NativePush64(arg11.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -318,7 +344,10 @@ public static unsafe class Function
         NativePush64(arg12.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -337,7 +366,11 @@ public static unsafe class Function
         NativePush64(arg13.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -357,7 +390,11 @@ public static unsafe class Function
         NativePush64(arg14.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -378,7 +415,11 @@ public static unsafe class Function
         NativePush64(arg15.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -400,7 +441,11 @@ public static unsafe class Function
         NativePush64(arg16.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -423,7 +468,11 @@ public static unsafe class Function
         NativePush64(arg17.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -447,7 +496,12 @@ public static unsafe class Function
         NativePush64(arg18.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -472,7 +526,12 @@ public static unsafe class Function
         NativePush64(arg19.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -498,7 +557,12 @@ public static unsafe class Function
         NativePush64(arg20.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -525,7 +589,12 @@ public static unsafe class Function
         NativePush64(arg21.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -553,7 +622,12 @@ public static unsafe class Function
         NativePush64(arg22.Value);
         NativeCall();
     }
-    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22, InputArgument arg23)
+
+    public static void Call(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22, InputArgument arg23)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -592,12 +666,14 @@ public static unsafe class Function
         NativeInit((ulong)hash);
         return ConvertFromNative<T>(NativeCall());
     }
+
     public static T Call<T>(Hash hash, InputArgument arg0)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
         return ConvertFromNative<T>(NativeCall());
     }
+
     public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1)
     {
         NativeInit((ulong)hash);
@@ -605,6 +681,7 @@ public static unsafe class Function
         NativePush64(arg1.Value);
         return ConvertFromNative<T>(NativeCall());
     }
+
     public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2)
     {
         NativeInit((ulong)hash);
@@ -613,6 +690,7 @@ public static unsafe class Function
         NativePush64(arg2.Value);
         return ConvertFromNative<T>(NativeCall());
     }
+
     public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3)
     {
         NativeInit((ulong)hash);
@@ -622,7 +700,9 @@ public static unsafe class Function
         NativePush64(arg3.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -632,7 +712,9 @@ public static unsafe class Function
         NativePush64(arg4.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -643,7 +725,9 @@ public static unsafe class Function
         NativePush64(arg5.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -655,7 +739,9 @@ public static unsafe class Function
         NativePush64(arg6.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -668,7 +754,9 @@ public static unsafe class Function
         NativePush64(arg7.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -682,7 +770,10 @@ public static unsafe class Function
         NativePush64(arg8.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -697,7 +788,10 @@ public static unsafe class Function
         NativePush64(arg9.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -713,7 +807,10 @@ public static unsafe class Function
         NativePush64(arg10.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -730,7 +827,10 @@ public static unsafe class Function
         NativePush64(arg11.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -748,7 +848,10 @@ public static unsafe class Function
         NativePush64(arg12.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -767,7 +870,11 @@ public static unsafe class Function
         NativePush64(arg13.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -787,7 +894,11 @@ public static unsafe class Function
         NativePush64(arg14.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -808,7 +919,11 @@ public static unsafe class Function
         NativePush64(arg15.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -830,7 +945,11 @@ public static unsafe class Function
         NativePush64(arg16.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -853,7 +972,11 @@ public static unsafe class Function
         NativePush64(arg17.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -877,7 +1000,12 @@ public static unsafe class Function
         NativePush64(arg18.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -902,7 +1030,12 @@ public static unsafe class Function
         NativePush64(arg19.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -928,7 +1061,12 @@ public static unsafe class Function
         NativePush64(arg20.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -955,7 +1093,12 @@ public static unsafe class Function
         NativePush64(arg21.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);
@@ -983,7 +1126,12 @@ public static unsafe class Function
         NativePush64(arg22.Value);
         return ConvertFromNative<T>(NativeCall());
     }
-    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3, InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8, InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13, InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18, InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22, InputArgument arg23)
+
+    public static T Call<T>(Hash hash, InputArgument arg0, InputArgument arg1, InputArgument arg2, InputArgument arg3,
+        InputArgument arg4, InputArgument arg5, InputArgument arg6, InputArgument arg7, InputArgument arg8,
+        InputArgument arg9, InputArgument arg10, InputArgument arg11, InputArgument arg12, InputArgument arg13,
+        InputArgument arg14, InputArgument arg15, InputArgument arg16, InputArgument arg17, InputArgument arg18,
+        InputArgument arg19, InputArgument arg20, InputArgument arg21, InputArgument arg22, InputArgument arg23)
     {
         NativeInit((ulong)hash);
         NativePush64(arg0.Value);

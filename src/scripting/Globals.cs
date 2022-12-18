@@ -1,4 +1,5 @@
 ﻿global using SHVDN;
+global using GTA.Native;
 global using static PInvoke.Kernel32;
 global using static PInvoke.User32;
 global using static SHVDN.ScriptHookV;
@@ -13,6 +14,7 @@ global using static GTA.Native.Function;
 global using static SHVDN.Marshaller;
 
 namespace SHVDN;
+
 public class Globals
 {
     public const int DLL_PROCESS_ATTACH = 1;

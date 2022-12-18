@@ -3,127 +3,129 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System;
-
 namespace GTA
 {
-	public struct RelationshipGroup : INativeValue, IEquatable<RelationshipGroup>
-	{
-		RelationshipGroup(string name) : this()
-		{
-			int hashArg;
-			unsafe
-			{
-				Function.Call(Native.Hash.ADD_RELATIONSHIP_GROUP, name, &hashArg);
-			}
+    public struct RelationshipGroup : INativeValue, IEquatable<RelationshipGroup>
+    {
+        RelationshipGroup(string name) : this()
+        {
+            int hashArg;
+            unsafe
+            {
+                Call(Native.Hash.ADD_RELATIONSHIP_GROUP, name, &hashArg);
+            }
 
-			Hash = hashArg;
-		}
-		public RelationshipGroup(int hash) : this()
-		{
-			Hash = hash;
-		}
-		public RelationshipGroup(uint hash) : this((int)hash)
-		{
-		}
+            Hash = hashArg;
+        }
 
-		/// <summary>
-		/// Gets the hash for this <see cref="RelationshipGroup"/>.
-		/// </summary>
-		public int Hash
-		{
-			get; private set;
-		}
+        public RelationshipGroup(int hash) : this()
+        {
+            Hash = hash;
+        }
 
-		/// <summary>
-		/// Gets the native representation of this <see cref="RelationshipGroup"/>.
-		/// </summary>
-		public ulong NativeValue
-		{
-			get => (ulong)Hash;
-			set => Hash = unchecked((int)value);
-		}
+        public RelationshipGroup(uint hash) : this((int)hash)
+        {
+        }
 
-		public Relationship GetRelationshipBetweenGroups(RelationshipGroup targetGroup)
-		{
-			return Function.Call<Relationship>(Native.Hash.GET_RELATIONSHIP_BETWEEN_GROUPS, Hash, targetGroup.NativeValue);
-		}
+        /// <summary>
+        /// Gets the hash for this <see cref="RelationshipGroup"/>.
+        /// </summary>
+        public int Hash { get; private set; }
 
-		public void SetRelationshipBetweenGroups(RelationshipGroup targetGroup, Relationship relationship, bool bidirectionally = false)
-		{
-			Function.Call(Native.Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, relationship, Hash, targetGroup.NativeValue);
+        /// <summary>
+        /// Gets the native representation of this <see cref="RelationshipGroup"/>.
+        /// </summary>
+        public ulong NativeValue
+        {
+            get => (ulong)Hash;
+            set => Hash = unchecked((int)value);
+        }
 
-			if (bidirectionally)
-			{
-				Function.Call(Native.Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, relationship, targetGroup.NativeValue, Hash);
-			}
-		}
+        public Relationship GetRelationshipBetweenGroups(RelationshipGroup targetGroup)
+        {
+            return Call<Relationship>(Native.Hash.GET_RELATIONSHIP_BETWEEN_GROUPS, Hash, targetGroup.NativeValue);
+        }
 
-		public void ClearRelationshipBetweenGroups(RelationshipGroup targetGroup, Relationship relationship, bool bidirectionally = false)
-		{
-			Function.Call(Native.Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, relationship, Hash, targetGroup.NativeValue);
+        public void SetRelationshipBetweenGroups(RelationshipGroup targetGroup, Relationship relationship,
+            bool bidirectionally = false)
+        {
+            Call(Native.Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, relationship, Hash, targetGroup.NativeValue);
 
-			if (bidirectionally)
-			{
-				Function.Call(Native.Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, relationship, targetGroup.NativeValue, Hash);
-			}
-		}
+            if (bidirectionally)
+            {
+                Call(Native.Hash.SET_RELATIONSHIP_BETWEEN_GROUPS, relationship, targetGroup.NativeValue, Hash);
+            }
+        }
 
-		public void Remove()
-		{
-			Function.Call(Native.Hash.REMOVE_RELATIONSHIP_GROUP, Hash);
-		}
+        public void ClearRelationshipBetweenGroups(RelationshipGroup targetGroup, Relationship relationship,
+            bool bidirectionally = false)
+        {
+            Call(Native.Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, relationship, Hash, targetGroup.NativeValue);
 
-		public bool Equals(RelationshipGroup group)
-		{
-			return Hash == group.Hash;
-		}
-		public override bool Equals(object obj)
-		{
-			if (obj is RelationshipGroup group)
-			{
-				return Equals(group);
-			}
+            if (bidirectionally)
+            {
+                Call(Native.Hash.CLEAR_RELATIONSHIP_BETWEEN_GROUPS, relationship, targetGroup.NativeValue, Hash);
+            }
+        }
 
-			return false;
-		}
+        public void Remove()
+        {
+            Call(Native.Hash.REMOVE_RELATIONSHIP_GROUP, Hash);
+        }
 
-		public static bool operator ==(RelationshipGroup left, RelationshipGroup right)
-		{
-			return left.Equals(right);
-		}
-		public static bool operator !=(RelationshipGroup left, RelationshipGroup right)
-		{
-			return !(left == right);
-		}
+        public bool Equals(RelationshipGroup group)
+        {
+            return Hash == group.Hash;
+        }
 
-		public static implicit operator RelationshipGroup(int source)
-		{
-			return new RelationshipGroup(source);
-		}
-		public static implicit operator RelationshipGroup(uint source)
-		{
-			return new RelationshipGroup(source);
-		}
-		public static implicit operator RelationshipGroup(string source)
-		{
-			return new RelationshipGroup(source);
-		}
+        public override bool Equals(object obj)
+        {
+            if (obj is RelationshipGroup group)
+            {
+                return Equals(group);
+            }
 
-		public static implicit operator InputArgument(RelationshipGroup value)
-		{
-			return new InputArgument((ulong)value.Hash);
-		}
+            return false;
+        }
 
-		public override int GetHashCode()
-		{
-			return Hash;
-		}
+        public static bool operator ==(RelationshipGroup left, RelationshipGroup right)
+        {
+            return left.Equals(right);
+        }
 
-		public override string ToString()
-		{
-			return "0x" + Hash.ToString("X");
-		}
-	}
+        public static bool operator !=(RelationshipGroup left, RelationshipGroup right)
+        {
+            return !(left == right);
+        }
+
+        public static implicit operator RelationshipGroup(int source)
+        {
+            return new RelationshipGroup(source);
+        }
+
+        public static implicit operator RelationshipGroup(uint source)
+        {
+            return new RelationshipGroup(source);
+        }
+
+        public static implicit operator RelationshipGroup(string source)
+        {
+            return new RelationshipGroup(source);
+        }
+
+        public static implicit operator InputArgument(RelationshipGroup value)
+        {
+            return new InputArgument((ulong)value.Hash);
+        }
+
+        public override int GetHashCode()
+        {
+            return Hash;
+        }
+
+        public override string ToString()
+        {
+            return "0x" + Hash.ToString("X");
+        }
+    }
 }

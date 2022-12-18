@@ -3,67 +3,67 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using System;
-using System.IO;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace GTA
 {
-	public class EntityDamageRecordCollection : IEnumerable<EntityDamageRecord>, IEnumerable
-	{
-		#region Fields
-		protected readonly Entity _owner;
-		#endregion
+    public class EntityDamageRecordCollection : IEnumerable<EntityDamageRecord>, IEnumerable
+    {
+        #region Fields
 
-		internal EntityDamageRecordCollection(Entity owner)
-		{
-			_owner = owner;
-		}
+        protected readonly Entity _owner;
 
-		public IEnumerator<EntityDamageRecord> GetEnumerator()
-		{
-			// No more than 3 damage records
-			for (uint i = 0; i < 3; i++)
-			{
-				var memoryAddress = _owner.MemoryAddress;
+        #endregion
 
-				if (memoryAddress == IntPtr.Zero || !SHVDN.NativeMemory.IsIndexOfEntityDamageRecordValid(memoryAddress, i))
-					yield break;
+        internal EntityDamageRecordCollection(Entity owner)
+        {
+            _owner = owner;
+        }
 
-				var returnDamageRecord = SHVDN.NativeMemory.GetEntityDamageRecordEntryAtIndex(_owner.MemoryAddress, i);
+        public IEnumerator<EntityDamageRecord> GetEnumerator()
+        {
+            // No more than 3 damage records
+            for (uint i = 0; i < 3; i++)
+            {
+                var memoryAddress = _owner.MemoryAddress;
 
-				(int attackerHandle, int weaponHash, int gameTime) = returnDamageRecord;
-				var attackerEntity = attackerHandle != 0 ? Entity.FromHandle(attackerHandle) : null;
+                if (memoryAddress == IntPtr.Zero || !NativeMemory.IsIndexOfEntityDamageRecordValid(memoryAddress, i))
+                    yield break;
 
-				yield return new EntityDamageRecord(_owner, attackerEntity, (WeaponHash)weaponHash, gameTime);
-			}
-		}
+                var returnDamageRecord = NativeMemory.GetEntityDamageRecordEntryAtIndex(_owner.MemoryAddress, i);
 
-		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                (int attackerHandle, int weaponHash, int gameTime) = returnDamageRecord;
+                var attackerEntity = attackerHandle != 0 ? Entity.FromHandle(attackerHandle) : null;
 
-		/// <summary>
-		/// Gets all the <see cref="EntityDamageRecord" /> at the moment.
-		/// The return array can contain up to 3 <see cref="EntityDamageRecord" />s.
-		/// </summary>
-		public EntityDamageRecord[] GetAllDamageRecords()
-		{
-			var memoryAddress = _owner.MemoryAddress;
+                yield return new EntityDamageRecord(_owner, attackerEntity, (WeaponHash)weaponHash, gameTime);
+            }
+        }
 
-			if (memoryAddress == IntPtr.Zero)
-				return new EntityDamageRecord[0];
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-			var damageEntries = SHVDN.NativeMemory.GetEntityDamageRecordEntries(memoryAddress);
-			var returnDamageRecords = new EntityDamageRecord[damageEntries.Length];
+        /// <summary>
+        /// Gets all the <see cref="EntityDamageRecord" /> at the moment.
+        /// The return array can contain up to 3 <see cref="EntityDamageRecord" />s.
+        /// </summary>
+        public EntityDamageRecord[] GetAllDamageRecords()
+        {
+            var memoryAddress = _owner.MemoryAddress;
 
-			for (int i = 0; i < returnDamageRecords.Length; i++)
-			{
-				(int attackerHandle, int weaponHash, int gameTime) = damageEntries[i];
-				var attackerEntity = attackerHandle != 0 ? Entity.FromHandle(attackerHandle) : null;
-				returnDamageRecords[i] = new EntityDamageRecord(_owner, attackerEntity, (WeaponHash)weaponHash, gameTime);
-			}
+            if (memoryAddress == IntPtr.Zero)
+                return new EntityDamageRecord[0];
 
-			return returnDamageRecords;
-		}
-	}
+            var damageEntries = NativeMemory.GetEntityDamageRecordEntries(memoryAddress);
+            var returnDamageRecords = new EntityDamageRecord[damageEntries.Length];
+
+            for (int i = 0; i < returnDamageRecords.Length; i++)
+            {
+                (int attackerHandle, int weaponHash, int gameTime) = damageEntries[i];
+                var attackerEntity = attackerHandle != 0 ? Entity.FromHandle(attackerHandle) : null;
+                returnDamageRecords[i] =
+                    new EntityDamageRecord(_owner, attackerEntity, (WeaponHash)weaponHash, gameTime);
+            }
+
+            return returnDamageRecords;
+        }
+    }
 }

@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace GTA.Native;
+
 /// <summary>
 /// A value class which handles access to global script variables.
 /// </summary>
@@ -31,7 +28,8 @@ public unsafe readonly struct GlobalVariable
 
         if (address == IntPtr.Zero)
         {
-            throw new IndexOutOfRangeException($"The index {index} does not correspond to an existing global variable.");
+            throw new IndexOutOfRangeException(
+                $"The index {index} does not correspond to an existing global variable.");
         }
 
         return new GlobalVariable(address);
@@ -40,27 +38,25 @@ public unsafe readonly struct GlobalVariable
     /// <summary>
     /// Gets the native memory address of the <see cref="GlobalVariable"/>.
     /// </summary>
-    public IntPtr MemoryAddress
-    {
-        get;
-    }
+    public IntPtr MemoryAddress { get; }
 
     /// <summary>
     /// Gets the value stored in the <see cref="GlobalVariable"/>.
     /// </summary>
     public T Read<T>()
     {
-        return Function.ConvertFromNative<T>((ulong*)MemoryAddress);
+        return ConvertFromNative<T>((ulong*)MemoryAddress);
     }
 
     /// <summary>
     /// Set the value stored in the <see cref="GlobalVariable"/>.
     /// </summary>
     /// <param name="value">The new value to assign to the <see cref="GlobalVariable"/>.</param>
-    public void Write<T>(T value) where T:unmanaged
+    public void Write<T>(T value) where T : unmanaged
     {
         *(T*)MemoryAddress = value;
     }
+
     /// <summary>
     /// Set the value stored in the <see cref="GlobalVariable"/> to a string.
     /// </summary>
@@ -100,6 +96,7 @@ public unsafe readonly struct GlobalVariable
 
         *(ulong*)(MemoryAddress.ToPointer()) |= (1u << index);
     }
+
     /// <summary>
     /// Set the value of a specific bit of the <see cref="GlobalVariable"/> to false.
     /// </summary>
@@ -113,6 +110,7 @@ public unsafe readonly struct GlobalVariable
 
         *(ulong*)(MemoryAddress.ToPointer()) &= ~(1u << index);
     }
+
     /// <summary>
     /// Gets a value indicating whether a specific bit of the <see cref="GlobalVariable"/> is set.
     /// </summary>
@@ -171,6 +169,7 @@ public unsafe readonly struct GlobalVariable
 
         return result;
     }
+
     /// <summary>
     /// Gets the <see cref="GlobalVariable"/> stored at a specific index in a global array.
     /// </summary>

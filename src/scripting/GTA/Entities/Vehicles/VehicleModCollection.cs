@@ -3,490 +3,486 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
-using System.Linq;
 
 namespace GTA
 {
-	public sealed class VehicleModCollection
-	{
-		#region Fields
-		readonly Vehicle _owner;
-		readonly Dictionary<VehicleModType, VehicleMod> _vehicleMods = new Dictionary<VehicleModType, VehicleMod>();
-		readonly Dictionary<VehicleToggleModType, VehicleToggleMod> _vehicleToggleMods = new Dictionary<VehicleToggleModType, VehicleToggleMod>();
+    public sealed class VehicleModCollection
+    {
+        #region Fields
 
-		private static readonly ReadOnlyDictionary<VehicleWheelType, Tuple<string, string>> _wheelNames = new ReadOnlyDictionary
-			<VehicleWheelType, Tuple<string, string>>(
-			new Dictionary<VehicleWheelType, Tuple<string, string>>
-			{
-				{VehicleWheelType.BikeWheels, new Tuple<string, string>("CMOD_WHE1_0", "Bike")},
-				{VehicleWheelType.HighEnd, new Tuple<string, string>("CMOD_WHE1_1", "High End")},
-				{VehicleWheelType.Lowrider, new Tuple<string, string>("CMOD_WHE1_2", "Lowrider")},
-				{VehicleWheelType.Muscle, new Tuple<string, string>("CMOD_WHE1_3", "Muscle")},
-				{VehicleWheelType.Offroad, new Tuple<string, string>("CMOD_WHE1_4", "Offroad")},
-				{VehicleWheelType.Sport, new Tuple<string, string>("CMOD_WHE1_5", "Sport")},
-				{VehicleWheelType.SUV, new Tuple<string, string>("CMOD_WHE1_6", "SUV")},
-				{VehicleWheelType.Tuner, new Tuple<string, string>("CMOD_WHE1_7", "Tuner")},
-				{VehicleWheelType.BennysOriginals, new Tuple<string, string>("CMOD_WHE1_8", "Benny's Originals")},
-				{VehicleWheelType.BennysBespoke, new Tuple<string, string>("CMOD_WHE1_9", "Benny's Bespoke")}
-			});
-		#endregion
+        readonly Vehicle _owner;
+        readonly Dictionary<VehicleModType, VehicleMod> _vehicleMods = new();
+        readonly Dictionary<VehicleToggleModType, VehicleToggleMod> _vehicleToggleMods = new();
 
-		internal VehicleModCollection(Vehicle owner)
-		{
-			_owner = owner;
-		}
+        private static readonly ReadOnlyDictionary<VehicleWheelType, Tuple<string, string>> _wheelNames = new(
+            new Dictionary<VehicleWheelType, Tuple<string, string>>
+            {
+                { VehicleWheelType.BikeWheels, new Tuple<string, string>("CMOD_WHE1_0", "Bike") },
+                { VehicleWheelType.HighEnd, new Tuple<string, string>("CMOD_WHE1_1", "High End") },
+                { VehicleWheelType.Lowrider, new Tuple<string, string>("CMOD_WHE1_2", "Lowrider") },
+                { VehicleWheelType.Muscle, new Tuple<string, string>("CMOD_WHE1_3", "Muscle") },
+                { VehicleWheelType.Offroad, new Tuple<string, string>("CMOD_WHE1_4", "Offroad") },
+                { VehicleWheelType.Sport, new Tuple<string, string>("CMOD_WHE1_5", "Sport") },
+                { VehicleWheelType.SUV, new Tuple<string, string>("CMOD_WHE1_6", "SUV") },
+                { VehicleWheelType.Tuner, new Tuple<string, string>("CMOD_WHE1_7", "Tuner") },
+                { VehicleWheelType.BennysOriginals, new Tuple<string, string>("CMOD_WHE1_8", "Benny's Originals") },
+                { VehicleWheelType.BennysBespoke, new Tuple<string, string>("CMOD_WHE1_9", "Benny's Bespoke") }
+            });
 
-		public VehicleMod this[VehicleModType modType]
-		{
-			get
-			{
-				if (!_vehicleMods.TryGetValue(modType, out VehicleMod vehicleMod))
-				{
-					vehicleMod = new VehicleMod(_owner, modType);
-					_vehicleMods.Add(modType, vehicleMod);
-				}
+        #endregion
 
-				return vehicleMod;
-			}
-		}
+        internal VehicleModCollection(Vehicle owner)
+        {
+            _owner = owner;
+        }
 
-		public VehicleToggleMod this[VehicleToggleModType modType]
-		{
-			get
-			{
-				if (!_vehicleToggleMods.TryGetValue(modType, out VehicleToggleMod vehicleToggleMod))
-				{
-					vehicleToggleMod = new VehicleToggleMod(_owner, modType);
-					_vehicleToggleMods.Add(modType, vehicleToggleMod);
-				}
+        public VehicleMod this[VehicleModType modType]
+        {
+            get
+            {
+                if (!_vehicleMods.TryGetValue(modType, out VehicleMod vehicleMod))
+                {
+                    vehicleMod = new VehicleMod(_owner, modType);
+                    _vehicleMods.Add(modType, vehicleMod);
+                }
 
-				return vehicleToggleMod;
-			}
-		}
+                return vehicleMod;
+            }
+        }
 
-		public bool Contains(VehicleModType type)
-		{
-			return Function.Call<int>(Hash.GET_NUM_VEHICLE_MODS, _owner.Handle, type) > 0;
-		}
+        public VehicleToggleMod this[VehicleToggleModType modType]
+        {
+            get
+            {
+                if (!_vehicleToggleMods.TryGetValue(modType, out VehicleToggleMod vehicleToggleMod))
+                {
+                    vehicleToggleMod = new VehicleToggleMod(_owner, modType);
+                    _vehicleToggleMods.Add(modType, vehicleToggleMod);
+                }
 
-		public VehicleMod[] ToArray()
-		{
-			return Enum.GetValues<VehicleModType>().Cast<VehicleModType>().Where(Contains).Select(modType => this[modType]).ToArray();
-		}
+                return vehicleToggleMod;
+            }
+        }
 
-		public VehicleWheelType WheelType
-		{
-			get => Function.Call<VehicleWheelType>(Hash.GET_VEHICLE_WHEEL_TYPE, _owner.Handle);
-			set => Function.Call(Hash.SET_VEHICLE_WHEEL_TYPE, _owner.Handle, value);
-		}
+        public bool Contains(VehicleModType type)
+        {
+            return Call<int>(Hash.GET_NUM_VEHICLE_MODS, _owner.Handle, type) > 0;
+        }
 
-		public VehicleWheelType[] AllowedWheelTypes
-		{
-			get
-			{
-				if (_owner.Model.IsBicycle || _owner.Model.IsBike)
-				{
-					return new VehicleWheelType[] { VehicleWheelType.BikeWheels };
-				}
-				if (_owner.Model.IsCar)
-				{
-					var res = new List<VehicleWheelType>()
-					{
-						VehicleWheelType.Sport,
-						VehicleWheelType.Muscle,
-						VehicleWheelType.Lowrider,
-						VehicleWheelType.SUV,
-						VehicleWheelType.Offroad,
-						VehicleWheelType.Tuner,
-						VehicleWheelType.HighEnd
-					};
-					switch ((VehicleHash)_owner.Model)
-					{
-						case VehicleHash.Faction2:
-						case VehicleHash.Buccaneer2:
-						case VehicleHash.Chino2:
-						case VehicleHash.Moonbeam2:
-						case VehicleHash.Primo2:
-						case VehicleHash.Voodoo2:
-						case VehicleHash.SabreGT2:
-						case VehicleHash.Tornado5:
-						case VehicleHash.Virgo2:
-						case VehicleHash.Minivan2:
-						case VehicleHash.SlamVan3:
-						case VehicleHash.Faction3:
-							res.AddRange(new VehicleWheelType[] { VehicleWheelType.BennysOriginals, VehicleWheelType.BennysBespoke });
-							break;
-						case VehicleHash.SultanRS:
-						case VehicleHash.Banshee2:
-							res.Add(VehicleWheelType.BennysOriginals);
-							break;
-					}
-					return res.ToArray();
-				}
-				return new VehicleWheelType[0];
-			}
-		}
+        public VehicleMod[] ToArray()
+        {
+            return Enum.GetValues<VehicleModType>().Cast<VehicleModType>().Where(Contains)
+                .Select(modType => this[modType]).ToArray();
+        }
 
-		public string LocalizedWheelTypeName => GetLocalizedWheelTypeName(WheelType);
+        public VehicleWheelType WheelType
+        {
+            get => Call<VehicleWheelType>(Hash.GET_VEHICLE_WHEEL_TYPE, _owner.Handle);
+            set => Call(Hash.SET_VEHICLE_WHEEL_TYPE, _owner.Handle, value);
+        }
 
-		public string GetLocalizedWheelTypeName(VehicleWheelType wheelType)
-		{
-			if (!Function.Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
-			{
-				Function.Call(Hash.CLEAR_ADDITIONAL_TEXT, 10, true);
-				Function.Call(Hash.REQUEST_ADDITIONAL_TEXT, "mod_mnu", 10);
-			}
-			if (_wheelNames.ContainsKey(wheelType))
-			{
-				if (!string.IsNullOrEmpty(Game.GetLocalizedString(_wheelNames[wheelType].Item1)))
-				{
-					return Game.GetLocalizedString(_wheelNames[wheelType].Item1);
-				}
-				return _wheelNames[wheelType].Item2;
-			}
-			throw new ArgumentException("Wheel Type is undefined", "wheelType");
-		}
+        public VehicleWheelType[] AllowedWheelTypes
+        {
+            get
+            {
+                if (_owner.Model.IsBicycle || _owner.Model.IsBike)
+                {
+                    return new VehicleWheelType[] { VehicleWheelType.BikeWheels };
+                }
 
-		public void InstallModKit()
-		{
-			Function.Call(Hash.SET_VEHICLE_MOD_KIT, _owner.Handle, 0);
-		}
+                if (_owner.Model.IsCar)
+                {
+                    var res = new List<VehicleWheelType>()
+                    {
+                        VehicleWheelType.Sport,
+                        VehicleWheelType.Muscle,
+                        VehicleWheelType.Lowrider,
+                        VehicleWheelType.SUV,
+                        VehicleWheelType.Offroad,
+                        VehicleWheelType.Tuner,
+                        VehicleWheelType.HighEnd
+                    };
+                    switch ((VehicleHash)_owner.Model)
+                    {
+                        case VehicleHash.Faction2:
+                        case VehicleHash.Buccaneer2:
+                        case VehicleHash.Chino2:
+                        case VehicleHash.Moonbeam2:
+                        case VehicleHash.Primo2:
+                        case VehicleHash.Voodoo2:
+                        case VehicleHash.SabreGT2:
+                        case VehicleHash.Tornado5:
+                        case VehicleHash.Virgo2:
+                        case VehicleHash.Minivan2:
+                        case VehicleHash.SlamVan3:
+                        case VehicleHash.Faction3:
+                            res.AddRange(new VehicleWheelType[]
+                                { VehicleWheelType.BennysOriginals, VehicleWheelType.BennysBespoke });
+                            break;
+                        case VehicleHash.SultanRS:
+                        case VehicleHash.Banshee2:
+                            res.Add(VehicleWheelType.BennysOriginals);
+                            break;
+                    }
 
-		public bool RequestAdditionTextFile(int timeout = 1000)
-		{
-			if (!Function.Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
-			{
-				Function.Call(Hash.CLEAR_ADDITIONAL_TEXT, 10, true);
-				Function.Call(Hash.REQUEST_ADDITIONAL_TEXT, "mod_mnu", 10);
-				int end = Game.GameTime + timeout;
-				{
-					while (Game.GameTime < end)
-					{
-						if (Function.Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
-						{
-							return true;
-						}
+                    return res.ToArray();
+                }
 
-						Script.Yield();
-					}
-					return false;
-				}
-			}
-			return true;
-		}
+                return new VehicleWheelType[0];
+            }
+        }
 
-		public int Livery
-		{
-			get
-			{
-				if (this[VehicleModType.Livery].Count > 0)
-				{
-					return this[VehicleModType.Livery].Index;
-				}
-				else
-				{
-					return Function.Call<int>(Hash.GET_VEHICLE_LIVERY, _owner.Handle);
-				}
-			}
-			set
-			{
-				if (this[VehicleModType.Livery].Count > 0)
-				{
-					this[VehicleModType.Livery].Index = value;
-				}
-				else
-				{
-					Function.Call(Hash.SET_VEHICLE_LIVERY, _owner.Handle, value);
-				}
-			}
-		}
-		public int LiveryCount
-		{
-			get
-			{
-				int modCount = this[VehicleModType.Livery].Count;
+        public string LocalizedWheelTypeName => GetLocalizedWheelTypeName(WheelType);
 
-				if (modCount > 0)
-				{
-					return modCount;
-				}
+        public string GetLocalizedWheelTypeName(VehicleWheelType wheelType)
+        {
+            if (!Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
+            {
+                Call(Hash.CLEAR_ADDITIONAL_TEXT, 10, true);
+                Call(Hash.REQUEST_ADDITIONAL_TEXT, "mod_mnu", 10);
+            }
 
-				return Function.Call<int>(Hash.GET_VEHICLE_LIVERY_COUNT, _owner.Handle);
-			}
-		}
+            if (_wheelNames.ContainsKey(wheelType))
+            {
+                if (!string.IsNullOrEmpty(Game.GetLocalizedString(_wheelNames[wheelType].Item1)))
+                {
+                    return Game.GetLocalizedString(_wheelNames[wheelType].Item1);
+                }
 
-		public string LocalizedLiveryName
-		{
-			get
-			{
-				int modCount = this[VehicleModType.Livery].Count;
+                return _wheelNames[wheelType].Item2;
+            }
 
-				if (modCount > 0)
-				{
-					return this[VehicleModType.Livery].LocalizedName;
-				}
-				return Game.GetLocalizedString(Function.Call<string>(Hash.GET_LIVERY_NAME, _owner.Handle, Livery));
-			}
-		}
+            throw new ArgumentException("Wheel Type is undefined", "wheelType");
+        }
 
-		public VehicleWindowTint WindowTint
-		{
-			get => Function.Call<VehicleWindowTint>(Hash.GET_VEHICLE_WINDOW_TINT, _owner.Handle);
-			set => Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, _owner.Handle, value);
-		}
+        public void InstallModKit()
+        {
+            Call(Hash.SET_VEHICLE_MOD_KIT, _owner.Handle, 0);
+        }
 
-		public VehicleColor PrimaryColor
-		{
-			get
-			{
-				int color1, color2;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_COLOURS, _owner.Handle, &color1, &color2);
-				}
+        public bool RequestAdditionTextFile(int timeout = 1000)
+        {
+            if (!Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
+            {
+                Call(Hash.CLEAR_ADDITIONAL_TEXT, 10, true);
+                Call(Hash.REQUEST_ADDITIONAL_TEXT, "mod_mnu", 10);
+                int end = Game.GameTime + timeout;
+                {
+                    while (Game.GameTime < end)
+                    {
+                        if (Call<bool>(Hash.HAS_THIS_ADDITIONAL_TEXT_LOADED, "mod_mnu", 10))
+                        {
+                            return true;
+                        }
 
-				return (VehicleColor)color1;
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_COLOURS, _owner.Handle, value, SecondaryColor);
-			}
-		}
-		public VehicleColor SecondaryColor
-		{
-			get
-			{
-				int color1, color2;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_COLOURS, _owner.Handle, &color1, &color2);
-				}
+                        Script.Yield();
+                    }
 
-				return (VehicleColor)color2;
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_COLOURS, _owner.Handle, PrimaryColor, value);
-			}
-		}
+                    return false;
+                }
+            }
 
-		public VehicleColor RimColor
-		{
-			get
-			{
-				int color1, color2;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_EXTRA_COLOURS, _owner.Handle, &color1, &color2);
-				}
+            return true;
+        }
 
-				return (VehicleColor)color2;
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, _owner.Handle, PearlescentColor, value);
-			}
-		}
-		public VehicleColor PearlescentColor
-		{
-			get
-			{
-				int color1, color2;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_EXTRA_COLOURS, _owner.Handle, &color1, &color2);
-				}
+        public int Livery
+        {
+            get
+            {
+                if (this[VehicleModType.Livery].Count > 0)
+                {
+                    return this[VehicleModType.Livery].Index;
+                }
+                else
+                {
+                    return Call<int>(Hash.GET_VEHICLE_LIVERY, _owner.Handle);
+                }
+            }
+            set
+            {
+                if (this[VehicleModType.Livery].Count > 0)
+                {
+                    this[VehicleModType.Livery].Index = value;
+                }
+                else
+                {
+                    Call(Hash.SET_VEHICLE_LIVERY, _owner.Handle, value);
+                }
+            }
+        }
 
-				return (VehicleColor)color1;
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_EXTRA_COLOURS, _owner.Handle, value, RimColor);
-			}
-		}
-		public VehicleColor TrimColor
-		{
-			get
-			{
-				if (Game.Version < GameVersion.v1_0_505_2_Steam)
-					throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam, nameof(VehicleModCollection), nameof(TrimColor));
+        public int LiveryCount
+        {
+            get
+            {
+                int modCount = this[VehicleModType.Livery].Count;
 
-				int color;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_EXTRA_COLOUR_5, _owner.Handle, &color);
-				}
+                if (modCount > 0)
+                {
+                    return modCount;
+                }
 
-				return (VehicleColor)color;
-			}
-			set
-			{
-				if (Game.Version < GameVersion.v1_0_505_2_Steam)
-					throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam, nameof(VehicleModCollection), nameof(TrimColor));
+                return Call<int>(Hash.GET_VEHICLE_LIVERY_COUNT, _owner.Handle);
+            }
+        }
 
-				Function.Call(Hash.SET_VEHICLE_EXTRA_COLOUR_5, _owner.Handle, value);
-			}
-		}
-		public VehicleColor DashboardColor
-		{
-			get
-			{
-				if (Game.Version < GameVersion.v1_0_505_2_Steam)
-					throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam, nameof(VehicleModCollection), nameof(DashboardColor));
+        public string LocalizedLiveryName
+        {
+            get
+            {
+                int modCount = this[VehicleModType.Livery].Count;
 
-				int color;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_EXTRA_COLOUR_6, _owner.Handle, &color);
-				}
+                if (modCount > 0)
+                {
+                    return this[VehicleModType.Livery].LocalizedName;
+                }
 
-				return (VehicleColor)color;
-			}
-			set
-			{
-				if (Game.Version < GameVersion.v1_0_505_2_Steam)
-					throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam, nameof(VehicleModCollection), nameof(DashboardColor));
+                return Game.GetLocalizedString(Call<string>(Hash.GET_LIVERY_NAME, _owner.Handle, Livery));
+            }
+        }
 
-				Function.Call(Hash.SET_VEHICLE_EXTRA_COLOUR_6, _owner.Handle, value);
-			}
-		}
+        public VehicleWindowTint WindowTint
+        {
+            get => Call<VehicleWindowTint>(Hash.GET_VEHICLE_WINDOW_TINT, _owner.Handle);
+            set => Call(Hash.SET_VEHICLE_WINDOW_TINT, _owner.Handle, value);
+        }
 
-		public int ColorCombination
-		{
-			get => Function.Call<int>(Hash.GET_VEHICLE_COLOUR_COMBINATION, _owner.Handle);
-			set => Function.Call(Hash.SET_VEHICLE_COLOUR_COMBINATION, _owner.Handle, value);
-		}
+        public VehicleColor PrimaryColor
+        {
+            get
+            {
+                int color1, color2;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_COLOURS, _owner.Handle, &color1, &color2);
+                }
 
-		public int ColorCombinationCount => Function.Call<int>(Hash.GET_NUMBER_OF_VEHICLE_COLOURS, _owner.Handle);
+                return (VehicleColor)color1;
+            }
+            set { Call(Hash.SET_VEHICLE_COLOURS, _owner.Handle, value, SecondaryColor); }
+        }
 
-		public Color TireSmokeColor
-		{
-			get
-			{
-				int red, green, blue;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_TYRE_SMOKE_COLOR, _owner.Handle, &red, &green, &blue);
-				}
+        public VehicleColor SecondaryColor
+        {
+            get
+            {
+                int color1, color2;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_COLOURS, _owner.Handle, &color1, &color2);
+                }
 
-				return Color.FromArgb(red, green, blue);
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, _owner.Handle, value.R, value.G, value.B);
-			}
-		}
-		public Color NeonLightsColor
-		{
-			get
-			{
-				int red, green, blue;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_NEON_COLOUR, _owner.Handle, &red, &green, &blue);
-				}
+                return (VehicleColor)color2;
+            }
+            set { Call(Hash.SET_VEHICLE_COLOURS, _owner.Handle, PrimaryColor, value); }
+        }
 
-				return Color.FromArgb(red, green, blue);
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_NEON_COLOUR, _owner.Handle, value.R, value.G, value.B);
-			}
-		}
+        public VehicleColor RimColor
+        {
+            get
+            {
+                int color1, color2;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_EXTRA_COLOURS, _owner.Handle, &color1, &color2);
+                }
 
-		public bool HasNeonLight(VehicleNeonLight neonLight)
-		{
-			switch (neonLight)
-			{
-				case VehicleNeonLight.Left:
-					return _owner.Bones.Contains("neon_l");
-				case VehicleNeonLight.Right:
-					return _owner.Bones.Contains("neon_r");
-				case VehicleNeonLight.Front:
-					return _owner.Bones.Contains("neon_f");
-				case VehicleNeonLight.Back:
-					return _owner.Bones.Contains("neon_b");
-				default:
-					return false;
-			}
-		}
+                return (VehicleColor)color2;
+            }
+            set { Call(Hash.SET_VEHICLE_EXTRA_COLOURS, _owner.Handle, PearlescentColor, value); }
+        }
 
-		public bool HasNeonLights => Enum.GetValues<VehicleNeonLight>().Cast<VehicleNeonLight>().Any(HasNeonLight);
+        public VehicleColor PearlescentColor
+        {
+            get
+            {
+                int color1, color2;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_EXTRA_COLOURS, _owner.Handle, &color1, &color2);
+                }
 
-		public bool IsNeonLightsOn(VehicleNeonLight light)
-		{
-			return Function.Call<bool>(Hash.GET_VEHICLE_NEON_ENABLED, _owner.Handle, light);
-		}
-		public void SetNeonLightsOn(VehicleNeonLight light, bool on)
-		{
-			Function.Call(Hash.SET_VEHICLE_NEON_ENABLED, _owner.Handle, light, on);
-		}
+                return (VehicleColor)color1;
+            }
+            set { Call(Hash.SET_VEHICLE_EXTRA_COLOURS, _owner.Handle, value, RimColor); }
+        }
 
-		public Color CustomPrimaryColor
-		{
-			get
-			{
-				int red, green, blue;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle, &red, &green, &blue);
-				}
+        public VehicleColor TrimColor
+        {
+            get
+            {
+                if (Game.Version < GameVersion.v1_0_505_2_Steam)
+                    throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam,
+                        nameof(VehicleModCollection), nameof(TrimColor));
 
-				return Color.FromArgb(red, green, blue);
+                int color;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_EXTRA_COLOUR_5, _owner.Handle, &color);
+                }
 
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle, value.R, value.G, value.B);
-			}
-		}
-		public Color CustomSecondaryColor
-		{
-			get
-			{
-				int red, green, blue;
-				unsafe
-				{
-					Function.Call(Hash.GET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle, &red, &green, &blue);
-				}
+                return (VehicleColor)color;
+            }
+            set
+            {
+                if (Game.Version < GameVersion.v1_0_505_2_Steam)
+                    throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam,
+                        nameof(VehicleModCollection), nameof(TrimColor));
 
-				return Color.FromArgb(red, green, blue);
-			}
-			set
-			{
-				Function.Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle, value.R, value.G, value.B);
-			}
-		}
+                Call(Hash.SET_VEHICLE_EXTRA_COLOUR_5, _owner.Handle, value);
+            }
+        }
 
-		public bool IsPrimaryColorCustom => Function.Call<bool>(Hash.GET_IS_VEHICLE_PRIMARY_COLOUR_CUSTOM, _owner.Handle);
-		public bool IsSecondaryColorCustom => Function.Call<bool>(Hash.GET_IS_VEHICLE_SECONDARY_COLOUR_CUSTOM, _owner.Handle);
+        public VehicleColor DashboardColor
+        {
+            get
+            {
+                if (Game.Version < GameVersion.v1_0_505_2_Steam)
+                    throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam,
+                        nameof(VehicleModCollection), nameof(DashboardColor));
 
-		public void ClearCustomPrimaryColor()
-		{
-			Function.Call(Hash.CLEAR_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle);
-		}
-		public void ClearCustomSecondaryColor()
-		{
-			Function.Call(Hash.CLEAR_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle);
-		}
+                int color;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_EXTRA_COLOUR_6, _owner.Handle, &color);
+                }
 
-		public string LicensePlate
-		{
-			get => Function.Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, _owner.Handle);
-			set => Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, _owner.Handle, value);
-		}
+                return (VehicleColor)color;
+            }
+            set
+            {
+                if (Game.Version < GameVersion.v1_0_505_2_Steam)
+                    throw new GameVersionNotSupportedException(GameVersion.v1_0_505_2_Steam,
+                        nameof(VehicleModCollection), nameof(DashboardColor));
 
-		public LicensePlateType LicensePlateType => Function.Call<LicensePlateType>(Hash.GET_VEHICLE_PLATE_TYPE, _owner.Handle);
+                Call(Hash.SET_VEHICLE_EXTRA_COLOUR_6, _owner.Handle, value);
+            }
+        }
 
-		public LicensePlateStyle LicensePlateStyle
-		{
-			get => Function.Call<LicensePlateStyle>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, _owner.Handle);
-			set => Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, _owner.Handle, value);
-		}
-	}
+        public int ColorCombination
+        {
+            get => Call<int>(Hash.GET_VEHICLE_COLOUR_COMBINATION, _owner.Handle);
+            set => Call(Hash.SET_VEHICLE_COLOUR_COMBINATION, _owner.Handle, value);
+        }
+
+        public int ColorCombinationCount => Call<int>(Hash.GET_NUMBER_OF_VEHICLE_COLOURS, _owner.Handle);
+
+        public Color TireSmokeColor
+        {
+            get
+            {
+                int red, green, blue;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_TYRE_SMOKE_COLOR, _owner.Handle, &red, &green, &blue);
+                }
+
+                return Color.FromArgb(red, green, blue);
+            }
+            set { Call(Hash.SET_VEHICLE_TYRE_SMOKE_COLOR, _owner.Handle, value.R, value.G, value.B); }
+        }
+
+        public Color NeonLightsColor
+        {
+            get
+            {
+                int red, green, blue;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_NEON_COLOUR, _owner.Handle, &red, &green, &blue);
+                }
+
+                return Color.FromArgb(red, green, blue);
+            }
+            set { Call(Hash.SET_VEHICLE_NEON_COLOUR, _owner.Handle, value.R, value.G, value.B); }
+        }
+
+        public bool HasNeonLight(VehicleNeonLight neonLight)
+        {
+            switch (neonLight)
+            {
+                case VehicleNeonLight.Left:
+                    return _owner.Bones.Contains("neon_l");
+                case VehicleNeonLight.Right:
+                    return _owner.Bones.Contains("neon_r");
+                case VehicleNeonLight.Front:
+                    return _owner.Bones.Contains("neon_f");
+                case VehicleNeonLight.Back:
+                    return _owner.Bones.Contains("neon_b");
+                default:
+                    return false;
+            }
+        }
+
+        public bool HasNeonLights => Enum.GetValues<VehicleNeonLight>().Cast<VehicleNeonLight>().Any(HasNeonLight);
+
+        public bool IsNeonLightsOn(VehicleNeonLight light)
+        {
+            return Call<bool>(Hash.GET_VEHICLE_NEON_ENABLED, _owner.Handle, light);
+        }
+
+        public void SetNeonLightsOn(VehicleNeonLight light, bool on)
+        {
+            Call(Hash.SET_VEHICLE_NEON_ENABLED, _owner.Handle, light, on);
+        }
+
+        public Color CustomPrimaryColor
+        {
+            get
+            {
+                int red, green, blue;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle, &red, &green, &blue);
+                }
+
+                return Color.FromArgb(red, green, blue);
+            }
+            set { Call(Hash.SET_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle, value.R, value.G, value.B); }
+        }
+
+        public Color CustomSecondaryColor
+        {
+            get
+            {
+                int red, green, blue;
+                unsafe
+                {
+                    Call(Hash.GET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle, &red, &green, &blue);
+                }
+
+                return Color.FromArgb(red, green, blue);
+            }
+            set { Call(Hash.SET_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle, value.R, value.G, value.B); }
+        }
+
+        public bool IsPrimaryColorCustom => Call<bool>(Hash.GET_IS_VEHICLE_PRIMARY_COLOUR_CUSTOM, _owner.Handle);
+        public bool IsSecondaryColorCustom => Call<bool>(Hash.GET_IS_VEHICLE_SECONDARY_COLOUR_CUSTOM, _owner.Handle);
+
+        public void ClearCustomPrimaryColor()
+        {
+            Call(Hash.CLEAR_VEHICLE_CUSTOM_PRIMARY_COLOUR, _owner.Handle);
+        }
+
+        public void ClearCustomSecondaryColor()
+        {
+            Call(Hash.CLEAR_VEHICLE_CUSTOM_SECONDARY_COLOUR, _owner.Handle);
+        }
+
+        public string LicensePlate
+        {
+            get => Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, _owner.Handle);
+            set => Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT, _owner.Handle, value);
+        }
+
+        public LicensePlateType LicensePlateType => Call<LicensePlateType>(Hash.GET_VEHICLE_PLATE_TYPE, _owner.Handle);
+
+        public LicensePlateStyle LicensePlateStyle
+        {
+            get => Call<LicensePlateStyle>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, _owner.Handle);
+            set => Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, _owner.Handle, value);
+        }
+    }
 }

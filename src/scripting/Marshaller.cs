@@ -1,15 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
-using static SHVDN.Logger;
 
 namespace SHVDN;
+
 /// <summary>
 ///     General marshalling helpers for calling natives
 /// </summary>
 public static unsafe class Marshaller
 {
-
-
     private static readonly List<IntPtr> _pinnedStrings = new();
     public static IntPtr StringString => StringToCoTaskMemUTF8("STRING");
     public static IntPtr NullString => StringToCoTaskMemUTF8(string.Empty);
@@ -40,6 +38,7 @@ public static unsafe class Marshaller
 
         return PtrToStringUTF8(ptr, len);
     }
+
     public static string PtrToStringUTF8(IntPtr ptr, int len)
     {
         if (len < 0)
@@ -69,7 +68,6 @@ public static unsafe class Marshaller
         _pinnedStrings.Add(handle);
         return handle;
     }
-    
 
 
     /// <summary>

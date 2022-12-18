@@ -1,18 +1,15 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using SHVDN;
+﻿using System.Collections.Concurrent;
+using GTA.UI;
+
 namespace GTA;
+
 public unsafe class Script
 {
     public delegate void ScriptEntryDelegate(IntPtr lParam);
+
     internal readonly ScriptEntryDelegate ScriptEntry;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
-    
+
     /// <summary>
     /// Invoked every frame
     /// </summary>
@@ -32,6 +29,7 @@ public unsafe class Script
     /// Invoked when the script is started
     /// </summary>
     public event Action Start;
+
     public Script()
     {
         // Need to store it somewhere to prevent GC from messing with it.
@@ -53,8 +51,7 @@ public unsafe class Script
         do
         {
             Yield();
-        }
-        while (GetTickCount64() - start < ms);
+        } while (GetTickCount64() - start < ms);
     }
 
     /// <summary>
@@ -72,13 +69,14 @@ public unsafe class Script
                 {
                     if (e.Item1)
                     {
-                       OnKeyDown(e.Item2);
+                        OnKeyDown(e.Item2);
                     }
                     else
                     {
                         OnKeyUp(e.Item2);
                     }
                 }
+
                 OnTick();
                 Core.ScriptYield();
             }
@@ -86,8 +84,9 @@ public unsafe class Script
         catch (Exception ex)
         {
             Logger.Error(ex.ToString());
-            UI.Notification.Show($"~r~{ex}");
+            Notification.Show($"~r~{ex}");
         }
+
         // Continue yielding the execution
         while (true)
         {

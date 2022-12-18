@@ -3,96 +3,90 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System;
-
 namespace GTA
 {
-	public sealed class TaskSequence : IDisposable
-	{
-		#region Fields
-		static Ped nullPed = null;
-		#endregion
+    public sealed class TaskSequence : IDisposable
+    {
+        #region Fields
 
-		public TaskSequence()
-		{
-			int handle;
-			unsafe
-			{
-				Function.Call(Hash.OPEN_SEQUENCE_TASK, &handle);
-			}
-			Handle = handle;
+        static Ped nullPed = null;
 
-			if (nullPed == null)
-			{
-				nullPed = new Ped(0);
-			}
-		}
-		public TaskSequence(int handle)
-		{
-			Handle = handle;
+        #endregion
 
-			if (nullPed == null)
-			{
-				nullPed = new Ped(0);
-			}
-		}
+        public TaskSequence()
+        {
+            int handle;
+            unsafe
+            {
+                Call(Hash.OPEN_SEQUENCE_TASK, &handle);
+            }
 
-		public void Dispose()
-		{
-			int handle = Handle;
-			unsafe
-			{
-				Function.Call(Hash.CLEAR_SEQUENCE_TASK, &handle);
-			}
-			Handle = handle;
-			GC.SuppressFinalize(this);
-		}
+            Handle = handle;
 
-		public int Handle
-		{
-			get; private set;
-		}
+            if (nullPed == null)
+            {
+                nullPed = new Ped(0);
+            }
+        }
 
-		public int Count
-		{
-			get; private set;
-		}
+        public TaskSequence(int handle)
+        {
+            Handle = handle;
 
-		public bool IsClosed
-		{
-			get; private set;
-		}
+            if (nullPed == null)
+            {
+                nullPed = new Ped(0);
+            }
+        }
 
-		public TaskInvoker AddTask
-		{
-			get
-			{
-				if (IsClosed)
-				{
-					throw new Exception("You can't add tasks to a closed sequence!");
-				}
+        public void Dispose()
+        {
+            int handle = Handle;
+            unsafe
+            {
+                Call(Hash.CLEAR_SEQUENCE_TASK, &handle);
+            }
 
-				Count++;
-				return nullPed.Task;
-			}
-		}
+            Handle = handle;
+            GC.SuppressFinalize(this);
+        }
 
-		public void Close()
-		{
-			Close(false);
-		}
-		public void Close(bool repeat)
-		{
-			if (IsClosed)
-			{
-				return;
-			}
+        public int Handle { get; private set; }
 
-			Function.Call(Hash.SET_SEQUENCE_TO_REPEAT, Handle, repeat);
-			Function.Call(Hash.CLOSE_SEQUENCE_TASK, Handle);
+        public int Count { get; private set; }
 
-			IsClosed = true;
-		}
-	}
+        public bool IsClosed { get; private set; }
+
+        public TaskInvoker AddTask
+        {
+            get
+            {
+                if (IsClosed)
+                {
+                    throw new Exception("You can't add tasks to a closed sequence!");
+                }
+
+                Count++;
+                return nullPed.Task;
+            }
+        }
+
+        public void Close()
+        {
+            Close(false);
+        }
+
+        public void Close(bool repeat)
+        {
+            if (IsClosed)
+            {
+                return;
+            }
+
+            Call(Hash.SET_SEQUENCE_TO_REPEAT, Handle, repeat);
+            Call(Hash.CLOSE_SEQUENCE_TASK, Handle);
+
+            IsClosed = true;
+        }
+    }
 }

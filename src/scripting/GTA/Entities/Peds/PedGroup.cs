@@ -3,231 +3,235 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace GTA
 {
-	public sealed class PedGroup : PoolObject, IEnumerable<Ped>, IDisposable
-	{
-		public sealed class Enumerator : IEnumerator<Ped>
-		{
-			#region Fields
-			readonly PedGroup collection;
-			Ped current;
-			int currentIndex = -2;
-			#endregion
+    public sealed class PedGroup : PoolObject, IEnumerable<Ped>, IDisposable
+    {
+        public sealed class Enumerator : IEnumerator<Ped>
+        {
+            #region Fields
 
-			public Enumerator(PedGroup group)
-			{
-				collection = group;
-			}
+            readonly PedGroup collection;
+            Ped current;
+            int currentIndex = -2;
 
-			public Ped Current => current;
+            #endregion
 
-			object IEnumerator.Current => current;
+            public Enumerator(PedGroup group)
+            {
+                collection = group;
+            }
 
-			public void Reset()
-			{
-			}
+            public Ped Current => current;
 
-			public bool MoveNext()
-			{
-				if (currentIndex++ < (collection.MemberCount - 1))
-				{
-					current = currentIndex < 0 ? collection.Leader : collection.GetMember(currentIndex);
+            object IEnumerator.Current => current;
 
-					if (current != null)
-					{
-						return true;
-					}
+            public void Reset()
+            {
+            }
 
-					return MoveNext();
-				}
+            public bool MoveNext()
+            {
+                if (currentIndex++ < (collection.MemberCount - 1))
+                {
+                    current = currentIndex < 0 ? collection.Leader : collection.GetMember(currentIndex);
 
-				return false;
-			}
+                    if (current != null)
+                    {
+                        return true;
+                    }
 
-			void IDisposable.Dispose()
-			{
-			}
-		}
+                    return MoveNext();
+                }
 
-		public PedGroup() : base(Function.Call<int>(Hash.CREATE_GROUP, 0))
-		{
-		}
-		public PedGroup(int handle) : base(handle)
-		{
-		}
+                return false;
+            }
 
-		public void Dispose()
-		{
-			Function.Call(Hash.REMOVE_GROUP, Handle);
-			GC.SuppressFinalize(this);
-		}
+            void IDisposable.Dispose()
+            {
+            }
+        }
 
-		public int MemberCount
-		{
-			get
-			{
-				long unknBool;
-				int count;
-				unsafe
-				{
-					Function.Call(Hash.GET_GROUP_SIZE, Handle, &unknBool, &count);
-				}
-				return count;
-			}
-		}
+        public PedGroup() : base(Call<int>(Hash.CREATE_GROUP, 0))
+        {
+        }
 
-		public float SeparationRange
-		{
-			set => Function.Call(Hash.SET_GROUP_SEPARATION_RANGE, Handle, value);
-		}
+        public PedGroup(int handle) : base(handle)
+        {
+        }
 
-		public Formation Formation
-		{
-			set => Function.Call(Hash.SET_GROUP_FORMATION, Handle, value);
-		}
+        public void Dispose()
+        {
+            Call(Hash.REMOVE_GROUP, Handle);
+            GC.SuppressFinalize(this);
+        }
 
-		public void Add(Ped ped, bool leader)
-		{
-			Function.Call(leader ? Hash.SET_PED_AS_GROUP_LEADER : Hash.SET_PED_AS_GROUP_MEMBER, ped.Handle, Handle);
-		}
-		public void Remove(Ped ped)
-		{
-			Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
-		}
+        public int MemberCount
+        {
+            get
+            {
+                long unknBool;
+                int count;
+                unsafe
+                {
+                    Call(Hash.GET_GROUP_SIZE, Handle, &unknBool, &count);
+                }
 
-		public bool Contains(Ped ped)
-		{
-			return Function.Call<bool>(Hash.IS_PED_GROUP_MEMBER, ped.Handle, Handle);
-		}
+                return count;
+            }
+        }
 
-		public Ped Leader
-		{
-			get
-			{
-				var ped = new Ped(Function.Call<int>(Hash.GET_PED_AS_GROUP_LEADER, Handle));
-				return ped.Exists() ? ped : null;
-			}
-		}
+        public float SeparationRange
+        {
+            set => Call(Hash.SET_GROUP_SEPARATION_RANGE, Handle, value);
+        }
 
-		public Ped GetMember(int index)
-		{
-			var ped = new Ped(Function.Call<int>(Hash.GET_PED_AS_GROUP_MEMBER, Handle, index));
-			return ped.Exists() ? ped : null;
-		}
+        public Formation Formation
+        {
+            set => Call(Hash.SET_GROUP_FORMATION, Handle, value);
+        }
 
-		public Ped[] ToArray(bool includingLeader = true)
-		{
-			return ToList(includingLeader).ToArray();
-		}
+        public void Add(Ped ped, bool leader)
+        {
+            Call(leader ? Hash.SET_PED_AS_GROUP_LEADER : Hash.SET_PED_AS_GROUP_MEMBER, ped.Handle, Handle);
+        }
 
-		public List<Ped> ToList(bool includingLeader = true)
-		{
-			var memberCount = MemberCount;
-			var expectedListSize = includingLeader ? 1 + memberCount : memberCount;
-			var result = new List<Ped>(expectedListSize);
+        public void Remove(Ped ped)
+        {
+            Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
+        }
 
-			if (includingLeader)
-			{
-				Ped leader = Leader;
+        public bool Contains(Ped ped)
+        {
+            return Call<bool>(Hash.IS_PED_GROUP_MEMBER, ped.Handle, Handle);
+        }
 
-				if (leader != null)
-				{
-					result.Add(leader);
-				}
-			}
+        public Ped Leader
+        {
+            get
+            {
+                var ped = new Ped(Call<int>(Hash.GET_PED_AS_GROUP_LEADER, Handle));
+                return ped.Exists() ? ped : null;
+            }
+        }
 
-			for (int i = 0; i < memberCount; i++)
-			{
-				Ped member = GetMember(i);
+        public Ped GetMember(int index)
+        {
+            var ped = new Ped(Call<int>(Hash.GET_PED_AS_GROUP_MEMBER, Handle, index));
+            return ped.Exists() ? ped : null;
+        }
 
-				if (member != null)
-				{
-					result.Add(member);
-				}
-			}
+        public Ped[] ToArray(bool includingLeader = true)
+        {
+            return ToList(includingLeader).ToArray();
+        }
 
-			return result;
-		}
+        public List<Ped> ToList(bool includingLeader = true)
+        {
+            var memberCount = MemberCount;
+            var expectedListSize = includingLeader ? 1 + memberCount : memberCount;
+            var result = new List<Ped>(expectedListSize);
 
-		/// <summary>
-		/// Removes this <see cref="PedGroup"/>.
-		/// </summary>
-		public override void Delete()
-		{
-			Function.Call(Hash.REMOVE_GROUP, Handle);
-		}
+            if (includingLeader)
+            {
+                Ped leader = Leader;
 
-		/// <summary>
-		/// Determines if this <see cref="PedGroup"/> exists.
-		/// </summary>
-		/// <returns><see langword="true" /> if this <see cref="PedGroup"/> exists; otherwise, <see langword="false" />.</returns>
-		public override bool Exists()
-		{
-			return Function.Call<bool>(Hash.DOES_GROUP_EXIST, Handle);
-		}
+                if (leader != null)
+                {
+                    result.Add(leader);
+                }
+            }
 
-		/// <summary>
-		/// Determines if an <see cref="object"/> refers to the same group as this <see cref="PedGroup"/>.
-		/// </summary>
-		/// <param name="obj">The <see cref="object"/> to check.</param>
-		/// <returns><see langword="true" /> if the <paramref name="obj"/> is the same group as this <see cref="PedGroup"/>; otherwise, <see langword="false" />.</returns>
-		public override bool Equals(object obj)
-		{
-			if (obj is PedGroup group)
-			{
-				return Handle == group.Handle;
-			}
+            for (int i = 0; i < memberCount; i++)
+            {
+                Ped member = GetMember(i);
 
-			return false;
-		}
+                if (member != null)
+                {
+                    result.Add(member);
+                }
+            }
 
-		/// <summary>
-		/// Determines if two <see cref="PedGroup"/>s refer to the same group.
-		/// </summary>
-		/// <param name="left">The left <see cref="Checkpoint"/>.</param>
-		/// <param name="right">The right <see cref="Checkpoint"/>.</param>
-		/// <returns><see langword="true" /> if <paramref name="left"/> is the same group as <paramref name="right"/>; otherwise, <see langword="false" />.</returns>
-		public static bool operator ==(PedGroup left, PedGroup right)
-		{
-			return left is null ? right is null : left.Equals(right);
-		}
-		/// <summary>
-		/// Determines if two <see cref="PedGroup"/>s don't refer to the same group.
-		/// </summary>
-		/// <param name="left">The left <see cref="PedGroup"/>.</param>
-		/// <param name="right">The right <see cref="PedGroup"/>.</param>
-		/// <returns><see langword="true" /> if <paramref name="left"/> is not the same group as <paramref name="right"/>; otherwise, <see langword="false" />.</returns>
-		public static bool operator !=(PedGroup left, PedGroup right)
-		{
-			return !(left == right);
-		}
+            return result;
+        }
 
-		/// <summary>
-		/// Converts a <see cref="PedGroup"/> to a native input argument.
-		/// </summary>
-		public static implicit operator InputArgument(PedGroup value)
-		{
-			return new InputArgument((ulong)value.Handle);
-		}
+        /// <summary>
+        /// Removes this <see cref="PedGroup"/>.
+        /// </summary>
+        public override void Delete()
+        {
+            Call(Hash.REMOVE_GROUP, Handle);
+        }
 
-		public override int GetHashCode()
-		{
-			return Handle.GetHashCode();
-		}
+        /// <summary>
+        /// Determines if this <see cref="PedGroup"/> exists.
+        /// </summary>
+        /// <returns><see langword="true" /> if this <see cref="PedGroup"/> exists; otherwise, <see langword="false" />.</returns>
+        public override bool Exists()
+        {
+            return Call<bool>(Hash.DOES_GROUP_EXIST, Handle);
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return new Enumerator(this);
-		}
-		public IEnumerator<Ped> GetEnumerator()
-		{
-			return new Enumerator(this);
-		}
-	}
+        /// <summary>
+        /// Determines if an <see cref="object"/> refers to the same group as this <see cref="PedGroup"/>.
+        /// </summary>
+        /// <param name="obj">The <see cref="object"/> to check.</param>
+        /// <returns><see langword="true" /> if the <paramref name="obj"/> is the same group as this <see cref="PedGroup"/>; otherwise, <see langword="false" />.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is PedGroup group)
+            {
+                return Handle == group.Handle;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Determines if two <see cref="PedGroup"/>s refer to the same group.
+        /// </summary>
+        /// <param name="left">The left <see cref="Checkpoint"/>.</param>
+        /// <param name="right">The right <see cref="Checkpoint"/>.</param>
+        /// <returns><see langword="true" /> if <paramref name="left"/> is the same group as <paramref name="right"/>; otherwise, <see langword="false" />.</returns>
+        public static bool operator ==(PedGroup left, PedGroup right)
+        {
+            return left is null ? right is null : left.Equals(right);
+        }
+
+        /// <summary>
+        /// Determines if two <see cref="PedGroup"/>s don't refer to the same group.
+        /// </summary>
+        /// <param name="left">The left <see cref="PedGroup"/>.</param>
+        /// <param name="right">The right <see cref="PedGroup"/>.</param>
+        /// <returns><see langword="true" /> if <paramref name="left"/> is not the same group as <paramref name="right"/>; otherwise, <see langword="false" />.</returns>
+        public static bool operator !=(PedGroup left, PedGroup right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>
+        /// Converts a <see cref="PedGroup"/> to a native input argument.
+        /// </summary>
+        public static implicit operator InputArgument(PedGroup value)
+        {
+            return new InputArgument((ulong)value.Handle);
+        }
+
+        public override int GetHashCode()
+        {
+            return Handle.GetHashCode();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+
+        public IEnumerator<Ped> GetEnumerator()
+        {
+            return new Enumerator(this);
+        }
+    }
 }

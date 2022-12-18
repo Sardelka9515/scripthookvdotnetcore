@@ -5,19 +5,19 @@
 
 namespace GTA
 {
-	public enum PedComponentType
-	{
-		Face,
-		Head,
-		Hair,
-		Torso,
-		Legs,
-		Hands,
-		Shoes,
-		Special1,
-		Special2,
-		Special3,
-		Textures,
-		Torso2,
-	}
+    public enum PedComponentType
+    {
+        Face,
+        Head,
+        Hair,
+        Torso,
+        Legs,
+        Hands,
+        Shoes,
+        Special1,
+        Special2,
+        Special3,
+        Textures,
+        Torso2,
+    }
 }

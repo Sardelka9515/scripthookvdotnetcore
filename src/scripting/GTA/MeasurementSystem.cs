@@ -5,9 +5,9 @@
 
 namespace GTA
 {
-	public enum MeasurementSystem
-	{
-		Imperial,
-		Metric
-	}
+    public enum MeasurementSystem
+    {
+        Imperial,
+        Metric
+    }
 }

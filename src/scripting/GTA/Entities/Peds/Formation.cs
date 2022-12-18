@@ -5,11 +5,11 @@
 
 namespace GTA
 {
-	public enum Formation
-	{
-		Default,
-		Circle1,
-		Circle2,
-		Line,
-	}
+    public enum Formation
+    {
+        Default,
+        Circle1,
+        Circle2,
+        Line,
+    }
 }

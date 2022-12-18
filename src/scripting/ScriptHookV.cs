@@ -1,22 +1,29 @@
 ﻿using System.Runtime.InteropServices;
+
 namespace SHVDN;
+
 public static unsafe class ScriptHookV
 {
     public static readonly IntPtr ShvModule = NativeLibrary.Load("ScriptHookV.dll");
 
     public static IntPtr Import(string entryPoint)
         => NativeLibrary.GetExport(ShvModule, entryPoint);
+
     static ScriptHookV()
     {
         ScriptWait = (delegate* unmanaged<ulong, void>)Import("?scriptWait@@YAXK@Z");
-        ScriptRegister = (delegate* unmanaged<nint, delegate* unmanaged<void>, void>)Import("?scriptRegister@@YAXPEAUHINSTANCE__@@P6AXXZ@Z");
-        ScriptUnregisterProc = (delegate* unmanaged<delegate* unmanaged<void>, void>)Import("?scriptUnregister@@YAXP6AXXZ@Z");
+        ScriptRegister =
+            (delegate* unmanaged<nint, delegate* unmanaged<void>, void>)Import(
+                "?scriptRegister@@YAXPEAUHINSTANCE__@@P6AXXZ@Z");
+        ScriptUnregisterProc =
+            (delegate* unmanaged<delegate* unmanaged<void>, void>)Import("?scriptUnregister@@YAXP6AXXZ@Z");
         ScriptUnregister = (delegate* unmanaged<HINSTANCE, void>)Import("?scriptUnregister@@YAXPEAUHINSTANCE__@@@Z");
         NativeInit = (delegate* unmanaged<ulong, void>)Import("?nativeInit@@YAX_K@Z");
         NativePush64 = (delegate* unmanaged<ulong, void>)Import("?nativePush64@@YAX_K@Z");
         NativeCall = (delegate* unmanaged<ulong*>)Import("?nativeCall@@YAPEA_KXZ");
         GetGlobalPtr = (delegate* unmanaged<int, IntPtr>)Import("?getGlobalPtr@@YAPEA_KH@Z");
     }
+
     public static delegate* unmanaged<ulong, void> ScriptWait;
     public static delegate* unmanaged<nint, delegate* unmanaged<void>, void> ScriptRegister;
     public static delegate* unmanaged<delegate* unmanaged<void>, void> ScriptUnregisterProc;
@@ -26,7 +33,7 @@ public static unsafe class ScriptHookV
     public static delegate* unmanaged<ulong, void> NativePush64;
     public static delegate* unmanaged<ulong*> NativeCall;
 
-    public static delegate* unmanaged<int,IntPtr> GetGlobalPtr;
+    public static delegate* unmanaged<int, IntPtr> GetGlobalPtr;
 
     #region Unused imports
 

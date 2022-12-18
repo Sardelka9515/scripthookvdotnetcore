@@ -3,42 +3,41 @@
 // License: https://github.com/crosire/scripthookvdotnet#license
 //
 
-using GTA.Native;
-using System.Collections.Generic;
-
 namespace GTA
 {
-	public sealed class VehicleWindowCollection
-	{
-		#region Fields
-		readonly Vehicle _owner;
-		readonly Dictionary<VehicleWindowIndex, VehicleWindow> _vehicleWindows = new Dictionary<VehicleWindowIndex, VehicleWindow>();
-		#endregion
+    public sealed class VehicleWindowCollection
+    {
+        #region Fields
 
-		internal VehicleWindowCollection(Vehicle owner)
-		{
-			_owner = owner;
-		}
+        readonly Vehicle _owner;
+        readonly Dictionary<VehicleWindowIndex, VehicleWindow> _vehicleWindows = new();
 
-		public VehicleWindow this[VehicleWindowIndex index]
-		{
-			get
-			{
-				if (!_vehicleWindows.TryGetValue(index, out VehicleWindow vehicleWindow))
-				{
-					vehicleWindow = new VehicleWindow(_owner, index);
-					_vehicleWindows.Add(index, vehicleWindow);
-				}
+        #endregion
 
-				return vehicleWindow;
-			}
-		}
+        internal VehicleWindowCollection(Vehicle owner)
+        {
+            _owner = owner;
+        }
 
-		public bool AllWindowsIntact => Function.Call<bool>(Hash.ARE_ALL_VEHICLE_WINDOWS_INTACT, _owner.Handle);
+        public VehicleWindow this[VehicleWindowIndex index]
+        {
+            get
+            {
+                if (!_vehicleWindows.TryGetValue(index, out VehicleWindow vehicleWindow))
+                {
+                    vehicleWindow = new VehicleWindow(_owner, index);
+                    _vehicleWindows.Add(index, vehicleWindow);
+                }
 
-		public void RollDownAllWindows()
-		{
-			Function.Call(Hash.ROLL_DOWN_WINDOWS, _owner.Handle);
-		}
-	}
+                return vehicleWindow;
+            }
+        }
+
+        public bool AllWindowsIntact => Call<bool>(Hash.ARE_ALL_VEHICLE_WINDOWS_INTACT, _owner.Handle);
+
+        public void RollDownAllWindows()
+        {
+            Call(Hash.ROLL_DOWN_WINDOWS, _owner.Handle);
+        }
+    }
 }
