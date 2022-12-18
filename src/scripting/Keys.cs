@@ -1,4 +1,5 @@
 namespace SHVDN;
+[Flags]
 public enum Keys
 {
     //

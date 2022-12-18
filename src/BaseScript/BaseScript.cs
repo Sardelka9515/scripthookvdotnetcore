@@ -1,27 +1,22 @@
-﻿using System.Drawing;
-using System.Runtime.InteropServices;
-using SHVDN;
+﻿using System.Diagnostics;
+using System.Drawing;
 using GTA;
 using GTA.Native;
-using static GTA.Native.Function;
-using System.Reflection.Metadata;
-using System.Diagnostics;
 using GTA.UI;
+using static GTA.Native.Function;
 
 namespace SHVDN;
 
-internal unsafe class BaseScript : Script
+internal class BaseScript : Script
 {
+    private readonly TextElement _textE = new("blah", default, 0.5f);
+    private readonly Stopwatch _sw = new();
+
     public BaseScript()
     {
         Tick += OnTick;
         Start += OnStart;
         KeyDown += OnKeyDown;
-    }
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
     }
 
     protected override void OnStart()
@@ -30,7 +25,7 @@ internal unsafe class BaseScript : Script
         while (Game.IsLoading) Yield();
         Notification.Show("Started");
     }
-    Stopwatch sw = new Stopwatch();
+
     protected override void OnTick()
     {
         base.OnTick();
@@ -41,18 +36,19 @@ internal unsafe class BaseScript : Script
             var stuff = Call<string>(Hash.GET_VEHICLE_NUMBER_PLATE_TEXT, V);
             DrawText(300, 200, $"player:{P.Handle}, veh:{V.Handle}, {stuff}", Color.CornflowerBlue);
         }
-        sw.Restart();
+
+        _sw.Restart();
         var position = P.Position;
-        sw.Stop();
-        DrawText(300, 250, $"pos:{position}, time{sw.ElapsedTicks}", Color.CornflowerBlue);
+        _sw.Stop();
+        DrawText(300, 250, $"pos:{position}, time{_sw.ElapsedTicks}", Color.CornflowerBlue);
         CleanupStrings();
     }
-    TextElement _textE = new TextElement("blah", default, 0.5f);
+
     private void DrawText(float x, float y, string text, Color color, float scale = 0.5f)
     {
-        _textE.Position = new(x, y);
+        _textE.Position = new PointF(x, y);
         _textE.Caption = text;
-        _textE.Color=color;
+        _textE.Color = color;
         _textE.Scale = scale;
         _textE.Draw();
     }

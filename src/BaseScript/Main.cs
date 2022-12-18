@@ -1,17 +1,9 @@
-﻿using System.Diagnostics;
-using System.Drawing;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using SHVDN;
-using GTA;
-using System;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
+﻿using System.Runtime.InteropServices;
 
 namespace SHVDN;
+
 public static unsafe class Main
 {
-
-
     [UnmanagedCallersOnly(EntryPoint = "OnInit")]
     public static void OnInit(HMODULE module)
     {
@@ -35,7 +27,7 @@ public static unsafe class Main
     public static void OnUnload(HMODULE module)
     {
         Core.CurrentModule = module;
-        for (int i=0; i < 20; i++)
+        for (int i = 0; i < 20; i++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -43,17 +35,18 @@ public static unsafe class Main
     }
 
     [UnmanagedCallersOnly(EntryPoint = "OnKeyboard")]
-    public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt, bool wasDownBefore, bool isUpNow)
+    public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt,
+        bool wasDownBefore, bool isUpNow)
     {
-        keyboardMessage(
-        key,
-        !isUpNow,
-        (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
-        (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
-        isWithAlt);
-
+        _keyboardMessage(
+            key,
+            !isUpNow,
+            (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
+            (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
+            isWithAlt);
     }
-    static void keyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
+
+    static void _keyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
     {
         // Filter out invalid key codes
         if (keycode <= 0 || keycode >= 256)

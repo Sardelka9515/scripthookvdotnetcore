@@ -11,6 +11,7 @@ global using static BaseScript.Globals;
 global using static SHVDN.Marshaller;
 
 namespace BaseScript;
+
 public class Globals
 {
     public const int DLL_PROCESS_ATTACH = 1;
