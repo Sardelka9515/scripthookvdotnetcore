@@ -189,7 +189,7 @@ namespace GTA.UI
 				_pinnedText.Clear();
 
 				PushLongString(value, (str) => {
-					byte[] data = Encoding.UTF8.GetBytes(str.ToArray() + "\0");
+					byte[] data = Encoding.UTF8.GetBytes(str.ToString() + "\0");
 					IntPtr next = Marshal.AllocCoTaskMem(data.Length);
 					Marshal.Copy(data, 0, next, data.Length);
 					_pinnedText.Add(next);

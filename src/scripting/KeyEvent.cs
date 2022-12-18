@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SHVDN;
-public class KeyEventArgs : EventArgs
+public struct KeyEventArgs
 {
 
     /// <summary>
@@ -19,7 +19,7 @@ public class KeyEventArgs : EventArgs
     /// <summary>
     ///  Gets a value indicating whether the ALT key was pressed.
     /// </summary>
-    public virtual bool Alt => (KeyData & Keys.Alt) == Keys.Alt;
+    public bool Alt => (KeyData & Keys.Alt) == Keys.Alt;
 
     /// <summary>
     ///  Gets a value indicating whether the CTRL key was pressed.
@@ -32,8 +32,8 @@ public class KeyEventArgs : EventArgs
     public bool Handled { get; set; }
 
     /// <summary>
-    ///  Gets the keyboard code for a <see cref="Forms.Control.KeyDown"/> or
-    /// <see cref="Forms.Control.KeyUp"/> event.
+    ///  Gets the keyboard code for a <see cref="GTA.Script.KeyDown"/> or
+    /// <see cref="GTA.Script.KeyUp"/> event.
     /// </summary>
     public Keys KeyCode
     {
@@ -52,8 +52,8 @@ public class KeyEventArgs : EventArgs
     }
 
     /// <summary>
-    ///  Gets the keyboard value for a <see cref="Forms.Control.KeyDown"/> or
-    /// <see cref="Forms.Control.KeyUp"/> event.
+    ///  Gets the keyboard value for a <see cref="GTA.Script.KeyDown"/> or
+    /// <see cref="GTA.Script.KeyUp"/> event.
     /// </summary>
     public int KeyValue => (int)(KeyData & Keys.KeyCode);
 
@@ -65,7 +65,7 @@ public class KeyEventArgs : EventArgs
 
     /// <summary>
     ///  Gets the modifier flags for a <see cref="Forms.Control.KeyDown"/> or
-    /// <see cref="Forms.Control.KeyUp"/> event.
+    /// <see cref="GTA.Script.KeyUp"/> event.
     ///  This indicates which modifier keys (CTRL, SHIFT, and/or ALT) were pressed.
     /// </summary>
     public Keys Modifiers => KeyData & Keys.Modifiers;
@@ -73,5 +73,5 @@ public class KeyEventArgs : EventArgs
     /// <summary>
     ///  Gets a value indicating whether the SHIFT key was pressed.
     /// </summary>
-    public virtual bool Shift => (KeyData & Keys.Shift) == Keys.Shift;
+    public bool Shift => (KeyData & Keys.Shift) == Keys.Shift;
 }

@@ -8,7 +8,6 @@ global using LPVOID = System.IntPtr;
 global using HINSTANCE = System.IntPtr;
 global using HMODULE = System.IntPtr;
 global using static BaseScript.Globals;
-global using static SHVDN.NativeFunc;
 global using static SHVDN.Marshaller;
 
 namespace BaseScript;

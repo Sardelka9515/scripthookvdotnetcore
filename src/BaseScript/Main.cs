@@ -10,16 +10,15 @@ using static System.Runtime.CompilerServices.RuntimeHelpers;
 namespace SHVDN;
 public static unsafe class Main
 {
-    public static HMODULE CurrentModule;
 
 
     [UnmanagedCallersOnly(EntryPoint = "OnInit")]
     public static void OnInit(HMODULE module)
     {
-        CurrentModule = module;
         try
         {
-            Core.Scripts.Add(new BaseScript(module));
+            Core.CurrentModule = module;
+            Core.RequestScriptCreation(new BaseScript());
         }
         catch (Exception ex)
         {
@@ -35,8 +34,8 @@ public static unsafe class Main
     [UnmanagedCallersOnly(EntryPoint = "OnUnload")]
     public static void OnUnload(HMODULE module)
     {
-        CurrentModule = module;
-        for(int i=0; i < 20; i++)
+        Core.CurrentModule = module;
+        for (int i=0; i < 20; i++)
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
