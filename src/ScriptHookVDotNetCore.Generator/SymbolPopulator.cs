@@ -22,7 +22,7 @@ namespace ScriptHookVDotNetCore.Generator
                 var methods = tree.GetRoot().DescendantNodes().Where(x => x is MethodDeclarationSyntax).Cast<MethodDeclarationSyntax>().Select(x => (IMethodSymbol)model.GetDeclaredSymbol(x));
                 AllMethods.AddRange(methods);
             }
-            AllMethods = (List<IMethodSymbol>)AllMethods.Distinct(SymbolEqualityComparer.Default);
+            AllMethods = AllMethods.Distinct(SymbolEqualityComparer.Default).Cast<IMethodSymbol>().ToList();
 
             foreach (var tree in cpl.SyntaxTrees)
             {
@@ -30,7 +30,7 @@ namespace ScriptHookVDotNetCore.Generator
                 var model = Ctx.Compilation.GetSemanticModel(tree);
                 AllTypes.AddRange(classes.Select(x => (ITypeSymbol)model.GetDeclaredSymbol(x)));
             }
-            AllTypes = (List<ITypeSymbol>)AllTypes.Distinct(SymbolEqualityComparer.Default);
+            AllTypes = AllTypes.Distinct(SymbolEqualityComparer.Default).Cast<ITypeSymbol>().ToList();
         }
     }
 }

@@ -1,11 +1,12 @@
 ﻿using System.Runtime.InteropServices;
+using System;
 
 namespace SHVDN;
 
 /// <summary>
 /// Template for generating AOT entrypoints
 /// </summary>
-public static partial class EntryPoint
+public static unsafe partial class EntryPoint
 {
 
     [UnmanagedCallersOnly(EntryPoint = "OnInit")]
@@ -18,7 +19,7 @@ public static partial class EntryPoint
         }
         catch (Exception ex)
         {
-            MessageBox(default, ex.ToString(), "Module initialization error", MessageBoxOptions.MB_OK);
+            MessageBoxA(default, ex.ToString(), "Module initialization error", MB_OK);
             throw; // Crash the process
         }
     }

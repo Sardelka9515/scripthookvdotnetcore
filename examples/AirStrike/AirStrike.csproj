@@ -3,6 +3,7 @@
   <PropertyGroup>
 	  <OutDir>$(SolutionDir)bin\examples</OutDir>
     <TargetFramework>net7.0</TargetFramework>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

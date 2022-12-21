@@ -13,8 +13,4 @@
 		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
 		<None Include="$(SolutionDir)bin\obj\ScriptHookVDotNetCore.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
-	<ItemGroup>
-	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
-	  <PackageReference Include="PInvoke.User32" Version="0.7.124" />
-	</ItemGroup>
 </Project>
