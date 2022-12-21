@@ -2,7 +2,7 @@
 ScriptHookV for .NET Core using NativeAOT technology.
 
 ## Installation
-Download **ScriptHookVDotNetCore.zip** from [release page](https://github.com/Sardelka9515/scripthookvdotnetcore/releases) and extract ScriptHookVDotNet.asi to your game root.
+Download **ScriptHookVDotNetCore.zip** from [release page](https://github.com/Sardelka9515/scripthookvdotnetcore/releases) and extract ScriptHookVDotNetCore.asi to your game root.
 
 A screenshot from the [AirStrike example script](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/examples/AirStrike/Main.cs)
 ![image](https://user-images.githubusercontent.com/106232474/208843982-d6ced835-d5ad-4d9e-9dde-f461a1ac2aed.png)
