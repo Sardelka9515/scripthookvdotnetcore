@@ -7,7 +7,7 @@ A screenshot from the [AirStrike example script](https://github.com/Sardelka9515
 ## Features
 - Use latest .NET Core API (.NET 7 or higher)
 - Can run alonside existing [ScriptHookVDotNet](https://github.com/crosire/scripthookvdotnet) based mods
-- Easy [upgrade/migration from ScriptHookVDotNet](https://github.com/Sardelka9515/scripthookvdotnetcore/edit/master/README.md#upgrade--migration-guide)
+- Easy [upgrade/migration from ScriptHookVDotNet](https://github.com/Sardelka9515/scripthookvdotnetcore/master/README.md#upgrade--migration-guide)
 - Reload scripts without restarting the game. Press **End** to unload all scripts, **Home** to reload
 - Better performance
 
@@ -33,7 +33,7 @@ As the entire runtime is based on NativeAOT, all limitations apply.
 
 - Limited use of reflection API
 - No dynamic assembly loading and code execution, executing code on the fly with console is thus impossible
-- Only scripts from the same module are visible to each other, see [cross-module comunication](https://github.com/Sardelka9515/scripthookvdotnetcore/edit/master/README.md#cross-module-communication)
+- Only scripts from the same module are visible to each other, see [cross-module comunication](https://github.com/Sardelka9515/scripthookvdotnetcore/master/README.md#cross-module-communication)
 - Longer compile time and larger binary size
 - No fail-safe script abortion, your game will hang if you block the main thread.
 ## Cross-module communication
