@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<NoWarn>CS1591</NoWarn>
 		<OutDir>$(SolutionDir)bin\obj</OutDir>
 		<OutputPath>$(SolutionDir)bin\obj</OutputPath>
 		<TargetFramework>net7.0</TargetFramework>
@@ -8,6 +9,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<LangVersion>preview</LangVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />

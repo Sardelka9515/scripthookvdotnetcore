@@ -1,4 +1,4 @@
-﻿namespace SHVDN;
+﻿namespace GTA;
 
 public struct KeyEventArgs
 {
@@ -52,13 +52,13 @@ public struct KeyEventArgs
     public int KeyValue => (int)(KeyData & Keys.KeyCode);
 
     /// <summary>
-    ///  Gets the key data for a <see cref="Forms.Control.KeyDown"/> or
-    /// <see cref="Forms.Control.KeyUp"/> event.
+    ///  Gets the key data for a <see cref="Script.KeyDown"/> or
+    /// <see cref="Script.KeyUp"/> event.
     /// </summary>
     public Keys KeyData { get; }
 
     /// <summary>
-    ///  Gets the modifier flags for a <see cref="Forms.Control.KeyDown"/> or
+    ///  Gets the modifier flags for a <see cref="Script.KeyDown"/> or
     /// <see cref="GTA.Script.KeyUp"/> event.
     ///  This indicates which modifier keys (CTRL, SHIFT, and/or ALT) were pressed.
     /// </summary>
