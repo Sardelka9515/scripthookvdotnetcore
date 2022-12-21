@@ -1,6 +1,9 @@
 # ScriptHookV .NET Core
 ScriptHookV for .NET Core using NativeAOT technology.
 
+## Installation
+Download **ScriptHookVDotNetCore.zip** from [release page](https://github.com/Sardelka9515/scripthookvdotnetcore/releases) and extract ScriptHookVDotNet.asi to your game root.
+
 A screenshot from the [AirStrike example script](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/examples/AirStrike/Main.cs)
 ![image](https://user-images.githubusercontent.com/106232474/208843982-d6ced835-d5ad-4d9e-9dde-f461a1ac2aed.png)
 
@@ -21,9 +24,12 @@ Don't worry! You'll never have to write these yourself. The nuget package comes 
 ## Getting started
 - Make sure you have .NET 7 SDK installed
 - Create a project targeting .NET 7
-- Install the nuget package
+- Install the [nuget package](https://www.nuget.org/packages/ScriptHookVDotNetCore/1.0.0)
+```
+dotnet add package ScriptHookVDotNetCore
+```
 - Define a class that inherits from `GTA.Script`
-- Subscribe to events like you would in ScriptHookVDotNet, or override `OnStart`\`OnTick` methods, etc..
+- Subscribe to events like you would in ScriptHookVDotNet, or override `OnStart`,`OnTick` and other methods as you need
 - Build the project and copy the dll in `native` folder of the output directory to GTAV\CoreScripts
 - Voila! Start the game and you'll see your script running.
 - Take a look at the examples to see how you can use the scripting API.
@@ -36,6 +42,7 @@ As the entire runtime is based on NativeAOT, all limitations apply.
 - Only scripts from the same module are visible to each other, see [cross-module comunication](https://github.com/Sardelka9515/scripthookvdotnetcore/master/README.md#cross-module-communication)
 - Longer compile time and larger binary size
 - No fail-safe script abortion, your game will hang if you block the main thread.
+
 ## Cross-module communication
 To call functions from other modules, you first need to export functions in the target module:
  ```
