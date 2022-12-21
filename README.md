@@ -17,9 +17,9 @@ A screenshot from the [AirStrike example script](https://github.com/Sardelka9515
 ## How it works?
 NativeAOT allow us to compile .NET code to native machine code, so it can be loaded like a regular Win32 module. Each module can have multiple scripts in it, just define a class that inherits from `GTA.Script` with default constructor. An instance will be automatically created.
 
-Module loading\unloading is done by the C++ core with some tweaks to bypass unloading problems. But first, some entry points is required in the NativeAOT compiled assembly so the core can dispatch events to our module. This is done via the `UnmanagedCallersOnly` attribute, you can see how those are defined in the [BaseScript](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/src/BaseScript/EntryPoint.cs).
+Module loading/unloading is done by the C++ core with some tweaks to bypass unloading problems. But first, some entry points is required in the NativeAOT compiled assembly so the core can dispatch events to our module. This is done via the `UnmanagedCallersOnly` attribute, you can see how those are defined in the [BaseScript](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/src/BaseScript/EntryPoint.cs).
 
-Don't worry! You'll never have to write these yourself. The nuget package comes with a source generatoe that'll set up everything for you. If you want to define the entrypoints yourself, just mark your methods with the attribute like those in the base script, the generator is smart enough to recognize and skip that part of code.
+Don't worry! You'll never have to write these yourself. The nuget package comes with a source generator that'll set up everything for you. If you want to define the entrypoints yourself, just mark your methods with the attribute like those in the base script, the generator is smart enough to recognize and skip that part of code.
 
 ## Getting started
 - Make sure you have .NET 7 SDK installed
