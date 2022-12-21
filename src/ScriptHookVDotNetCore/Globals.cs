@@ -15,7 +15,7 @@ global using static SHVDN.Marshaller;
 
 namespace SHVDN;
 
-public class Globals
+internal class Globals
 {
     public const int DLL_PROCESS_ATTACH = 1;
     public const int DLL_PROCESS_DETACH = 0;
@@ -25,4 +25,6 @@ public class Globals
 
     public const int BASE_WIDTH = 1280;
     public const int BASE_HEIGHT = 720;
+
+    public const nint NULL = default;
 }

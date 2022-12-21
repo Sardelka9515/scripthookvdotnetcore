@@ -7,15 +7,13 @@ public static unsafe class Core
 {
     public static HMODULE CurrentModule { get; set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
-    internal static delegate* unmanaged<void> ScriptYield = (delegate* unmanaged<void>)Import("ScriptYield");
 
-    private static delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool> RegisterScriptFiber =
-        (delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool>)Import("RegisterScript");
+    internal static readonly delegate* unmanaged<void> ScriptYield = (delegate* unmanaged<void>)Import("ScriptYield");
+    internal static readonly delegate* unmanaged<string, HMODULE> LoadModuleA = (delegate* unmanaged<string, HMODULE>)Import("LoadModuleA");
+    private static readonly delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool> RegisterScriptFiber = (delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool>)Import("RegisterScript");
+    private static readonly delegate* unmanaged<IntPtr, void> ScheduleCallback = (delegate* unmanaged<IntPtr, void>)Import("ScheduleCallback");
 
-    private static delegate* unmanaged<IntPtr, void> ScheduleCallback =
-        (delegate* unmanaged<IntPtr, void>)Import("ScheduleCallback");
-
-    private static bool[] _keyboardState = new bool[256];
+    private static readonly bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
 
     /// <summary>
@@ -42,7 +40,7 @@ public static unsafe class Core
 
     public static bool IsKeyPressed(Keys key)
     {
-        return _keyboardState[(int)key];
+        return KeyboardState[(int)key];
     }
 
     /// <summary>
@@ -50,7 +48,7 @@ public static unsafe class Core
     /// </summary>
     /// <param name="script">The script instance to create</param>
     /// <param name="callback">The callback to invoke when the script is registered or the request have failed</param>
-    /// <remarks>The script is registerd from a worker thread. Do not wait the for the callback if calling this method during module initilization, otherwise a deadlock is expected</remarks>
+    /// <remarks>The script is registered from a worker thread. Do not wait the for the callback if calling this method during module initilization, otherwise a deadlock is expected</remarks>
     public static void RequestScriptCreation(Script script, Action<bool, Script> callback = null)
     {
         ScheduleCallback(Marshal.GetFunctionPointerForDelegate(() =>
@@ -74,9 +72,23 @@ public static unsafe class Core
             }
             catch (Exception ex)
             {
+                Logger.Error("Failed to request script creation: " + ex);
                 callback?.Invoke(false, script);
-                Logger.Error("Failed to request script creation: " + ex.ToString());
             }
+        }));
+    }
+
+    /// <summary>
+    /// Request the C++ core to load a module in the worker thread
+    /// </summary>
+    /// <param name="modulePath"></param>
+    /// <param name="callback">The callback to invoke when the module is loaded, with an argument passing the handle of loaded module, or <see cref="IntPtr.Zero"/> if the module failed to load</param>
+    public static void RequestModuleLoad(string modulePath, Action<HMODULE> callback = null)
+    {
+        ScheduleCallback(Marshal.GetFunctionPointerForDelegate(() =>
+        {
+            HMODULE module = LoadModuleA(modulePath);
+            callback?.Invoke(module);
         }));
     }
 
@@ -85,15 +97,15 @@ public static unsafe class Core
         var e = new KeyEventArgs(keys);
 
         // Only update state of the primary key (without modifiers) here
-        _keyboardState[(int)e.KeyCode] = status;
+        KeyboardState[(int)e.KeyCode] = status;
 
         if (_recordKeyboardEvents)
         {
-            var eventinfo = new Tuple<bool, KeyEventArgs>(status, e);
+            var te = new Tuple<bool, KeyEventArgs>(status, e);
             lock (_scripts)
             {
                 foreach (Script script in _scripts)
-                    script.KeyboardEvents.Enqueue(eventinfo);
+                    script.KeyboardEvents.Enqueue(te);
             }
         }
     }

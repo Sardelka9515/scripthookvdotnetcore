@@ -9,16 +9,16 @@ mutex JobMutex;
 LPVOID MainFiber;
 #pragma region Internal
 
-bool LoadModuleInternal(LPCWSTR path) {
+HMODULE LoadModuleInternal(LPCWSTR path) {
 	try {
 		auto script = new AotLoader(path);
 		Modules.push_back(script);
 		info("Loaded module {0}", string(script->ModulePath.begin(), script->ModulePath.end()));
-		return true;
+		return script->Module;
 	}
 	catch (exception ex) {
 		error(ex.what());
-		return false;
+		return NULL;
 	}
 }
 
@@ -47,7 +47,7 @@ bool UnloadModuleInternal(LPCWSTR path) {
 #pragma endregion
 
 
-DllExport bool LoadModuleW(LPCWSTR path) {
+DllExport HMODULE LoadModuleW(LPCWSTR path) {
 	LOCK(ModulesMutex);
 	return LoadModuleInternal(path);
 }
@@ -109,7 +109,7 @@ DllExport void ScheduleCallback(VoidFunc callback) {
 
 #pragma region ANSI
 
-DllExport bool LoadModuleA(LPCSTR path) {
+DllExport HMODULE LoadModuleA(LPCSTR path) {
 	auto sPath = string(path);
 	return LoadModuleW(STW(sPath).c_str());
 }

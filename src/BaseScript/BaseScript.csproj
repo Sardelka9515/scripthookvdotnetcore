@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<AssemblyName>ScriptHookVDotNetCore.BaseScript</AssemblyName>
-		<TargetFramework>net7.0-windows</TargetFramework>
+		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
@@ -10,6 +10,6 @@
 		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(SolutionDir)bin\obj&quot;  -p:PublishAOT=true -r win-x64 " />
 	</Target>
 	<ItemGroup>
-	  <ProjectReference Include="..\scripting\scripting.csproj" />
+	  <ProjectReference Include="..\ScriptHookVDotNetCore\ScriptHookVDotNetCore.csproj" />
 	</ItemGroup>
 </Project>

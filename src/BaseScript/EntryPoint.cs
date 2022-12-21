@@ -2,19 +2,23 @@
 
 namespace SHVDN;
 
-public static unsafe class Main
+/// <summary>
+/// Template for generating AOT entrypoints
+/// </summary>
+public static partial class EntryPoint
 {
+
     [UnmanagedCallersOnly(EntryPoint = "OnInit")]
     public static void OnInit(HMODULE module)
     {
         try
         {
+            ModuleSetup();
             Core.CurrentModule = module;
-            Core.RequestScriptCreation(new BaseScript());
         }
         catch (Exception ex)
         {
-            MessageBox(default, ex.ToString(), "Base script initialization error", MessageBoxOptions.MB_OK);
+            MessageBox(default, ex.ToString(), "Module initialization error", MessageBoxOptions.MB_OK);
             throw; // Crash the process
         }
     }

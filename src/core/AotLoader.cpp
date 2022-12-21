@@ -62,9 +62,12 @@ void AotLoader::FreeFls() {
 
 AotLoader::AotLoader(LPCWSTR path) {
 
-	ModulePath = wstring(path);
+	LPCWSTR relativePath = path;
+	TCHAR fullPath[MAX_PATH];
+	GetFullPathName(relativePath, MAX_PATH, fullPath, nullptr);
+	ModulePath = wstring(fullPath);
 
-	info("Loading module {0}", string(ModulePath.begin(), ModulePath.end()));
+	info("Loading module {0}", WTS(ModulePath));
 
 	// Load the library and find the entry points we want
 	Module = LoadLibraryW(path);
@@ -93,11 +96,8 @@ void AotLoader::Unload() {
 	// Call the pre-unload function
 	UnloadFunc(Module);
 
-	LPCWSTR relativePath = ModulePath.c_str();
-	TCHAR fullPath[MAX_PATH];
-	GetFullPathName(relativePath, MAX_PATH, fullPath, nullptr);
 	// Terminate all threads that orginated from this module
-	ListProcessThreads(GetCurrentProcessId(), NULL, fullPath);
+	ListProcessThreads(GetCurrentProcessId(), NULL, ModulePath.c_str());
 
 	int retries = MAX_UNLOAD_RETRIES;
 	auto path = ModulePath.c_str();

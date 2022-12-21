@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutDir>$(SolutionDir)bin\obj</OutDir>
+		<OutputPath>$(SolutionDir)bin\obj</OutputPath>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<LangVersion>preview</LangVersion>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
+		<None Include="$(SolutionDir)bin\obj\ScriptHookVDotNetCore.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="PInvoke.Kernel32" Version="0.7.124" />
+	  <PackageReference Include="PInvoke.User32" Version="0.7.124" />
+	</ItemGroup>
+</Project>
