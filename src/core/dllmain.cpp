@@ -128,12 +128,14 @@ static DWORD Worker(LPVOID lparam) {
 	return 0;
 }
 void ScriptMain() {
+	auto fiber = GetCurrentFiber();
 	while (true) {
-		MainFiber = GetCurrentFiber();
 		{
 			LOCK(ModulesMutex);
 			for (auto pM : Modules) {
-				pM->DoTick();
+				if (pM->TickFunc != NULL) {
+					pM->TickFunc(fiber);
+				}
 			}
 		}
 		scriptWait(0);

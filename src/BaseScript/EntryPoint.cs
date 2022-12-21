@@ -32,6 +32,7 @@ public static unsafe partial class EntryPoint
     public static void OnUnload(HMODULE module)
     {
         Core.CurrentModule = module;
+        Core.DisposeScripts();
         for (int i = 0; i < 20; i++)
         {
             GC.Collect();
@@ -63,5 +64,11 @@ public static unsafe partial class EntryPoint
         if (shift) keys |= Keys.Shift;
         if (alt) keys |= Keys.Alt;
         Core.DoKeyEvent(keys, keydown);
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "OnTick")]
+    public static void OnTick(LPVOID currentFiber)
+    {
+        Core.DoTick(currentFiber);
     }
 }

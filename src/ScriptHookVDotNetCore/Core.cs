@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
 using GTA;
 
 namespace SHVDN;
@@ -8,13 +9,17 @@ public static unsafe class Core
     public static HMODULE CurrentModule { get; set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
 
-    internal static readonly delegate* unmanaged<void> ScriptYield = (delegate* unmanaged<void>)Import("ScriptYield");
     internal static readonly delegate* unmanaged<string, HMODULE> LoadModuleA = (delegate* unmanaged<string, HMODULE>)Import("LoadModuleA");
-    private static readonly delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool> RegisterScriptFiber = (delegate* unmanaged<HMODULE, delegate* unmanaged<IntPtr, void>, bool>)Import("RegisterScript");
     private static readonly delegate* unmanaged<IntPtr, void> ScheduleCallback = (delegate* unmanaged<IntPtr, void>)Import("ScheduleCallback");
 
     private static readonly bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
+
+
+    private static List<Script> _scripts = new();
+    private static int _executingScriptIndex = -1;
+    private static DWORD _mainThread;
+    private static LPVOID _mainFiber;
 
     /// <summary>
     /// List all scripts in this module
@@ -28,7 +33,16 @@ public static unsafe class Core
         }
     }
 
-    private static List<Script> _scripts = new();
+    public static Script ExecutingScript
+    {
+        get
+        {
+            lock (_scripts)
+            {
+                return _executingScriptIndex < 0 ? null : _scripts[_executingScriptIndex];
+            }
+        }
+    }
 
     public static IntPtr Import(string entryPoint)
         => NativeLibrary.GetExport(CoreModule, entryPoint);
@@ -44,38 +58,43 @@ public static unsafe class Core
     }
 
     /// <summary>
-    /// Request a script fiber creation from the C++ core
+    /// Used internally to dispose all scripts on module unload, don't call this manually
     /// </summary>
-    /// <param name="script">The script instance to create</param>
-    /// <param name="callback">The callback to invoke when the script is registered or the request have failed</param>
-    /// <remarks>The script is registered from a worker thread. Do not wait the for the callback if calling this method during module initilization, otherwise a deadlock is expected</remarks>
-    public static void RequestScriptCreation(Script script, Action<bool, Script> callback = null)
+    public static void DisposeScripts()
     {
-        ScheduleCallback(Marshal.GetFunctionPointerForDelegate(() =>
+        lock (_scripts)
         {
-            try
+            foreach (Script script in _scripts)
             {
-                if (!RegisterScriptFiber(CurrentModule,
-                        (delegate* unmanaged<IntPtr, void>)Marshal.GetFunctionPointerForDelegate(script.ScriptEntry)))
+                try
                 {
-                    throw new ArgumentException(
-                        $"An invalid module is supplied. Module: {CurrentModule}. Make sure you set SHVDN.Core.CurrentModule properly during module initialization");
+                    script.Dispose();
                 }
-
-                lock (_scripts)
+                catch (Exception ex)
                 {
-                    _scripts.Add(script);
+                    Logger.Error($"Error disposing script: {ex}");
                 }
+            }
+            _scripts.Clear();
+        }
+    }
 
-                Logger.Info($"Script registered: {script}");
-                callback?.Invoke(true, script);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Failed to request script creation: " + ex);
-                callback?.Invoke(false, script);
-            }
-        }));
+    /// <summary>
+    /// Register a script instance, create associated fibers and begin executing
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="callback"></param>
+    public static void RegisterScript(Script script)
+    {
+        // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
+        lock (_scripts)
+        {
+            Logger.Info("Registering script: " + script.GetType().ToString());
+            script.ScriptFiber = CreateFiber(default, script.PtrFiberEntry, default);
+            if (script.ScriptFiber == default) { throw new Win32Exception(Marshal.GetLastWin32Error(),"Failed to create fiber"); }
+            _scripts.Add(script);
+            Logger.Info("Script registered: " + script.GetType().ToString());
+        }
     }
 
     /// <summary>
@@ -92,6 +111,11 @@ public static unsafe class Core
         }));
     }
 
+    /// <summary>
+    /// Used internally to process keyboard events, don't call this manually
+    /// </summary>
+    /// <param name="keys"></param>
+    /// <param name="status"></param>
     public static void DoKeyEvent(Keys keys, bool status)
     {
         var e = new KeyEventArgs(keys);
@@ -108,5 +132,51 @@ public static unsafe class Core
                     script.KeyboardEvents.Enqueue(te);
             }
         }
+    }
+
+    /// <summary>
+    /// Used internally to process tick events, don't call this manually
+    /// </summary>
+    /// <param name="currentFiber"></param>
+    public static void DoTick(LPVOID currentFiber)
+    {
+        _mainFiber = currentFiber;
+        _mainThread = GetCurrentThreadId();
+        lock (_scripts)
+        {
+            if (_scripts.Count > 0)
+            {
+                _executingScriptIndex = -1;
+                // Switch to the first script's fiber to begin the ticking chain and wait for the last script to switch back
+                SwitchToNextFiber();
+                CleanupStrings();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Switch to next script fiber or back to main fiber if all scripts have finished execution in this tick
+    /// </summary>
+    internal static void SwitchToNextFiber()
+    {
+        LPVOID fiber;
+        var time = GetTickCount64();
+        while (++_executingScriptIndex < _scripts.Count && _scripts[_executingScriptIndex].Continue > time) ;
+        if (_executingScriptIndex >= _scripts.Count)
+        {
+            _executingScriptIndex = -1;
+            fiber = _mainFiber;
+        }
+        else
+        {
+            fiber = _scripts[_executingScriptIndex].ScriptFiber;
+        }
+        SwitchToFiber(fiber);
+    }
+
+    internal static void EnsureMainThread()
+    {
+        if (GetCurrentThreadId() != _mainThread)
+            throw new InvalidOperationException("This function can only be called from main thread.");
     }
 }

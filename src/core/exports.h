@@ -6,7 +6,6 @@ mutex ModulesMutex;
 HMODULE CurrentModule;
 queue<VoidFunc> JobQueue;
 mutex JobMutex;
-LPVOID MainFiber;
 #pragma region Internal
 
 HMODULE LoadModuleInternal(LPCWSTR path) {
@@ -58,15 +57,6 @@ DllExport bool UnloadModuleW(LPCWSTR path) {
 	return UnloadModuleInternal(path);
 }
 
-DllExport SIZE_T ListScripts(HMODULE pathBuffer[], SIZE_T maxSize) {
-	LOCK(ModulesMutex);
-	auto size = Modules.size();
-	for (SIZE_T i = 0; i < maxSize && i < size; i++) {
-		pathBuffer[i] = Modules[i]->Module;
-	}
-	return size;
-}
-
 DllExport bool UnloadAllModules() {
 	LOCK(ModulesMutex);
 	bool bResult = true;
@@ -85,21 +75,6 @@ DllExport bool UnloadAllModules() {
 	Modules.clear();
 	AotLoader::FreeFls();
 	return bResult;
-}
-
-DllExport bool RegisterScript(HMODULE module,ScriptEntry entry) {
-	LOCK(ModulesMutex);
-	for (auto pModule : Modules) {
-		if (pModule->Module == module) {
-			pModule->RegisterScript(entry);
-			return true;
-		}
-	}
-	return false;
-}
-
-DllExport void ScriptYield() {
-	SwitchToFiber(MainFiber);
 }
 
 DllExport void ScheduleCallback(VoidFunc callback) {

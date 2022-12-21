@@ -1,14 +1,17 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using GTA.UI;
 
 namespace GTA;
 
-public unsafe class Script
+public unsafe class Script : IDisposable
 {
     public delegate void ScriptEntryDelegate(IntPtr lParam);
-
-    internal readonly ScriptEntryDelegate ScriptEntry;
+    private readonly ScriptEntryDelegate _fiberEntry;
+    internal ulong Continue = 0;
+    internal readonly LPVOID PtrFiberEntry;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
+    internal LPVOID ScriptFiber;
 
     /// <summary>
     /// Invoked every frame
@@ -33,13 +36,18 @@ public unsafe class Script
     public Script()
     {
         // Need to store it somewhere to prevent GC from messing with it.
-        ScriptEntry = ScriptMain;
+        _fiberEntry = ScriptMain;
+        PtrFiberEntry = Marshal.GetFunctionPointerForDelegate(_fiberEntry);
     }
 
     /// <summary>
     /// Yield the execution back to other scripts and game engine for one frame
     /// </summary>
-    public static void Yield() => Core.ScriptYield();
+    public static void Yield()
+    {
+        Core.EnsureMainThread();
+        Core.SwitchToNextFiber();
+    }
 
     /// <summary>
     /// Yield the execution and continue after specified time in milliseconds
@@ -47,11 +55,11 @@ public unsafe class Script
     /// <param name="ms"></param>
     public static void Wait(ulong ms)
     {
-        var start = GetTickCount64();
-        do
-        {
-            Yield();
-        } while (GetTickCount64() - start < ms);
+        Core.EnsureMainThread();
+        var script = Core.ExecutingScript;
+        if (script == null) throw new InvalidOperationException("No script is currently executing");
+        script.Continue = GetTickCount64() + ms;
+        Core.SwitchToNextFiber();
     }
 
     /// <summary>
@@ -78,7 +86,7 @@ public unsafe class Script
                 }
 
                 OnTick();
-                Core.ScriptYield();
+                Yield();
             }
         }
         catch (Exception ex)
@@ -90,7 +98,7 @@ public unsafe class Script
         // Continue yielding the execution
         while (true)
         {
-            Core.ScriptYield();
+            Yield();
         }
     }
 
@@ -124,5 +132,10 @@ public unsafe class Script
     protected virtual void OnKeyUp(KeyEventArgs e)
     {
         KeyUp?.Invoke(e);
+    }
+
+    public void Dispose()
+    {
+        if (ScriptFiber != default) DeleteFiber(ScriptFiber);
     }
 }

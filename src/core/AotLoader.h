@@ -3,7 +3,7 @@
 typedef VOID(WINAPI* ModuleEntry)(HMODULE);
 
 typedef VOID(WINAPI* VoidFunc)(VOID);
-typedef VOID(WINAPI* ScriptEntry)(LPVOID lparam);
+typedef VOID(WINAPI* TickEntry)(PVOID currentFiber);
 using namespace std;
 
 
@@ -13,16 +13,14 @@ class AotLoader
 private:
 	ModuleEntry InitFunc;
 	ModuleEntry UnloadFunc;
-	vector<LPVOID> ScriptFibers = {};
 public:
 	KeyboardHandler KeyboardFunc;
 	PresentCallback PresentFunc;
+	TickEntry TickFunc;
 	AotLoader(LPCWSTR path);
 	HMODULE Module;
 	wstring ModulePath;
-	void DoTick();
 	void Unload();
-	void RegisterScript(ScriptEntry entry);
 	static void Init();
 	static void Shutdown();
 	static void FreeFls();

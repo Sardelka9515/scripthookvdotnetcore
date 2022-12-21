@@ -10,7 +10,7 @@ public static partial class EntryPoint
 {
     static void ModuleSetup()
     {
-        Core.RequestScriptCreation(new BaseScript());
+        Core.RegisterScript(new BaseScript());
     }
 }
 internal unsafe class BaseScript : Script
@@ -19,7 +19,7 @@ internal unsafe class BaseScript : Script
     {
         base.OnStart();
         while (Game.IsLoading) Yield();
-        Notification.Show("Started");
+        Notification.Show("ScriptHookVDotNetCore 1.0.0 by Sardelka9515");
         Directory.CreateDirectory("CoreScripts");
         foreach (var script in Directory.GetFiles("CoreScripts"))
         {

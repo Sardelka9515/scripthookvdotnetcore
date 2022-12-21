@@ -80,6 +80,7 @@ AotLoader::AotLoader(LPCWSTR path) {
 	// Optional entry points
 	KeyboardFunc = (KeyboardHandler)GetProcAddress(Module, "OnKeyboard");
 	PresentFunc = (PresentCallback)GetProcAddress(Module, "OnPresent");
+	TickFunc = (TickEntry)GetProcAddress(Module, "OnTick");
 
 	if (!(InitFunc && UnloadFunc)) {
 		FreeLibrary(Module);
@@ -115,23 +116,6 @@ void AotLoader::Unload() {
 		throw runtime_error(s.str());
 	}
 	info("Unloaded module {0}", WTS(ModulePath));
-}
-void AotLoader::RegisterScript(ScriptEntry entry) {
-	auto fiber = CreateFiber(0, entry, NULL);
-	if (fiber == NULL) {
-		throw exception(format("Failure creating fiber: {}", GetLastError()).c_str());
-	}
-	ScriptFibers.push_back(fiber);
-	debug("Script fiber registered: {}", (uint64_t)entry);
-}
-void AotLoader::DoTick() {
-	int i = 0;
-	for (auto fiber : ScriptFibers) {
-
-		// Switch to the ticking fiber and wait for it to switch back
-		SwitchToFiber(fiber);
-		i++;
-	}
 }
 
 BOOL GetModuleHandleExWHook(DWORD   dwFlags, LPCWSTR  lpModuleName, HMODULE* phModule) {

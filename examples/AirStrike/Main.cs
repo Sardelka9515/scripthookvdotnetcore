@@ -17,7 +17,6 @@ namespace AirStrike
         private void Main_Tick()
         {
             new TextElement("Boom!", new PointF(Screen.Width / 2, Screen.Height / 2), 1).Draw();
-            Marshaller.CleanupStrings();
         }
     }
 }
