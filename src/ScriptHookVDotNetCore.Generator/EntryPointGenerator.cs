@@ -9,9 +9,9 @@ namespace ScriptHookVDotNet.Generator
 {
 
     [Generator]
-    public class EntryPointGenerator : SymbolPopulator,ISourceGenerator
+    public class EntryPointGenerator : SymbolPopulator, ISourceGenerator
     {
-        
+
         public void Execute(GeneratorExecutionContext context)
         {
             Populate(context);
@@ -57,6 +57,7 @@ public static unsafe partial class EntryPoint
             var scripts = AllTypes.Where(x => $"{x?.BaseType.ContainingNamespace}.{x?.BaseType.Name}" == "GTA.Script");
             foreach (var script in scripts)
             {
+                if (script.GetAttributes().Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == "GTA.ScriptAttributes" && x.NamedArguments.Any(x => x.Key == "NoDefaultInstance" && ((bool)x.Value.Value)))) continue;
                 source += $"Core.RegisterScript(new {script.ContainingNamespace}.{script.Name}());\n";
             }
             return source;

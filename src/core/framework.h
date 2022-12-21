@@ -35,7 +35,7 @@ namespace fs = std::filesystem;
 
 #define LOCK(mtx) std::scoped_lock lock(mtx)
 
-// Converr Unicode string to ANSI string
+// Convert Unicode string to ANSI string
 static string WTS(wstring ws) {
 	return string(ws.begin(), ws.end());
 }

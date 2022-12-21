@@ -94,8 +94,14 @@ public unsafe class Script : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Error($"Script {GetType()} was terminated as an unhandled exception has been caught:\n"+ex.ToString());
-            Notification.Show($"~r~{ex}");
+            Logger.Error($"Script {GetType()} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
+            Notification.Show("~r~Unhandled exception~s~ in script \"~h~" + GetType().ToString() + "~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
+            var attribute = GetType().GetCustomAttributesData().FirstOrDefault(x => x.AttributeType.FullName == typeof(ScriptAttributes).FullName);
+            var supportUrl = GetAttribute(typeof(ScriptAttributes), nameof(ScriptAttributes.SupportURL));
+            if (supportUrl != null)
+            {
+                Logger.Error($"Please check the following site for support on the issue: {supportUrl}");
+            }
         }
 
         Pause();
@@ -107,13 +113,19 @@ public unsafe class Script : IDisposable
         }
     }
 
+    public object GetAttribute(Type attrType, string name)
+    {
+        var attribute = GetType().GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
+        return (attribute?.NamedArguments.FirstOrDefault(x => x.MemberName == name))?.TypedValue;
+    }
+
     /// <summary>
-    /// Pause the script execution, can be called from any thread
+    /// Pause the script execution, can be called from any thread. If the call was made to and from currently executing script, the script will pause execution immediately until it was resumed by another script or thread
     /// </summary>
     public void Pause()
     {
         Continue = ulong.MaxValue;
-        if (Core.IsMainThread()) { Yield(); }
+        if (Core.IsMainThread() && this == Core.ExecutingScript) { Yield(); }
     }
 
     /// <summary>
@@ -124,33 +136,33 @@ public unsafe class Script : IDisposable
         Continue = 0;
     }
 
-    /// <summary>
+    /// <remarks>
     /// Remeber to call the base method when overriding
-    /// </summary>
+    /// </remarks>
     protected virtual void OnStart()
     {
         Started?.Invoke();
     }
 
-    /// <summary>
+    /// <remarks>
     /// Remeber to call the base method when overriding
-    /// </summary>
+    /// </remarks>
     protected virtual void OnTick()
     {
         Tick?.Invoke();
     }
 
-    /// <summary>
+    /// <remarks>
     /// Remeber to call the base method when overriding
-    /// </summary>
+    /// </remarks>
     protected virtual void OnKeyDown(KeyEventArgs e)
     {
         KeyDown?.Invoke(e);
     }
 
-    /// <summary>
+    /// <remarks>
     /// Remeber to call the base method when overriding
-    /// </summary>
+    /// </remarks>
     protected virtual void OnKeyUp(KeyEventArgs e)
     {
         KeyUp?.Invoke(e);

@@ -6,6 +6,7 @@ using GTA.UI;
 using static GTA.Native.Function;
 
 namespace SHVDN;
+
 public static partial class EntryPoint
 {
     static void ModuleSetup()
@@ -13,6 +14,7 @@ public static partial class EntryPoint
         Core.RegisterScript(new BaseScript());
     }
 }
+
 internal unsafe class BaseScript : Script
 {
     protected override void OnStart()

@@ -10,6 +10,11 @@
 		<LangVersion>preview</LangVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<Title>ScriptHookVDotNetCore</Title>
+		<RepositoryUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</RepositoryUrl>
+		<Copyright>Copyright © 2022 Sardelka9515</Copyright>
+		<Description>ScriptHookV for .NET Core using NativeAOT technology</Description>
+		<Authors>Sardelka</Authors>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />

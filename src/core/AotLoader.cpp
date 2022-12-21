@@ -84,7 +84,7 @@ AotLoader::AotLoader(LPCWSTR path) {
 
 	if (!(InitFunc && UnloadFunc)) {
 		FreeLibrary(Module);
-		throw runtime_error("Some required entry points were no found in this module");
+		throw runtime_error("Some required entry points were not found in this module");
 	}
 
 	// First call to the dll will spin up the .NET runtime, which creates FLS and the GC thread
@@ -207,7 +207,7 @@ BOOL ListProcessThreads(DWORD dwOwnerPID, DWORD results[], LPCWSTR terminateIfMa
 				&threadModule);
 
 			TCHAR modulePath[256] = { 0 };
-			GetModuleFileName(threadModule, modulePath, sizeof(modulePath));
+			GetModuleFileName(threadModule, modulePath, sizeof(modulePath)/sizeof(TCHAR));
 			auto sModulePath = wstring(modulePath);
 			// debug("Thread {0} found in module {1}", te32.th32ThreadID, WTS(sModulePath));
 			auto moduleName = sModulePath.substr(sModulePath.find_last_of(L"/\\") + 1);
