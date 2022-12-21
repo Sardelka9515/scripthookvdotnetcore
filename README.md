@@ -18,6 +18,16 @@ Module loading\unloading is done by the C++ core with some tweaks to bypass unlo
 
 Don't worry! You'll never have to write these yourself. The nuget package comes with a source generatoe that'll set up everything for you. If you want to define the entrypoints yourself, you just need to mark your methods with the attribute like those in the base script, the generator is smart enough to recognize and skip that part of code.
 
+## Getting started
+- Make sure you have .NET 7 SDK installed
+- Create a project targeting .NET 7
+- Install the nuget package
+- Define a class that inherits from `GTA.Script`
+- Subscribe to events like you would in ScriptHookVDotNet, or override `OnStart`\`OnTick` methods, etc..
+- Build the project and copy the dll in `native` folder of the output directory to GTAV\CoreScripts
+- Voila! Start the game and you'll see your script running.
+- Take a look at the examples to see how you can use the scripting API.
+
 ## Limitations
 As the entire runtime is based on NativeAOT, all limitations apply.
 
@@ -25,7 +35,7 @@ As the entire runtime is based on NativeAOT, all limitations apply.
 - No dynamic assembly loading and code execution, executing code on the fly with console is thus impossible
 - Only scripts from the same module are visible to each other, see [cross-module comunication](https://github.com/Sardelka9515/scripthookvdotnetcore/edit/master/README.md#cross-module-communication)
 - Longer compile time and larger binary size
-
+- No fail-safe script abortion, your game will hang if you block the main thread.
 ## Cross-module communication
 To call functions from other modules, you first need to export functions in the target module:
  ```
@@ -39,12 +49,25 @@ To call functions from other modules, you first need to export functions in the 
  Then you need to load the module with the `NativeLibrary` class
  ```
  using System.Runtime.InteropServices;
- public MyScript : GTA.Script
+ public unsafe class MyScript : GTA.Script
  {
- 
+  protected override void OnStart()
+  {
+    base.OnStart();
+    IntPtr myModu = default;
+    do{ 
+      myModu = NativeLibrary.Load("MyModule.dll");
+      Wait(200);
+    }
+    while(myModu == default); // The module might not yet loaded by the core, so cotinue waiting
+    var func = (delegate* unmanaged<void>)NativeLibrary.GetExport("MyFancyFunction");
+    func();
+  }
  }
  ```
 ## Upgrade & migration guide
+The code is written in such way that should make the migration from ScriptHookVDotNet pretty easy. Just remove the reference and install the nuget package and you should be good to go.
+Some internal APIs were removed , such as `SHVDN.ScriptDomain` and `SHVDN.Console`(will be added back later), so changes might be needed if you made use of them.
 
 ## Building the project
 - Install .NET 7 SDK, C++ desktop development workload and build tools v143
