@@ -31,7 +31,7 @@ public unsafe class Script : IDisposable
     /// <summary>
     /// Invoked when the script is started
     /// </summary>
-    public event Action Start;
+    public event Action Started;
 
     public Script()
     {
@@ -58,7 +58,10 @@ public unsafe class Script : IDisposable
         Core.EnsureMainThread();
         var script = Core.ExecutingScript;
         if (script == null) throw new InvalidOperationException("No script is currently executing");
-        script.Continue = GetTickCount64() + ms;
+        var time = GetTickCount64();
+        script.Continue = unchecked(time + ms);
+        // Overflow check
+        if (script.Continue < time || script.Continue < ms) script.Continue = ulong.MaxValue;
         Core.SwitchToNextFiber();
     }
 
@@ -91,11 +94,13 @@ public unsafe class Script : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Error(ex.ToString());
+            Logger.Error($"Script {GetType()} was terminated as an unhandled exception has been caught:\n"+ex.ToString());
             Notification.Show($"~r~{ex}");
         }
 
-        // Continue yielding the execution
+        Pause();
+
+        // Continue yielding the execution, just in case
         while (true)
         {
             Yield();
@@ -103,11 +108,28 @@ public unsafe class Script : IDisposable
     }
 
     /// <summary>
+    /// Pause the script execution, can be called from any thread
+    /// </summary>
+    public void Pause()
+    {
+        Continue = ulong.MaxValue;
+        if (Core.IsMainThread()) { Yield(); }
+    }
+
+    /// <summary>
+    /// Resume script execution
+    /// </summary>
+    public void Resume()
+    {
+        Continue = 0;
+    }
+
+    /// <summary>
     /// Remeber to call the base method when overriding
     /// </summary>
     protected virtual void OnStart()
     {
-        Start?.Invoke();
+        Started?.Invoke();
     }
 
     /// <summary>

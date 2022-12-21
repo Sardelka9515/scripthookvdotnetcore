@@ -82,8 +82,7 @@ public static unsafe class Core
     /// <summary>
     /// Register a script instance, create associated fibers and begin executing
     /// </summary>
-    /// <param name="script"></param>
-    /// <param name="callback"></param>
+    /// <param name="script">The script instance to register</param>
     public static void RegisterScript(Script script)
     {
         // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
@@ -174,9 +173,14 @@ public static unsafe class Core
         SwitchToFiber(fiber);
     }
 
+    /// <summary>
+    /// Determine if the current thread is the main script thread
+    /// </summary>
+    public static bool IsMainThread() => GetCurrentThreadId() == _mainThread;
+
     internal static void EnsureMainThread()
     {
-        if (GetCurrentThreadId() != _mainThread)
+        if (!IsMainThread())
             throw new InvalidOperationException("This function can only be called from main thread.");
     }
 }

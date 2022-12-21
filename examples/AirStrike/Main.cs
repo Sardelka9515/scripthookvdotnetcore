@@ -11,7 +11,7 @@ namespace AirStrike
     {
         public Main()
         {
-            Start += Main_Start;
+            Started += Main_Start;
             KeyDown += Main_KeyDown;
         }
 

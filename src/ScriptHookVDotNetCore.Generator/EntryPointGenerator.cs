@@ -54,7 +54,7 @@ public static unsafe partial class EntryPoint
         string GenerateScriptsRegister()
         {
             var source = "";
-            var scripts = AllTypes.Where(x => $"{x.BaseType.ContainingNamespace}.{x.BaseType.Name}" == "GTA.Script");
+            var scripts = AllTypes.Where(x => $"{x?.BaseType.ContainingNamespace}.{x?.BaseType.Name}" == "GTA.Script");
             foreach (var script in scripts)
             {
                 source += $"Core.RegisterScript(new {script.ContainingNamespace}.{script.Name}());\n";
