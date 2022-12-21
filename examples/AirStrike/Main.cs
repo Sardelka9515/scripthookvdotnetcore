@@ -15,21 +15,34 @@ namespace AirStrike
             KeyDown += Main_KeyDown;
         }
 
+        private void Main_Start()
+        {
+            while (Game.IsLoading) { Yield(); }
+            Notification.Show("Press B to launch an airstrike at the position you're aiming at");
+        }
+
         private void Main_KeyDown(KeyEventArgs obj)
         {
             if (obj.KeyCode == Keys.B)
             {
                 var rand = new Random();
-                var source = Game.Player.Character.Position + 200 * Vector3.WorldUp;
-                var count = rand.Next(5, 10);
                 var target = GetCamTarget();
                 if (target == default) return;
+                var source = target + 200 * Vector3.WorldUp;
+                source.X += rand.Next(-100, 100);
+                source.Y += rand.Next(-100, 100);
+                var count = rand.Next(5, 10);
                 var asset = new WeaponAsset(WeaponHash.RPG);
-                asset.Request(500);
+                asset.Request(2000);
                 var n = Notification.Show("Incoming!");
                 for (int i = 0; i < count; i++)
                 {
-                    World.ShootBullet(source, target, Game.Player.Character, asset, 0);
+                    source.X += rand.Next(-20, 20);
+                    source.Y += rand.Next(-20, 20);
+                    var randTarget = target;
+                    randTarget.X += rand.Next(-5, 5) * rand.NextSingle();
+                    randTarget.Y += rand.Next(-5, 5) * rand.NextSingle();
+                    World.ShootBullet(source, randTarget, Game.Player.Character, asset, 0);
                     Wait((ulong)rand.Next(200, 1000));
                 }
                 asset.MarkAsNoLongerNeeded();
@@ -37,11 +50,6 @@ namespace AirStrike
             }
         }
 
-        private void Main_Start()
-        {
-            while (Game.IsLoading) { Yield(); }
-            Notification.Show("Press B to launch an airstrike at the position you're aiming at");
-        }
         public static Vector3 GetCamTarget()
         {
 
