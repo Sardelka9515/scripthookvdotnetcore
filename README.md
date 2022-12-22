@@ -10,7 +10,7 @@ A screenshot from the [AirStrike example script](https://github.com/Sardelka9515
 ## Features
 - Use latest .NET Core API (.NET 7 or higher)
 - Can run alonside existing [ScriptHookVDotNet](https://github.com/crosire/scripthookvdotnet) based mods
-- Easy [upgrade/migration from ScriptHookVDotNet](https://github.com/Sardelka9515/scripthookvdotnetcore/master/README.md#upgrade--migration-guide)
+- Easy [upgrade/migration from ScriptHookVDotNet](https://github.com/Sardelka9515/scripthookvdotnetcore#upgrade--migration-guide)
 - Reload scripts without restarting the game. Press **End** to unload all scripts, **Home** to reload
 - Better performance
 
@@ -69,7 +69,8 @@ To call functions from other modules, you first need to export functions in the 
  }
  ```
 ## Upgrade & migration guide
-The code is written in such way that should make the migration from ScriptHookVDotNet pretty easy. Just remove the reference and install the nuget package and you should be good to go.
+The code is written in such way that should make the migration from ScriptHookVDotNet pretty easy. 
+Just remove the reference from SHVDN, upgrade project TFM to .NET 7 and install the nuget package, then you should be good to go.
 Some internal APIs were removed, such as `SHVDN.ScriptDomain` and `SHVDN.Console`(console will be added in the future), so changes might be needed if you made use of them.
 
 ## Building the project
