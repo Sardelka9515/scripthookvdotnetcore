@@ -70,8 +70,11 @@ To call functions from other modules, you first need to export functions in the 
  ```
 ## Upgrade & migration guide
 The code is written in such way that should make the migration from ScriptHookVDotNet pretty easy. 
-Just remove the reference from SHVDN, upgrade project TFM to .NET 7 and install the nuget package, then you should be good to go.
-Some internal APIs were removed, such as `SHVDN.ScriptDomain` and `SHVDN.Console`(console will be added in the future), so changes might be needed if you made use of them.
+- Remove the reference from SHVDN
+- Upgrade project TFM to .NET 7
+- Remove WinForms reference as it's not supported by NativeAOT (yet). `Keys` and `KeyEvent` are now defined in the `GTA` namespace.
+- Install the nuget package, then you should be good to go.
+- Some internal APIs were removed, such as `SHVDN.ScriptDomain` and `SHVDN.Console`(console will be added in the future), so changes might be needed if you made use of them.
 
 ## Building the project
 - Install .NET 7 SDK, C++ desktop development workload and build tools v143
