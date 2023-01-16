@@ -11,6 +11,7 @@ global using HMODULE = System.IntPtr;
 global using static SHVDN.Globals;
 global using static GTA.Native.Function;
 global using static SHVDN.Marshaller;
+global using NativeVector3 = GTA.Math.Vector3;
 
 namespace SHVDN;
 

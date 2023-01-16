@@ -4,6 +4,31 @@ using GTA;
 
 namespace SHVDN;
 
+#region API bridge
+
+public class ScriptDomain
+{
+    public static readonly ScriptDomain CurrentDomain = new();
+    public bool IsKeyPressed(Keys k) => Core.IsKeyPressed(k);
+    public void PauseKeyEvents(bool pause) => Core.PauseKeyEvents(pause);
+    public IntPtr PinString(ReadOnlySpan<char> str) => Marshaller.PinString(str);
+    public void ExecuteTask(IScriptTask task)
+    {
+        Core.EnsureMainThread();
+        task.Run();
+    }
+}
+public static class NativeFunc
+{
+    public static void PushLongString(ReadOnlySpan<char> str, PushCallBack cb) => Function.PushLongString(str, cb);
+    public static void PushLongString(ReadOnlySpan<char> str) => Function.PushLongString(str);
+}
+public interface IScriptTask
+{
+    public void Run();
+}
+
+#endregion
 public static unsafe class Core
 {
     public static HMODULE CurrentModule { get; set; }

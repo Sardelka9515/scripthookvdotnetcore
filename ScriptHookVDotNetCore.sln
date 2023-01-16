@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.Gener
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirStrike", "examples\AirStrike\AirStrike.csproj", "{87DB4973-2577-46DC-B0ED-CB594267B244}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -81,6 +83,14 @@ Global
 		{87DB4973-2577-46DC-B0ED-CB594267B244}.Release|Any CPU.Build.0 = Release|Any CPU
 		{87DB4973-2577-46DC-B0ED-CB594267B244}.Release|x64.ActiveCfg = Release|Any CPU
 		{87DB4973-2577-46DC-B0ED-CB594267B244}.Release|x64.Build.0 = Release|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Debug|x64.Build.0 = Debug|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Release|x64.ActiveCfg = Release|Any CPU
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -88,6 +98,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D} = {0CED6C14-C150-4D0B-822D-2120E1A6F18E}
 		{87DB4973-2577-46DC-B0ED-CB594267B244} = {0D1DFD62-0D48-48C6-AFA6-6183437E93AA}
+		{52CCEA32-BF18-4DC2-88B0-0D40735C78DD} = {0CED6C14-C150-4D0B-822D-2120E1A6F18E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BB705119-87AF-432B-A23A-5CF7BD5D3816}
