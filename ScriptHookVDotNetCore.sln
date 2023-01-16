@@ -25,7 +25,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.Gener
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirStrike", "examples\AirStrike\AirStrike.csproj", "{87DB4973-2577-46DC-B0ED-CB594267B244}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "Updater\Updater.csproj", "{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater", "tools\Updater\Updater.csproj", "{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
