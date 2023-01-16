@@ -23,7 +23,7 @@ internal unsafe class BaseScript : Script
         while (Game.IsLoading) Yield();
         Notification.Show("ScriptHookVDotNetCore 1.0.0 by Sardelka9515");
         Directory.CreateDirectory("CoreScripts");
-        foreach (var script in Directory.GetFiles("CoreScripts"))
+        foreach (var script in Directory.GetFiles("CoreScripts","*.dll"))
         {
             Core.RequestModuleLoad(script);
         }

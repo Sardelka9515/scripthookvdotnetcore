@@ -15,6 +15,12 @@ namespace ScriptHookVDotNet.Generator
         public void Execute(GeneratorExecutionContext context)
         {
             Populate(context);
+
+            var scripts = GenerateScriptsRegister();
+
+            // Don't generate entrypoints if it doesn't have any scripts
+            if (string.IsNullOrEmpty(scripts)) return;
+
             var init = EntryPointExists("OnInit") ? "" : InitCode;
             var unload = EntryPointExists("OnOnload") ? "" : UnloadCode;
             var keyboard = EntryPointExists("OnKeyboard") ? "" : KeyboardCode;
@@ -33,7 +39,7 @@ public static unsafe partial class EntryPoint
 {{
     static void ModuleSetup()
     {{
-        {GenerateScriptsRegister()}
+        {scripts}
     }}
 
     {init}
