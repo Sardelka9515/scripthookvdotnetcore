@@ -1247,9 +1247,9 @@ namespace SHVDN
             return (*data & (1 << bit)) != 0;
         }
 
-        public static IntPtr String => StringToCoTaskMemUTF8("STRING");
-        public static IntPtr NullString => StringToCoTaskMemUTF8(string.Empty);
-        public static IntPtr CellEmailBcon => StringToCoTaskMemUTF8("CELL_EMAIL_BCON");
+        public static readonly IntPtr String = StringToCoTaskMemUTF8("STRING");
+        public static readonly IntPtr NullString = StringToCoTaskMemUTF8(string.Empty);
+        public static readonly IntPtr CellEmailBcon = StringToCoTaskMemUTF8("CELL_EMAIL_BCON");
         [StructLayout(LayoutKind.Explicit, Size = 0xC)]
         internal struct RageAtArrayPtr
         {

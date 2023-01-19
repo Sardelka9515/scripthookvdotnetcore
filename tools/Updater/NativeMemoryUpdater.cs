@@ -70,8 +70,8 @@ namespace Updater
             };
         static Dictionary<string, string> CaFixes = new()
         {
-             { "static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)",
-            "public static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)" },
+            //  { "static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)",
+            // "public static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)" },
 
 
             { "SetEntityAngularVelocityDelegate setAngularVelocityDelegate;","delegate* unmanaged<IntPtr, float*, void> setAngularVelocityDelegate;"},
