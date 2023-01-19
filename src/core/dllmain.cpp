@@ -9,6 +9,21 @@ static void FATAL(string msg) {
 	throw exception(msg.c_str());
 }
 
+LPVOID DoJob(Job* pj) {
+	switch (pj->Type) {
+	case J_UNLOAD:
+		return (LPVOID)UnloadModuleW((LPCWSTR)pj->Parameter);
+	case J_LOAD:
+		return (LPVOID)LoadModuleW((LPCWSTR)pj->Parameter);
+	case J_UNLOAD_ALL:
+		return (LPVOID)UnloadAllModules();
+	case J_RELOAD:
+		return (LPVOID)(UnloadAllModules() && LoadModuleW(BASE_SCRIPT_NAME));
+	case J_CALLBACK:
+		return ((CallBackFunc)pj->Parameter)(pj->ParameterEx);
+		break;
+	}
+}
 shared_ptr<spdlog::logger> Logger;
 LPVOID PtrBaseScript;
 SIZE_T BaseScriptSize;
@@ -31,10 +46,10 @@ static void OnPresent(void* swapChain) {
 static void KeyboardMessage(unsigned long keycode, bool keydown, bool ctrl, bool shift, bool alt) {
 	if (!keydown) {
 		if (keycode == UNLOAD_KEY) {
-			ScheduleCallback([]() {UnloadAllModules(); });
+			ScheduleUnloadAll();
 		}
 		if (keycode == RELOAD_KEY) {
-			ScheduleCallback([]() {UnloadAllModules(); LoadModuleA(BASE_SCRIPT_NAME); });
+			ScheduleReload();
 		}
 	}
 }
@@ -99,25 +114,24 @@ static DWORD Worker(LPVOID lparam) {
 	else {
 		info("Symlink detected, base script will not be overwritten");
 	}
-	{
-		ScheduleCallback([]() {LoadModuleA(BASE_SCRIPT_NAME); });
-	}
+
+	ScheduleLoad(BASE_SCRIPT_NAME);
 
 	// Begin job processing
 	while (true) {
 		Sleep(200);
 		Logger->flush();
-		VoidFunc job;
-		doWork:
-		job = NULL;
-		// Only lock the mutex in this scope so we can schedule another callback inside the current one
+		Job job = {};
+	doWork:
+		bool hasJob = false;
+		// Only lock the mutex in this scope so we can schedule another job inside the current one
 		{
 			LOCK(JobMutex);
-			if (!JobQueue.empty()) { job = JobQueue.front(); JobQueue.pop(); }
+			if (!JobQueue.empty()) { job = JobQueue.front(); JobQueue.pop(); hasJob = true; }
 		}
-		if (job != NULL) {
+		if (hasJob) {
 			try {
-				job();
+				DoJob(&job);
 			}
 			catch (exception ex) {
 				error(format("Failed to execute queued job: {}", ex.what()));

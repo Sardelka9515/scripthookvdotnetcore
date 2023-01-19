@@ -1,7 +1,9 @@
-﻿using static System.IO.Path;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using static System.IO.Path;
 namespace Updater
 {
-    internal class Program
+    internal unsafe class Program
     {
         static HashSet<string> SrcExlude = new HashSet<string>
         {
@@ -16,17 +18,20 @@ namespace Updater
             Console.WriteLine($"Adding updater {x}");
             return (ISourceUpdater)Activator.CreateInstance(x);
         }).ToList();
-        static void Main(string[] args)
+        static unsafe void Main(string[] args)
         {
             void Add(string src)
             {
                 var t = File.ReadAllText(src);
-                var u = Updaters.Where(x => x.TargetFile == GetFileName(src));
+                var u = Updaters.Where(x => x.TargetFile == GetFileName(src) || x.TargetFile == null);
                 if (u.Any())
                 {
                     foreach (var ur in u)
                     {
-                        Console.WriteLine($"Running updater {ur.GetType()}");
+                        if (ur.TargetFile != null)
+                        {
+                            Console.WriteLine($"Running updater {ur.GetType()}");
+                        }
                         t = ur.Update(t);
                     }
                 }
@@ -51,7 +56,12 @@ namespace Updater
             var dest = Combine("src", "ScriptHookVDotNetCore", "CodeDom");
             if (Directory.Exists(dest))
             {
-                Directory.Delete(dest, true);
+                try
+                {
+
+                    Directory.Delete(dest, true);
+                }
+                catch (Exception ex) { }
             }
             Directory.CreateDirectory(dest);
             foreach (var s in SrcUpstream)

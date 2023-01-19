@@ -8,3 +8,4 @@ global using HINSTANCE = System.IntPtr;
 global using HMODULE = System.IntPtr;
 global using static SHVDN.Globals;
 global using static SHVDN.PInvoke;
+global using static SHVDN.Marshaller;

@@ -126,5 +126,5 @@ public unsafe readonly ref struct InputArgument
     public static implicit operator InputArgument(Enum val) => From(Convert.ToUInt64(val));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator InputArgument(string val) => From(PinString(val));
+    public static implicit operator InputArgument(string val) => From(Marshaller.PinString(val));
 }

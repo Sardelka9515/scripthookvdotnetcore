@@ -15,6 +15,7 @@
 #include <mutex>
 #include <queue>
 #include <fstream>
+#include <map>
 // ScriptHookV
 #include <main.h> 
 // MinHook
@@ -29,7 +30,7 @@ using namespace spdlog;
 namespace fs = std::filesystem;
 
 #define MAX_UNLOAD_RETRIES 256
-#define BASE_SCRIPT_NAME "ScriptHookVDotNetCore.BaseScript.dll"
+#define BASE_SCRIPT_NAME L"ScriptHookVDotNetCore.BaseScript.dll"
 #define UNLOAD_KEY 35 // End
 #define RELOAD_KEY 36 // Home
 
@@ -44,5 +45,6 @@ static string WTS(wstring ws) {
 static wstring STW(string s) {
 	return wstring(s.begin(), s.end());
 }
-
+#define PWTS(lpcwstr) WTS(wstring(lpcwstr)).c_str()
+#define PSTW(lpcstr) STW(string(lpcstr)).c_str()
 

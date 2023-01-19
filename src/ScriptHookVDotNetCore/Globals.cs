@@ -27,4 +27,9 @@ public class Globals
     public const int VK_SHIFT = 0x10;
 
     public const uint MB_OK = 0x0;
+
+    public const Logger.LogLevel L_DBG = Logger.LogLevel.Debug;
+    public const Logger.LogLevel L_INF = Logger.LogLevel.Info;
+    public const Logger.LogLevel L_WRN = Logger.LogLevel.Warn;
+    public const Logger.LogLevel L_ERR = Logger.LogLevel.Error;
 }

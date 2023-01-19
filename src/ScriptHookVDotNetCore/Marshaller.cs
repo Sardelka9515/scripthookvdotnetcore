@@ -39,6 +39,20 @@ public static unsafe class Marshaller
         return PtrToStringUTF8(ptr, len);
     }
 
+    /// <summary>
+    /// Initialize a new <see cref="HeapArray{TARR}"/> instance from specified array, elements will be copied
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="arr"></param>
+    /// <param name="canWrite"></param>
+    /// <returns></returns>
+    public static HeapArray<T> ToHeapArray<T>(T[] arr, bool canWrite = false)
+    {
+        var len = arr.Length;
+        var ha = new HeapArray<T>(len, canWrite);
+        Buffer.MemoryCopy(&arr, ha.Address, len, len);
+        return ha;
+    }
     public static string PtrToStringUTF8(IntPtr ptr, int len)
     {
         if (len < 0)
@@ -161,7 +175,6 @@ public static unsafe class Marshaller
 
         return result;
 
-
         /*
         /// <summary>
         /// Copy string to a shared heap region, data will be overwritten on next tick
@@ -184,5 +197,23 @@ public static unsafe class Marshaller
             return result;
         }
         */
+    }
+
+    public static int StrLenUni(char* pChar)
+    {
+        int len = 0;
+        while (pChar[len] != 0) { len++; }
+        return len;
+    }
+    public static int StrLenAscii(byte* pChar)
+    {
+        int len = 0;
+        while (pChar[len] != 0) { len++; }
+        return len;
+    }
+
+    public static ReadOnlySpan<char> PtrToSpanUni(char* pChar)
+    {
+        return new(pChar, StrLenUni(pChar));
     }
 }

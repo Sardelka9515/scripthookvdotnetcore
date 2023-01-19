@@ -34,8 +34,11 @@ public static unsafe class Core
     public static HMODULE CurrentModule { get; set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
 
-    internal static readonly delegate* unmanaged<string, HMODULE> LoadModuleA = (delegate* unmanaged<string, HMODULE>)Import("LoadModuleA");
-    private static readonly delegate* unmanaged<IntPtr, void> ScheduleCallback = (delegate* unmanaged<IntPtr, void>)Import("ScheduleCallback");
+    public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
+    public static readonly delegate* unmanaged<char*, void> ScheduleUnoad = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
+    public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
+    public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
+    public static readonly delegate* unmanaged<HMODULE*,int,int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
 
     private static readonly bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
@@ -115,24 +118,10 @@ public static unsafe class Core
         {
             Logger.Info("Registering script: " + script.GetType().ToString());
             script.ScriptFiber = CreateFiber(default, script.PtrFiberEntry, default);
-            if (script.ScriptFiber == default) { throw new Win32Exception(Marshal.GetLastWin32Error(),"Failed to create fiber"); }
+            if (script.ScriptFiber == default) { throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create fiber"); }
             _scripts.Add(script);
             Logger.Info("Script registered: " + script.GetType().ToString());
         }
-    }
-
-    /// <summary>
-    /// Request the C++ core to load a module in the worker thread
-    /// </summary>
-    /// <param name="modulePath"></param>
-    /// <param name="callback">The callback to invoke when the module is loaded, with an argument passing the handle of loaded module, or <see cref="IntPtr.Zero"/> if the module failed to load</param>
-    public static void RequestModuleLoad(string modulePath, Action<HMODULE> callback = null)
-    {
-        ScheduleCallback(Marshal.GetFunctionPointerForDelegate(() =>
-        {
-            HMODULE module = LoadModuleA(modulePath);
-            callback?.Invoke(module);
-        }));
     }
 
     /// <summary>

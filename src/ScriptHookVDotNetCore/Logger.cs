@@ -2,17 +2,38 @@
 {
     public unsafe class Logger
     {
+        public enum LogLevel { Debug, Info, Warn, Error }
         static Logger()
         {
-            Debug = (delegate* unmanaged<string, void>)Core.Import("LogDebug");
-            Info = (delegate* unmanaged<string, void>)Core.Import("LogInfo");
-            Warn = (delegate* unmanaged<string, void>)Core.Import("LogWarn");
-            Error = (delegate* unmanaged<string, void>)Core.Import("LogError");
+            _debug = (delegate* unmanaged<char*, void>)Core.Import("LogDebugW");
+            _info = (delegate* unmanaged<char*, void>)Core.Import("LogInfoW");
+            _warn = (delegate* unmanaged<char*, void>)Core.Import("LogWarnW");
+            _error = (delegate* unmanaged<char*, void>)Core.Import("LogErrorW");
         }
-
-        public static delegate* unmanaged<string, void> Debug;
-        public static delegate* unmanaged<string, void> Info;
-        public static delegate* unmanaged<string, void> Warn;
-        public static delegate* unmanaged<string, void> Error;
+        public static void Debug(ReadOnlySpan<char> msg) => Write(msg, L_DBG);
+        public static void Info(ReadOnlySpan<char> msg) => Write(msg, L_INF);
+        public static void Warn(ReadOnlySpan<char> msg) => Write(msg, L_WRN);
+        public static void Error(ReadOnlySpan<char> msg) => Write(msg, L_ERR);
+        public static void Write(ReadOnlySpan<char> msg, LogLevel lev)
+        {
+            delegate* unmanaged<char*, void> func =
+            lev switch
+            {
+                L_DBG => _debug,
+                L_INF => _info,
+                L_WRN => _warn,
+                L_ERR => _error,
+                _ => default
+            };
+            if (func == default) { throw new ArgumentException("Invalid level",nameof(lev)); }
+            fixed (char* ptr = msg)
+            {
+                func(ptr);
+            }
+        }
+        private static readonly delegate* unmanaged<char*, void> _debug;
+        private static readonly delegate* unmanaged<char*, void> _info;
+        private static readonly delegate* unmanaged<char*, void> _warn;
+        private static readonly delegate* unmanaged<char*, void> _error;
     }
 }

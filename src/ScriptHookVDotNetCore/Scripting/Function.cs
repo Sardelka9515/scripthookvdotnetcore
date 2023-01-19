@@ -27,7 +27,7 @@ public static unsafe class Function
         var buf = stackalloc byte[len + 1];
         Encoding.UTF8.GetBytes(str, new Span<byte>(buf, len));
         buf[len] = 0; // '\0'
-        Call((Hash)0x6C188BE134E074AA /*ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME*/, (ulong)buf, 1);
+        Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, (ulong)buf, 1);
     }
 
     /// <summary>
@@ -140,7 +140,7 @@ public static unsafe class Function
 
         if (type == typeof(string))
         {
-            var obj = (T)(object)PtrToStringUTF8((IntPtr)(*pNative));
+            var obj = (T)(object)NativeMemory.PtrToStringUTF8((IntPtr)(*pNative));
             return obj;
         }
 
