@@ -131,6 +131,14 @@ DllExport void ScheduleReload() {
 	ScheduleTask(j);
 }
 
+// Obsolete
+DllExport void ScheduleCallback(VoidFunc callback) {
+	Job j = {};
+	j.Type = J_CALLBACK;
+	j.Parameter = (LPVOID)callback; // Works despite different signature
+	ScheduleTask(j);
+}
+
 #pragma region ANSI
 
 DllExport HMODULE LoadModuleA(LPCSTR path) {
