@@ -18,7 +18,6 @@ namespace ScriptHookVDotNet.Generator
 
             var scripts = GenerateScriptsRegister();
 
-            // Don't generate entrypoints if it doesn't have any scripts
             if (string.IsNullOrEmpty(scripts)) return;
 
             var init = EntryPointExists("OnInit") ? "" : InitCode;
@@ -59,12 +58,16 @@ public static unsafe partial class EntryPoint
         }
         string GenerateScriptsRegister()
         {
-            var source = "";
+            var source = "GTA.Script script;\n";
             var scripts = AllTypes.Where(x => $"{x?.BaseType.ContainingNamespace}.{x?.BaseType.Name}" == "GTA.Script");
             foreach (var script in scripts)
             {
                 if (script.GetAttributes().Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == "GTA.ScriptAttributes" && x.NamedArguments.Any(x => x.Key == "NoDefaultInstance" && ((bool)x.Value.Value)))) continue;
-                source += $"Core.RegisterScript(new {script.ContainingNamespace}.{script.Name}());\n";
+                var fullName = $"{script.ContainingNamespace}.{script.Name}";
+                source += $"script = new {fullName}();";
+                source += $"Core.RegisterScript(script);\n";
+                source += $"GTA.Console.RegisterCommands(typeof({fullName}));\n";
+                source += $"GTA.Console.RegisterCommands(typeof({fullName}), script);\n";
             }
             return source;
         }
@@ -96,36 +99,18 @@ public static unsafe partial class EntryPoint
     public static void OnUnload(HMODULE module)
     {
         Core.CurrentModule = module;
-        for (int i = 0; i < 20; i++)
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
+        Core.OnUnload();
     }";
         const string KeyboardCode = @"[UnmanagedCallersOnly(EntryPoint = ""OnKeyboard"")]
     public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt,
         bool wasDownBefore, bool isUpNow)
     {
-        _keyboardMessage(
+        Core.DoKeyEvent(
             key,
             !isUpNow,
             (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
             (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
             isWithAlt);
-    }
-
-    static void _keyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
-    {
-        // Filter out invalid key codes
-        if (keycode <= 0 || keycode >= 256)
-            return;
-
-        // Convert message into a key event
-        var keys = (Keys)keycode;
-        if (ctrl) keys |= Keys.Control;
-        if (shift) keys |= Keys.Shift;
-        if (alt) keys |= Keys.Alt;
-        Core.DoKeyEvent(keys, keydown);
     }";
         const string TickCode = @"
     [UnmanagedCallersOnly(EntryPoint = ""OnTick"")]

@@ -34,4 +34,6 @@ public class Globals
     public const Logger.LogLevel L_INF = Logger.LogLevel.Info;
     public const Logger.LogLevel L_WRN = Logger.LogLevel.Warn;
     public const Logger.LogLevel L_ERR = Logger.LogLevel.Error;
+
+    public const string BASE_SCRIPT_NAME = "ScriptHookVDotNetCore.BaseScript.dll";
 }

@@ -11,14 +11,6 @@ using System.Diagnostics.Metrics;
 
 namespace SHVDN;
 
-public static partial class EntryPoint
-{
-    static void ModuleSetup()
-    {
-        Core.RegisterScript(new BaseScript());
-        GTA.Console.RegisterCommands(typeof(BaseScript));
-    }
-}
 
 internal unsafe class BaseScript : Script
 {
@@ -40,44 +32,36 @@ internal unsafe class BaseScript : Script
         }
     }
 
-    static string[] TestStrings = new string[]
-        {
-            "YLvbTGwqZDV7cAS3EO5T",
-            "DQwHOet2gAxlopBD5YBv",
-            "C89CSWjnagVh0dcUYjEf",
-            "8y3EOW9RqtJdmQxC3Gfs",
-            "cv1tNmGvQr8l5JcnORUW",
-            "gDxF3FIMq45kJESchT3i",
-            "gEfqkhLMYmn22HEBruMO",
-            "XNqU1D86P5Fr07myMdHQ",
-            "WKWk1ZGhnTNexlnldJP9",
-            "1r979KceR5hU1wNZF3cL",
-            "j08z0x0VKBSMgFFZ2j8U",
-            "rihusSJOe3rny8GJFBrW",
-            "pMv1SYHPQbfZpiSUmkkt",
-            "s8TNthZnLcagI54FqxHx",
-            "x9aYv10oNHSC7PBsDgp2",
-            "LQo2gpJ9Fb418s27cgUd",
-            "IbeZEys1ECZ09uWsALGV",
-            "QJPwrldZN7XjWGFlzG7p",
-            "eHbwowHZ9vYJH7RnBCGx",
-            "pYY1vrv7VjPAmcye2gRa",
-        };
-
-    [GTA.ConsoleCommand("Benchmark GetHashKey performance")]
-    public static void BenchMark()
+    [GTA.ConsoleCommand("Unload and reload all scripts")]
+    public static void Reload()
     {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        for (int i = 0; i < 10000; i++)
+        Core.ScheduleReload();
+    }
+
+    [GTA.ConsoleCommand("Print all avalible commands")]
+    public static void Help()
+    {
+        Console.PrintHelpText();
+    }
+
+    [GTA.ConsoleCommand("Clear console output")]
+    public static void Clear()
+    {
+        Console.Clear();
+    }
+
+    [GTA.ConsoleCommand("List all loaded modules")]
+    public static void ListModules()
+    {
+        HMODULE* modus = stackalloc HMODULE[256];
+        var cModu = Core.ListModules(modus, 256);
+        Console.PrintInfo("List of loaded modules:");
+        char* path = stackalloc char[256];
+        for (int i = 0; i < cModu; i++)
         {
-            foreach (var str in TestStrings)
-            {
-                NativeMemory.GetHashKey(str);
-            }
+            var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
+            Console.PrintInfo($"    {String.Format("0x{0:X}", modus[i])} : {(fSucess ? Path.GetFileName(new string(path)) : "error")}");
         }
-        stopwatch.Stop();
-        GTA.Console.PrintInfo("Elapsed ticks: " + stopwatch.ElapsedTicks);
     }
 
     [GTA.ConsoleCommand("Get object count of specified type, possible types are: ped,vehicle,prop,projectile")]
@@ -91,7 +75,7 @@ internal unsafe class BaseScript : Script
             "projectile" => World.ProjectileCount,
             _ => throw new ArgumentException($"Type not found: {type}"),
         };
-        GTA.Console.PrintInfo(count.ToString());
+        Console.PrintInfo(count.ToString());
     }
 
     [GTA.ConsoleCommand("Request a module to be unloaded")]
@@ -107,7 +91,7 @@ internal unsafe class BaseScript : Script
             if (fSucess && Path.GetFileName(new string(path)).ToLower() == filename.ToLower())
             {
                 Core.ScheduleUnload(path);
-                GTA.Console.PrintInfo($"Module {filename} scheduled for unload");
+                Console.PrintInfo($"Module {filename} scheduled for unload");
                 return;
             }
         }

@@ -218,4 +218,9 @@ public static unsafe class Marshaller
     {
         return new(pChar, StrLenUni(pChar));
     }
+
+    internal static void OnUnload()
+    {
+        CleanupStrings();
+    }
 }

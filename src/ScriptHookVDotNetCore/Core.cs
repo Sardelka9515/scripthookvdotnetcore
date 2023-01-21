@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using GTA;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace SHVDN;
 
@@ -38,11 +40,11 @@ public static unsafe class Core
     public static readonly delegate* unmanaged<char*, void> ScheduleUnload = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
     public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
     public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
-    public static readonly delegate* unmanaged<HMODULE*,int,int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
+    public static readonly delegate* unmanaged<HMODULE*, int, int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
     public static readonly delegate* unmanaged<string, ulong> GetPtr = (delegate* unmanaged<string, ulong>)Import("GetPtr");
     public static readonly delegate* unmanaged<string, ulong, void> SetPtr = (delegate* unmanaged<string, ulong, void>)Import("SetPtr");
 
-    private static readonly bool[] KeyboardState = new bool[256];
+    private static bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
 
 
@@ -88,9 +90,9 @@ public static unsafe class Core
     }
 
     /// <summary>
-    /// Used internally to dispose all scripts on module unload, don't call this manually
+    /// Abort alls scripts and delete associated fibers
     /// </summary>
-    public static void DisposeScripts()
+    internal static void DisposeScripts()
     {
         lock (_scripts)
         {
@@ -110,10 +112,10 @@ public static unsafe class Core
     }
 
     /// <summary>
-    /// Register a script instance, create associated fibers and begin the execution once the script thread has been launched
+    /// Register a script instance, create associated fiber, register commands and begin the execution once the script thread has been launched
     /// </summary>
     /// <param name="script">The script instance to register</param>
-    public static void RegisterScript(Script script)
+    public static void RegisterScript([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Script script)
     {
         // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
         lock (_scripts)
@@ -126,33 +128,10 @@ public static unsafe class Core
         }
     }
 
-    /// <summary>
-    /// Used internally to process keyboard events, don't call this manually
-    /// </summary>
-    /// <param name="keys"></param>
-    /// <param name="status"></param>
-    public static void DoKeyEvent(Keys keys, bool status)
-    {
-        var e = new KeyEventArgs(keys);
-
-        // Only update state of the primary key (without modifiers) here
-        KeyboardState[(int)e.KeyCode] = status;
-
-        if (_recordKeyboardEvents)
-        {
-            var te = new Tuple<bool, KeyEventArgs>(status, e);
-            lock (_scripts)
-            {
-                foreach (Script script in _scripts)
-                    script.KeyboardEvents.Enqueue(te);
-            }
-        }
-    }
 
     /// <summary>
-    /// Used internally to process tick events, don't call this manually
+    /// Don't use
     /// </summary>
-    /// <param name="currentFiber"></param>
     public static void DoTick(LPVOID currentFiber)
     {
         _mainFiber = currentFiber;
@@ -166,6 +145,51 @@ public static unsafe class Core
                 SwitchToNextFiber();
                 CleanupStrings();
             }
+        }
+    }
+
+    /// <summary>
+    /// Don't use
+    /// </summary>
+    public static void DoKeyEvent(DWORD key, bool down, bool ctrl, bool shift, bool alt)
+    {
+        if (key <= 0 || key >= 256)
+            return;
+
+        // Convert message into a key event
+        var keys = (Keys)key;
+        if (ctrl) keys |= Keys.Control;
+        if (shift) keys |= Keys.Shift;
+        if (alt) keys |= Keys.Alt;
+
+        KeyboardState[key] = down;
+
+        if (_recordKeyboardEvents)
+        {
+            var te = new Tuple<bool, KeyEventArgs>(down, new KeyEventArgs(keys));
+            lock (_scripts)
+            {
+                foreach (Script script in _scripts)
+                    script.KeyboardEvents.Enqueue(te);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Don't use
+    /// </summary>
+    public static void OnUnload()
+    {
+        DisposeScripts();
+        _scripts = null;
+        KeyboardState = null;
+        GTA.Console.OnUnload();
+        Marshaller.OnUnload();
+        NativeLibrary.Free(CoreModule);
+        for (int i = 0; i < 20; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
     }
 
@@ -199,4 +223,5 @@ public static unsafe class Core
         if (!IsMainThread())
             throw new InvalidOperationException("This function can only be called from main thread.");
     }
+
 }

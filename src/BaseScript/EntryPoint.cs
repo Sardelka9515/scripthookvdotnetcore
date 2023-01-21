@@ -33,38 +33,19 @@ public static unsafe partial class EntryPoint
     public static void OnUnload(HMODULE module)
     {
         Core.CurrentModule = module;
-        Core.DisposeScripts();
-        for (int i = 0; i < 20; i++)
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
+        Core.OnUnload();
     }
 
     [UnmanagedCallersOnly(EntryPoint = "OnKeyboard")]
     public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt,
         bool wasDownBefore, bool isUpNow)
     {
-        _keyboardMessage(
+        Core.DoKeyEvent(
             key,
             !isUpNow,
             (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
             (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
             isWithAlt);
-    }
-
-    static void _keyboardMessage(DWORD keycode, bool keydown, bool ctrl, bool shift, bool alt)
-    {
-        // Filter out invalid key codes
-        if (keycode <= 0 || keycode >= 256)
-            return;
-
-        // Convert message into a key event
-        var keys = (Keys)keycode;
-        if (ctrl) keys |= Keys.Control;
-        if (shift) keys |= Keys.Shift;
-        if (alt) keys |= Keys.Alt;
-        Core.DoKeyEvent(keys, keydown);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "OnTick")]

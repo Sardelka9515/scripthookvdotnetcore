@@ -124,38 +124,38 @@ static DWORD Worker(LPVOID lparam) {
 
 	ScheduleLoad(BASE_SCRIPT_NAME);
 
-	// Begin job processing
-	while (true) {
-		Sleep(200);
-		Logger->flush();
-		Job job = {};
-	doWork:
-		bool hasJob = false;
-		// Only lock the mutex in this scope so we can schedule another job inside the current one
-		{
-			LOCK(JobMutex);
-			if (!JobQueue.empty()) { job = JobQueue.front(); JobQueue.pop(); hasJob = true; }
-		}
-		if (hasJob) {
-			try {
-				DoJob(&job);
-			}
-			catch (exception ex) {
-				error(format("Failed to execute queued job: {}", ex.what()));
-			}
-			goto doWork;
-		}
-	}
 	return 0;
 }
 void ScriptMain() {
-	auto fiber = GetCurrentFiber();
 	while (true) {
+
+		// execute scheduled jobs
+		{ 
+			Job job = {};
+		doWork:
+			bool hasJob = false;
+			// Only lock the mutex in this scope so we can schedule another job inside the current one
+			{
+				LOCK(JobMutex);
+				if (!JobQueue.empty()) { job = JobQueue.front(); JobQueue.pop(); hasJob = true; }
+			}
+			if (hasJob) {
+				try {
+					DoJob(&job);
+				}
+				catch (exception ex) {
+					error(format("Failed to execute queued job: {}", ex.what()));
+				}
+				goto doWork;
+			}
+		}
+
+		// Tick
 		{
 			LOCK(ModulesMutex);
 			for (auto pM : Modules) {
 				if (pM->TickFunc != NULL) {
-					pM->TickFunc(fiber);
+					pM->TickFunc(GetCurrentFiber());
 				}
 			}
 		}
@@ -172,10 +172,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 
-		Logger = basic_logger_st("Core", "ScriptHookVDotNetCore.log", true);
+		Logger = basic_logger_mt("Core", "ScriptHookVDotNetCore.log", true);
 		Logger->set_level(level::trace);
 		Logger->flush_on(level::err);
 		set_default_logger(Logger);
+		flush_every(chrono::seconds(3));
 		info("Logging system initilized");
 
 		presentCallbackRegister(OnPresent);

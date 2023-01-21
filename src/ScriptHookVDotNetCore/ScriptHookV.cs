@@ -11,29 +11,20 @@ public static unsafe class ScriptHookV
 
     static ScriptHookV()
     {
-        ScriptWait = (delegate* unmanaged<ulong, void>)Import("?scriptWait@@YAXK@Z");
-        ScriptRegister =
-            (delegate* unmanaged<nint, delegate* unmanaged<void>, void>)Import(
-                "?scriptRegister@@YAXPEAUHINSTANCE__@@P6AXXZ@Z");
-        ScriptUnregisterProc =
-            (delegate* unmanaged<delegate* unmanaged<void>, void>)Import("?scriptUnregister@@YAXP6AXXZ@Z");
-        ScriptUnregister = (delegate* unmanaged<HINSTANCE, void>)Import("?scriptUnregister@@YAXPEAUHINSTANCE__@@@Z");
-        NativeInit = (delegate* unmanaged<ulong, void>)Import("?nativeInit@@YAX_K@Z");
-        NativePush64 = (delegate* unmanaged<ulong, void>)Import("?nativePush64@@YAX_K@Z");
-        NativeCall = (delegate* unmanaged<ulong*>)Import("?nativeCall@@YAPEA_KXZ");
-        GetGlobalPtr = (delegate* unmanaged<int, IntPtr>)Import("?getGlobalPtr@@YAPEA_KH@Z");
+        ScriptWait = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?scriptWait@@YAXK@Z");
+        NativeInit = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?nativeInit@@YAX_K@Z");
+        NativePush64 = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?nativePush64@@YAX_K@Z");
+        NativeCall = (delegate* unmanaged[SuppressGCTransition]<ulong*>)Import("?nativeCall@@YAPEA_KXZ");
+        GetGlobalPtr = (delegate* unmanaged[SuppressGCTransition]<int, IntPtr>)Import("?getGlobalPtr@@YAPEA_KH@Z");
     }
 
-    public static delegate* unmanaged<ulong, void> ScriptWait;
-    public static delegate* unmanaged<nint, delegate* unmanaged<void>, void> ScriptRegister;
-    public static delegate* unmanaged<delegate* unmanaged<void>, void> ScriptUnregisterProc;
-    public static delegate* unmanaged<HINSTANCE, void> ScriptUnregister;
+    public static delegate* unmanaged[SuppressGCTransition]<ulong, void> ScriptWait;
 
-    public static delegate* unmanaged<ulong, void> NativeInit;
-    public static delegate* unmanaged<ulong, void> NativePush64;
-    public static delegate* unmanaged<ulong*> NativeCall;
+    public static delegate* unmanaged[SuppressGCTransition]<ulong, void> NativeInit;
+    public static delegate* unmanaged[SuppressGCTransition]<ulong, void> NativePush64;
+    public static delegate* unmanaged[SuppressGCTransition]<ulong*> NativeCall;
 
-    public static delegate* unmanaged<int, IntPtr> GetGlobalPtr;
+    public static delegate* unmanaged[SuppressGCTransition]<int, IntPtr> GetGlobalPtr;
 
     #region Unused imports
 

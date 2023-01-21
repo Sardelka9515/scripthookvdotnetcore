@@ -14,22 +14,65 @@ namespace GTA
     /// </summary>
     public static unsafe class Console
     {
-        public static readonly HMODULE BaseScript = NativeLibrary.Load("ScriptHookVDotNetCore.BaseScript.dll");
+        public static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
         public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Import("ExecuteConsoleCommand");
         public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Import("RegisterConsoleCommand");
         public static readonly delegate* unmanaged<char*, char*, void> PrintConsoleMessage = (delegate* unmanaged<char*, char*, void>)Import("PrintConsoleMessage");
-
+        public static HashSet<Type> _registeredTypes = new();
+        public static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
         public static IntPtr Import(string name) => NativeLibrary.GetExport(BaseScript, name);
-        
+
+        /// <summary>
+        /// Search and register all static method marked with <see cref="ConsoleCommand"/> attribute in this type
+        /// </summary>
+        /// <param name="type"></param>
+        /// <remarks>Automatically called for the delclaring type of a registered <see cref="Script"/> object</remarks>
         public static void RegisterCommands([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
         {
-            foreach (var method in type.GetMethods(BindingFlags.Static | BindingFlags.Public))
+            lock (_registeredTypes)
+            {
+                if (_registeredTypes.Contains(type))
+                {
+                    return;
+                }
+
+                foreach (var method in type.GetMethods(BindingFlags.Static | BindingFlags.Public))
+                {
+                    try
+                    {
+                        foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(true))
+                        {
+                            attribute.Method = method;
+                            RegisterCommand(attribute);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to search for console commands in {type.FullName}.{method.Name}: {ex}");
+                    }
+                }
+                _registeredTypes.Add(type);
+                Logger.Info($"Registered commands for type {type.FullName}");
+            }
+            
+        }
+
+        /// <summary>
+        /// Search and register all instance methods marked with <see cref="ConsoleCommand"/> attribute for this object
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="target"></param>
+        /// <remarks>Automatically called when registering a <see cref="Script"/> object</remarks>
+        public static void RegisterCommands([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type,object target)
+        {
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
                 try
                 {
                     foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(true))
                     {
                         attribute.Method = method;
+                        attribute.Target = target;
                         RegisterCommand(attribute);
                     }
                 }
@@ -39,38 +82,38 @@ namespace GTA
                 }
             }
         }
-        
-        public static void Print(string prefix, string msg, params object[] args)
+
+        public static void Print(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, params object[] args)
         {
-            msg = string.Format(msg, args);
+            msg = string.Format(msg.ToString(), args);
             fixed (char* pp = prefix, pm = msg)
             {
                 PrintConsoleMessage(pp, pm);
             }
         }
-        
+
         /// <summary>
         /// Writes an info message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintInfo(string msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
-        
+        public static void PrintInfo(ReadOnlySpan<char> msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
+
         /// <summary>
         /// Writes an error message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintError(string msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
-        
+        public static void PrintError(ReadOnlySpan<char> msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
+
         /// <summary>
         /// Writes a warning message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintWarning(string msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
-        
-        public static void RegisterCommand(ConsoleCommand command)
+        public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
+
+        static void RegisterCommand(ConsoleCommand command)
         {
             var wrapper = (int argc, char** argv) =>
             {
@@ -85,7 +128,7 @@ namespace GTA
                     }
                     command.Method.Invoke(command.Target, args);
                 }
-                catch(TargetInvocationException ex)
+                catch (TargetInvocationException ex)
                 {
                     PrintError(ex.InnerException.ToString());
                 }
@@ -100,8 +143,12 @@ namespace GTA
                 RegisterConsoleCommand(Marshal.GetFunctionPointerForDelegate(wrapper), pName, pParm, pHelp, pAssm);
             }
             command._wrapper = wrapper;
+            lock (_registeredCommands)
+            {
+                _registeredCommands.Add(command);
+            }
         }
-        
+
         public static List<string> GetArguments(int argc, char** argv)
         {
             List<string> args = new(argc);
@@ -110,6 +157,13 @@ namespace GTA
                 args.Add(Marshal.PtrToStringUni((IntPtr)argv[args.Count]));
             }
             return args;
+        }
+
+        internal static void OnUnload()
+        {
+            NativeLibrary.Free(BaseScript);
+            _registeredTypes = null;
+            _registeredCommands = null;
         }
     }
     public class ConsoleCommand : Attribute

@@ -10,6 +10,12 @@
 		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(SolutionDir)bin\obj&quot;  -p:PublishAOT=true -r win-x64 " />
 	</Target>
 	<ItemGroup>
-	  <ProjectReference Include="..\ScriptHookVDotNetCore\ScriptHookVDotNetCore.csproj" />
+	  <Compile Remove="EntryPoint.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ScriptHookVDotNetCore.Generator\ScriptHookVDotNetCore.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\ScriptHookVDotNetCore\ScriptHookVDotNetCore.csproj" />
+		<TrimmerRootDescriptor Include="Trimming.xml" />
+
 	</ItemGroup>
 </Project>

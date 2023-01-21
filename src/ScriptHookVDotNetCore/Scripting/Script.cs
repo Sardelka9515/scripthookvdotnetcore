@@ -6,6 +6,8 @@ namespace GTA;
 
 public unsafe class Script : IDisposable
 {
+    private object _lock = new object();
+    private bool _aborted = false;
     public delegate void ScriptEntryDelegate(IntPtr lParam);
     private readonly ScriptEntryDelegate _fiberEntry;
     internal ulong Continue = 0;
@@ -17,6 +19,16 @@ public unsafe class Script : IDisposable
     /// Invoked every frame
     /// </summary>
     public event Action Tick;
+
+
+    /// <summary>
+    /// Invoked when the script is aborted, whether during the module unload or a call to <see cref="Abort"/>
+    /// </summary>
+    /// <remarks>The handler can be used to perform cleanup tasks. 
+    /// This is mostly invoked from the main thread unless <see cref="Abort"/> is called from another thread.
+    /// To determine whether the executing thread is main thread, call <see cref="Core.IsMainThread()"/>
+    /// </remarks>
+    public event Action Aborted;
 
     /// <summary>
     /// Invoked when a key is down
@@ -104,7 +116,7 @@ public unsafe class Script : IDisposable
             }
         }
 
-        Pause();
+        Abort();
 
         // Continue yielding the execution, just in case
         while (true)
@@ -124,6 +136,7 @@ public unsafe class Script : IDisposable
     /// </summary>
     public void Pause()
     {
+        ThrowIfAborted();
         Continue = ulong.MaxValue;
         if (Core.IsMainThread() && this == Core.ExecutingScript) { Yield(); }
     }
@@ -133,6 +146,7 @@ public unsafe class Script : IDisposable
     /// </summary>
     public void Resume()
     {
+        ThrowIfAborted();
         Continue = 0;
     }
 
@@ -168,8 +182,52 @@ public unsafe class Script : IDisposable
         KeyUp?.Invoke(e);
     }
 
+    /// <summary>
+    /// Abort this script and delete associated fiber
+    /// </summary>
     public void Dispose()
     {
-        if (ScriptFiber != default) DeleteFiber(ScriptFiber);
+        lock (_lock)
+        {
+            Abort();
+            if (ScriptFiber != default)
+            {
+                DeleteFiber(ScriptFiber);
+                ScriptFiber = default;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Basically has the same effect as <see cref="Pause"/>, except <see cref="Aborted"/> will be invoked and the script can't be resumed
+    /// </summary>
+    /// <remarks>
+    /// Unlike SHVDN, this method does not actually abort the execution thread. 
+    /// As all script lives in the game thread, blocking it will cause the game to hang forever 
+    /// and this method won't have any effect
+    /// </remarks>
+    public void Abort()
+    {
+        lock (_lock)
+        {
+            if (_aborted) return;
+            try
+            {
+                Aborted?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during script abortion:\n {ex}");
+            }
+            finally
+            {
+                Pause();
+            }
+        }
+    }
+
+    private void ThrowIfAborted()
+    {
+        if (_aborted) { throw new InvalidOperationException("The script has been aborted"); }
     }
 }
