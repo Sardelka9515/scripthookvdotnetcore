@@ -30,7 +30,7 @@ namespace SHVDN
         static string _input = string.Empty;
         static List<string> _lineHistory = new();
         static List<string> _commandHistory = new(); // This must be set via CommandHistory property
-        static ConcurrentQueue<string[]> _outputQueue = new();
+        static ConcurrentQueue<string> _outputQueue = new();
         static Dictionary<string, ConsoleCommand> _commands = new();
         static DateTime _lastClosed;
         const int BASE_WIDTH = 1280;
@@ -110,34 +110,29 @@ namespace SHVDN
                 if (_commands.ContainsKey(name)) { _commands.Remove(name); }
             }
         }
-
-        /// <summary>
-        /// Add text lines to the console. This call is thread-safe.
-        /// </summary>
-        /// <param name="prefix">The prefix for each line.</param>
-        /// <param name="messages">The lines to add to the console.</param>
-
-        /// <summary>
-        /// Add text lines to the console. This call is thread-safe.
-        /// </summary>
-        /// <param name="prefix">The prefix for each line.</param>
-        /// <param name="messages">The lines to add to the console.</param>
-        static void AddLines(string prefix, string[] messages)
+        static void AddLine(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, string color)
         {
-            AddLines(prefix, messages, "~w~");
+            var full = msg;
+            if (msg.Length <= 0) return;
+            trim:
+            ReadOnlySpan<char> line = $"~c~[{DateTime.Now.ToString("HH:mm:ss")}] ~w~{prefix} {color}{msg}";
+            if (GetTextLength(line) > 0.95)
+            {
+                msg = msg.Slice(0, msg.Length - Math.Max(5,msg.Length/10));
+                goto trim;
+            }
+            _outputQueue.Enqueue(line.ToString());
+            if (msg != full)
+            {
+                AddLine(prefix, full.Slice(msg.Length), color);
+            }
         }
-        /// <summary>
-        /// Add colored text lines to the console. This call is thread-safe.
-        /// </summary>
-        /// <param name="prefix">The prefix for each line.</param>
-        /// <param name="messages">The lines to add to the console.</param>
-        /// <param name="color">The color of those lines.</param>
-        static void AddLines(string prefix, string[] messages, string color)
+        static float GetTextLength(ReadOnlySpan<char> str)
         {
-            for (int i = 0; i < messages.Length; i++) // Add proper styling
-                messages[i] = $"~c~[{DateTime.Now.ToString("HH:mm:ss")}] ~w~{prefix} {color}{messages[i]}";
-
-            _outputQueue.Enqueue(messages);
+            fixed (char* p = str)
+            {
+                return GetTextLength(p, str.Length);
+            }
         }
         /// <summary>
         /// Add text to the console input line.
@@ -203,7 +198,10 @@ namespace SHVDN
         {
             if (args.Length > 0)
                 msg = String.Format(msg, args);
-            AddLines(prefix, msg.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+            foreach (var s in msg.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            {
+                AddLine(prefix, s, "~s~");
+            }
         }
 
         /// <summary>
@@ -253,9 +251,8 @@ namespace SHVDN
         {
             DateTime now = DateTime.UtcNow;
             // Add lines from concurrent queue to history
-            if (_outputQueue.TryDequeue(out string[] lines))
-                foreach (string line in lines)
-                    _lineHistory.Add(line);
+            while (_outputQueue.TryDequeue(out var line))
+                _lineHistory.Add(line);
 
             if (!IsOpen)
             {
@@ -496,7 +493,7 @@ namespace SHVDN
                         throw new KeyNotFoundException("Command not found: " + command);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     PrintError(ex.ToString());
                 }
@@ -849,7 +846,7 @@ namespace SHVDN
             _input = new(command);
             Execute();
         }
-        
+
         #endregion
     }
 

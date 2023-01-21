@@ -22,11 +22,11 @@ public static unsafe class PInvoke
     public static delegate* unmanaged<LPVOID, void> DeleteFiber = (delegate* unmanaged<LPVOID, void>)NativeLibrary.GetExport(Kernel32, "DeleteFiber");
     public static delegate* unmanaged<HANDLE, string, string, uint, int> MessageBoxA = (delegate* unmanaged<HANDLE, string, string, uint, int>)NativeLibrary.GetExport(User32, "MessageBoxA");
     public static delegate* unmanaged<int, short> GetAsyncKeyState = (delegate* unmanaged<int, short>)NativeLibrary.GetExport(User32, "GetAsyncKeyState");
-    public static ReadOnlySpan<char> GetClipboardText()
+    public static string GetClipboardText()
     {
         if (!OpenClipboard(default)) throw new Win32Exception();
         var pChar = (char*)GetClipboardData(CF_UNICODETEXT);
-        var text = new ReadOnlySpan<char>(pChar, StrLenUni(pChar));
+        var text = new string(pChar);
         CloseClipboard();
         return text;
     }
