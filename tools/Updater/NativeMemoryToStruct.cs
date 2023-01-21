@@ -40,6 +40,7 @@ namespace Updater
             "NullString",
             "CellEmailBcon",
             "disallowWeaponHashSetForHumanPedsOnFoot",
+            "LookupTableForGetHashKey",
         };
         static HashSet<string> Remove = new() {
              "_strBufferForStringToCoTaskMemUTF8",
@@ -305,8 +306,8 @@ namespace SHVDN
 
     public static unsafe class NativeMemory
     {{
-        public const string StructSinature = ""SHVDN.NativeMemory.98cd9e030a8f81d45cc9d2e87da5002117f3266777a45a455f9a51fcc7195640"";
-        private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSinature);
+        public const string StructSignature;
+        private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSignature);
         static NativeMemory()
         {{
             try
@@ -318,7 +319,7 @@ namespace SHVDN
                     return;
                 }}
                 // Return if the struct has already been initialized
-                else if ((_pNativeMemory = (NativeMemoryStruct*)Core.GetPtr(StructSinature)) != null)
+                else if ((_pNativeMemory = (NativeMemoryStruct*)Core.GetPtr(StructSignature)) != null)
                 {{
                     Logger.Debug($""Using NativeMemoryStruct at address {{(IntPtr)_pNativeMemory}}"");
                     return;
@@ -328,7 +329,7 @@ namespace SHVDN
                 // Need to manually allocate it on unmanaged heap so it doesn't get popped from the stack (or GC'd?)
                 _pNativeMemory = (NativeMemoryStruct*)AllocHGlobal(sizeof(NativeMemoryStruct));
                 *_pNativeMemory = temp;
-                Core.SetPtr(StructSinature, (ulong)_pNativeMemory);
+                Core.SetPtr(StructSignature, (ulong)_pNativeMemory);
                 Logger.Debug($""Initialized NativeMemoryStruct at address {{(IntPtr)_pNativeMemory}}"");
             }}
             catch (Exception ex)
@@ -384,7 +385,7 @@ namespace SHVDN
             }
             var structSignature = $"SHVDN.NativeMemory.{sbSig}";
             Console.WriteLine($"Struct signature is {structSignature}");
-            newSource = newSource.Replace("const string StructSinature;", $"const string StructSinature = \"{structSignature}\";");
+            newSource = newSource.Replace("const string StructSignature;", $"const string StructSignature = \"{structSignature}\";");
             return newSource;
         }
     }

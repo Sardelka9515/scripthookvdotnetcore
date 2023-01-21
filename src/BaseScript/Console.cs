@@ -18,6 +18,9 @@ using System.Text.RegularExpressions;
 
 namespace SHVDN
 {
+    /// <summary>
+    /// SHVDN.Console implementations
+    /// </summary>
     internal static unsafe partial class Console
     {
         static int _cursorPos = 0;
