@@ -115,7 +115,7 @@ public static unsafe class Core
     /// Register a script instance, create associated fiber, register commands and begin the execution once the script thread has been launched
     /// </summary>
     /// <param name="script">The script instance to register</param>
-    public static void RegisterScript([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Script script)
+    public static void RegisterScript(Script script)
     {
         // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
         lock (_scripts)

@@ -76,7 +76,7 @@ namespace GTA
 
 		public VehicleMod[] ToArray()
 		{
-			return Enum.GetValues(typeof(VehicleModType)).Cast<VehicleModType>().Where(Contains).Select(modType => this[modType]).ToArray();
+			return Enum.GetValues<VehicleModType>().Cast<VehicleModType>().Where(Contains).Select(modType => this[modType]).ToArray();
 		}
 
 		public VehicleWheelType WheelType
@@ -416,7 +416,7 @@ namespace GTA
 			}
 		}
 
-		public bool HasNeonLights => Enum.GetValues(typeof(VehicleNeonLight)).Cast<VehicleNeonLight>().Any(HasNeonLight);
+		public bool HasNeonLights => Enum.GetValues<VehicleNeonLight>().Cast<VehicleNeonLight>().Any(HasNeonLight);
 
 		public bool IsNeonLightsOn(VehicleNeonLight light)
 		{

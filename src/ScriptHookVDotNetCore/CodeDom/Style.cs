@@ -54,7 +54,7 @@ namespace GTA
 		public PedProp[] GetAllProps()
 		{
 			var props = new List<PedProp>();
-			foreach (PedPropAnchorPosition anchorPosition in Enum.GetValues(typeof(PedPropAnchorPosition)))
+			foreach (PedPropAnchorPosition anchorPosition in Enum.GetValues<PedPropAnchorPosition>())
 			{
 				PedProp prop = this[anchorPosition];
 				if (prop.HasAnyVariations)
@@ -68,7 +68,7 @@ namespace GTA
 		public PedComponent[] GetAllComponents()
 		{
 			var components = new List<PedComponent>();
-			foreach (PedComponentType componentId in Enum.GetValues(typeof(PedComponentType)))
+			foreach (PedComponentType componentId in Enum.GetValues<PedComponentType>())
 			{
 				PedComponent component = this[componentId];
 				if (component.HasAnyVariations)

@@ -57,7 +57,7 @@ namespace GTA
 		public VehicleDoor[] ToArray()
 		{
 			var result = new List<VehicleDoor>();
-			foreach (VehicleDoorIndex doorindex in Enum.GetValues(typeof(VehicleDoorIndex)))
+			foreach (VehicleDoorIndex doorindex in Enum.GetValues<VehicleDoorIndex>())
 			{
 				if (Contains(doorindex))
 				{

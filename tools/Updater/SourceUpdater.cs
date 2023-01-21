@@ -55,11 +55,30 @@ namespace Updater
     class GlobalUpdater : ISourceUpdater
     {
         public string TargetFile => null;
-
+        public static HashSet<string> Remove = new()
+        {"\t\t[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]\r\n"};
+        public static Dictionary<string, string> Fixes = new()
+        {
+            { "Enum.GetValues(typeof(VehicleModType))","Enum.GetValues<VehicleModType>()"}  ,
+            { "Enum.GetValues(typeof(VehicleDoorIndex))","Enum.GetValues<VehicleDoorIndex>()"}  ,
+            { "Enum.GetValues(typeof(PedPropAnchorPosition))","Enum.GetValues<PedPropAnchorPosition>()"}  ,
+            { "Enum.GetValues(typeof(PedComponentType))","Enum.GetValues<PedComponentType>()"}  ,
+            { "Enum.GetValues(typeof(VehicleNeonLight))","Enum.GetValues<VehicleNeonLight>()"}  ,
+            { "T GetHelper<T>(string message)", "T GetHelper<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T > (string message)"}
+        };
         public string Update(ReadOnlySpan<char> src)
         {
-            return src.ToString();
-            // return src.ToString().Replace("NativeMemory.VehicleFlag2", "NativeMemory.Types.VehicleFlag2").Replace("NativeMemory.VehicleFlag1", "NativeMemory.Types.VehicleFlag1");
+            var newSource = src.ToString();
+            foreach (var item in Remove)
+            {
+                newSource = newSource.Replace(item, "");
+            }
+
+            foreach (var item in Fixes)
+            {
+                newSource = newSource.Replace(item.Key, item.Value);
+            }
+            return newSource;
         }
     }
 }

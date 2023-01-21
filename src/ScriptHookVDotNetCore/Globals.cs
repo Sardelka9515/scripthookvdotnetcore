@@ -1,4 +1,5 @@
-﻿global using SHVDN;
+﻿global using System.Diagnostics.CodeAnalysis;
+global using SHVDN;
 global using GTA.Native;
 global using static SHVDN.PInvoke;
 global using static SHVDN.ScriptHookV;
