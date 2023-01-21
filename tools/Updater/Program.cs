@@ -152,12 +152,6 @@ namespace Updater
         }
         static unsafe void Main(string[] args)
         {
-            var res = Parse("");
-            foreach (var r in res)
-            {
-                Console.WriteLine(r);
-            }
-            return;
             void Add(string src)
             {
                 var t = File.ReadAllText(src);

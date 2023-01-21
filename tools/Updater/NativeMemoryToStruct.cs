@@ -63,29 +63,13 @@ namespace Updater
             { "NativeMemory.", ""},
             {" PtrToStringUTF8("," Marshaller.PtrToStringUTF8(" },
             { "ReadOnlyCollection","HeapArray"},
-            { "Array.AsReadOnly","Marshaller.ToHeapArray"}
+            { "Array.AsReadOnly","Marshaller.ToHeapArray"},
+            { "unmanaged[Stdcall]","unmanaged[SuppressGCTransition]"}
             };
         static Dictionary<string, string> CaFixes = new()
         {
-            //  { "static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)",
-            // "public static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)" },
-
-
-            { "SetEntityAngularVelocityDelegate setAngularVelocityDelegate;","delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, float*, void> setAngularVelocityDelegate;"},
-
-            {"var getFragInstFunc = CreateGetFragInstDelegateIfNotCreated(vFuncAddr);"
-                ,"var getFragInstFunc = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, FragInst*>)(vFuncAddr);" },
-
-            {"var getEntityAngularVelocity = CreateGetEntityAngularVelocityDelegateIfNotCreated(vFuncAddr);",
-            "var getEntityAngularVelocity = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr,float*>)(vFuncAddr);"},
-
-            {"var setEntityAngularVelocityDelegate = CreateSetEntityAngularVelocityDelegateIfNotCreated(vFuncAddr);",
-            "var setEntityAngularVelocityDelegate = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, float*, void>)(vFuncAddr);"},
-
-            {"var getEventTypeIndexFunc = CreateGetEventTypeIndexDelegateIfNotCreated(eventAddress);"
-            ,"var getEventTypeIndexFunc = (delegate* unmanaged[Stdcall, SuppressGCTransition] <ulong, int>)(eventAddress);"},
-
             { "ReadOnlyCollection","HeapArray"},
+            { "unmanaged[Stdcall]","unmanaged[SuppressGCTransition]"}
         };
         List<MethodDeclarationSyntax> Externals = new();
 
