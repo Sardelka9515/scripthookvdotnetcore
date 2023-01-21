@@ -234,7 +234,7 @@ namespace SHVDN
                         assm = command.Assembly;
                         help.AppendLine($"[{assm}]");
                     }
-                    help.AppendLine($"    ~h~{command.Name}({command.Parameters})~h~ : {command.Help}");
+                    help.AppendLine($"    ~h~{command.Name}~h~ ~s~{command.Parameters} => {command.Help}");
                 }
 
                 PrintInfo(help.ToString());
@@ -248,7 +248,7 @@ namespace SHVDN
         {
             if (_commands.TryGetValue(commandName, out var command))
             {
-                PrintInfo($"~h~{command.Name}({command.Parameters})~h~: {command.Help}");
+                PrintInfo($"~h~{command.Name}~h~ ~s~{command.Parameters} => {command.Help}");
                 return;
             }
         }
@@ -293,9 +293,13 @@ namespace SHVDN
             // Draw blinking cursor
             if (now.Millisecond < 500)
             {
-                float length = GetStringWidth(_input.Substring(0, _cursorPos));
+                var input = _input.Substring(0, _cursorPos);
+                fixed (char* pi = input)
+                {
+                    float length = GetTextLength(pi, input.Length);
+                    DrawRect(25 + (length * CONSOLE_WIDTH) - 5, CONSOLE_HEIGHT + 3, 3, INPUT_HEIGHT - 6, Color.White);
+                }
 
-                DrawRect(25 + (length * CONSOLE_WIDTH) - 5, CONSOLE_HEIGHT + 3, 3, INPUT_HEIGHT - 6, Color.White);
             }
 
             // Draw console history text
@@ -478,9 +482,13 @@ namespace SHVDN
                     var result = default(string);
                     if (_input.Replace(" ", "").Length > command.Length)
                     {
-                        var argv = CommandLineToArgvW(_input.Substring(command.Length), out var argc);
-                        result = Marshal.PtrToStringUni(cmdObj.FuncPtr(argc, argv));
-                        Marshal.FreeHGlobal((IntPtr)argv);
+                        var args = _input.Substring(command.Length);
+                        fixed(char* pStr = args)
+                        {
+                            var argv = Parse(pStr, out var argc);
+                            result = Marshal.PtrToStringUni(cmdObj.FuncPtr(argc, argv));
+                            Marshal.FreeHGlobal((IntPtr)argv);
+                        }
                     }
                     else
                     {
@@ -654,16 +662,32 @@ namespace SHVDN
             for (ulong i = 1; i <= 6; i++)
                 Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, i, 0);
         }
-
-        static unsafe float GetStringWidth(ReadOnlySpan<char> text, float scale = 0.35f, int font = 0)
+        static unsafe float GetTextLength(char* str, int count)
         {
-            Call(Hash.SET_TEXT_FONT, font);
-            Call(Hash.SET_TEXT_SCALE, scale, scale);
-            Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, NativeMemory.CellEmailBcon);
-            PushLongString(text);
-            return Call<float>(Hash.END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, true);
+            var calculated = count;
+            if (calculated > 50) { calculated = 50; }
+            while (Encoding.UTF8.GetByteCount(str, calculated) > 50) { calculated--; };
+            Call((Hash)0x66E0276CC5F6B9DA /*SET_TEXT_FONT*/, 0);
+            Call((Hash)0x07C837F9A01C34C9 /*SET_TEXT_SCALE*/, 0.35f, 0.35f);
+            Call((Hash)0x54CE8AC98E120CAB /*_BEGIN_TEXT_COMMAND_GET_WIDTH*/, NativeMemory.CellEmailBcon);
+            PushString(new ReadOnlySpan<char>(str, calculated));
+            var len = Call<float>((Hash)0x85F061DA64ED2F67 /*_END_TEXT_COMMAND_GET_WIDTH*/, true);
+            if (calculated < count)
+            {
+                len += GetTextLength(str + calculated, count - calculated) - GetMarginLength();
+            }
+            return len;
+        }
+        static unsafe float GetMarginLength()
+        {
+            char* pC = stackalloc char[3] { 'A', '\0', '\0' };
+            var len1 = GetTextLength(pC, 1);
+            pC[1] = 'A';
+            var len2 = GetTextLength(pC, 2);
+            return len1 - (len2 - len1); // [Margin][A] - [A] = [Margin]
         }
 
+        #region Argument parsing
         public static List<string> GetArguments(int argc, char** argv)
         {
             List<string> args = new(argc);
@@ -673,8 +697,140 @@ namespace SHVDN
             }
             return args;
         }
-        [DllImport("shell32.dll", SetLastError = true)]
-        static extern char** CommandLineToArgvW([MarshalAs(UnmanagedType.LPWStr)] string lpCmdLine, out int pNumArgs);
+        [Flags]
+        enum ParseState
+        {
+            Gap = 0,
+            Read = 1,
+            ReadEscape = 2,
+            InQuotes = 4
+        }
+        static char** Parse(char* input, out int argc)
+        {
+            ParseState state = ParseState.Gap;
+            var results = new List<string>();
+            char* currentCommandBuf = stackalloc char[StrLenUni(input)];
+            char thisChar;
+            int inputIndex = 0;
+            int curCmdIndex = 0;
+            while ((thisChar = input[inputIndex]) != 0)
+            {
+                char thisRead = '\0';
+                var previouReading = state.HasFlag(ParseState.Read);
+                switch (thisChar)
+                {
+                    case '\\':
+                        {
+                            if (state.HasFlag(ParseState.ReadEscape))
+                            {
+                                state &= ~ParseState.ReadEscape;
+                                thisRead = thisChar;
+                            }
+                            else
+                            {
+                                state |= ParseState.ReadEscape;
+                                state |= ParseState.Read;
+                            }
+                            break;
+                        }
+                    case '\"':
+                        if (state.HasFlag(ParseState.ReadEscape))
+                        {
+                            thisRead = thisChar;
+                            state &= ~ParseState.ReadEscape;
+                        }
+                        else if (state.HasFlag(ParseState.InQuotes))
+                        {
+                            state &= ~ParseState.InQuotes;
+                        }
+                        else
+                        {
+                            state |= ParseState.InQuotes;
+                            state |= ParseState.Read;
+                        }
+                        break;
+                    case ' ':
+                        if (state.HasFlag(ParseState.ReadEscape))
+                        {
+                            throwEs();
+                        }
+                        else if (state.HasFlag(ParseState.InQuotes))
+                        {
+                            thisRead = thisChar;
+                        }
+                        else
+                        {
+                            state &= ~ParseState.Read;
+                        }
+                        break;
+                    default:
+                        if (state.HasFlag(ParseState.ReadEscape))
+                        {
+                            switch (thisChar)
+                            {
+                                case 'a': thisRead = '\a'; break;
+                                case 'b': thisRead = '\b'; break;
+                                case 'f': thisRead = '\f'; break;
+                                case 'n': thisRead = '\n'; break;
+                                case 'r': thisRead = '\r'; break;
+                                case 't': thisRead = '\t'; break;
+                                case 'v': thisRead = '\v'; break;
+                                default: throwEs(); break;
+                            }
+                        }
+                        else
+                        {
+                            thisRead = thisChar;
+                        }
+                        break;
+                }
+                if (thisRead != '\0')
+                {
+                    state |= ParseState.Read;
+                    currentCommandBuf[curCmdIndex++] = thisRead;
+                }
+                if (previouReading && !state.HasFlag(ParseState.Read))
+                {
+                    currentCommandBuf[curCmdIndex + 1] = '\0';
+                    results.Add(new(currentCommandBuf));
+                    input += inputIndex;
+                    inputIndex = curCmdIndex = 0;
+                }
+                else
+                {
+                    inputIndex++;
+                }
+            }
+            if (state.HasFlag(ParseState.Read))
+            {
+                currentCommandBuf[curCmdIndex] = '\0';
+                results.Add(new(currentCommandBuf));
+            }
+
+            void throwEs()
+            {
+                throw new Exception($"Unrecognized escape sequence: '\\{thisChar}'");
+            }
+            var bufPtrsSize = results.Count * sizeof(IntPtr);
+            var bufArgsSize = results.Sum(x => x.Length + 1) * sizeof(char);
+            char** pStrs = (char**)Marshal.AllocHGlobal(bufPtrsSize + bufArgsSize);
+            char* pCurArg = (char*)(pStrs + results.Count);
+            for (int i = 0; i < results.Count; i++)
+            {
+                var thisArg = results[i];
+                pStrs[i] = pCurArg;
+                var cChars = thisArg.Length + 1;
+                fixed (char* pStr = thisArg)
+                {
+                    var cbThisArg = cChars * sizeof(char);
+                    Buffer.MemoryCopy(pStr, pCurArg, cbThisArg, cbThisArg);
+                }
+                pCurArg += cChars;
+            }
+            argc = results.Count;
+            return pStrs;
+        }
+        #endregion
     }
 
     public unsafe class ConsoleCommand

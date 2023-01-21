@@ -12,8 +12,9 @@ using System.Security.Cryptography;
 
 namespace Updater
 {
-    internal class NativeMemoryUpdater : ISourceUpdater
+    internal class NativeMemoryToStruct : ISourceUpdater
     {
+        public string TargetFile => "NativeMemory.cs";
         static HashSet<string> Move = new()
         {
             "FindPattern",
@@ -50,14 +51,10 @@ namespace Updater
             "getFragInstVFuncCache",
             "CreateGetFragInstDelegateIfNotCreated",
             "getEventTypeIndexDelegateCacheDict",
-            "CreateGetEntityAngularVelocityDelegateIfNotCreated",
             "CreateGetEventTypeIndexDelegateIfNotCreated",
             "setEntityAngularVelocityVFuncCache",
             "CreateSetEntityAngularVelocityDelegateIfNotCreated",
-            // "WeaponModels",
-            // "VehicleModels",
-            // "VehicleModelsGroupedByType",
-            // "PedModels",
+            "CreateGetEntityAngularVelocityDelegateIfNotCreated",
         };
         static Dictionary<string, string> StFixes = new()
         {
@@ -74,20 +71,19 @@ namespace Updater
             // "public static unsafe byte* FindPattern(string pattern, string mask, IntPtr startAddress, ulong size)" },
 
 
-            { "SetEntityAngularVelocityDelegate setAngularVelocityDelegate;","delegate* unmanaged<IntPtr, float*, void> setAngularVelocityDelegate;"},
+            { "SetEntityAngularVelocityDelegate setAngularVelocityDelegate;","delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, float*, void> setAngularVelocityDelegate;"},
 
             {"var getFragInstFunc = CreateGetFragInstDelegateIfNotCreated(vFuncAddr);"
-                ,"var getFragInstFunc = (delegate* unmanaged<IntPtr, FragInst*>)(vFuncAddr);" },
+                ,"var getFragInstFunc = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, FragInst*>)(vFuncAddr);" },
 
             {"var getEntityAngularVelocity = CreateGetEntityAngularVelocityDelegateIfNotCreated(vFuncAddr);",
-            "var getEntityAngularVelocity = (delegate* unmanaged<IntPtr,float*>)(vFuncAddr);"},
+            "var getEntityAngularVelocity = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr,float*>)(vFuncAddr);"},
 
             {"var setEntityAngularVelocityDelegate = CreateSetEntityAngularVelocityDelegateIfNotCreated(vFuncAddr);",
-            "var setEntityAngularVelocityDelegate = (delegate* unmanaged<IntPtr, float*, void>)(vFuncAddr);"},
+            "var setEntityAngularVelocityDelegate = (delegate* unmanaged[Stdcall, SuppressGCTransition] <IntPtr, float*, void>)(vFuncAddr);"},
 
             {"var getEventTypeIndexFunc = CreateGetEventTypeIndexDelegateIfNotCreated(eventAddress);"
-            ,"var getEventTypeIndexFunc = (delegate* unmanaged<ulong, int>)(eventAddress);"},
-
+            ,"var getEventTypeIndexFunc = (delegate* unmanaged[Stdcall, SuppressGCTransition] <ulong, int>)(eventAddress);"},
 
             { "ReadOnlyCollection","HeapArray"},
         };
@@ -98,7 +94,6 @@ namespace Updater
         NamespaceDeclarationSyntax nameSpace;
         ClassDeclarationSyntax nativeMemoryClass;
         string newSource = null;
-        public string TargetFile => "NativeMemory.cs";
         bool NeedMove(MemberDeclarationSyntax mb)
         {
             if (mb is MethodDeclarationSyntax m)
@@ -175,6 +170,7 @@ namespace Updater
                     if (mb is DelegateDeclarationSyntax dd)
                     {
                         var d = new DelegateConverter(dd);
+                        d.CallConv = "[Stdcall, SuppressGCTransition] ";
                         delegates.Add(dd.Identifier.ToString(), d);
                         var old = $" {dd.Identifier} ";
                         var @new = $" {d.ToFnPtr()} ";
@@ -325,18 +321,40 @@ namespace SHVDN
 
     public static unsafe class NativeMemory
     {{
-        public const string StructSinature;
-        private static object _ctorLock = new object();
+        public const string StructSinature = ""SHVDN.NativeMemory.98cd9e030a8f81d45cc9d2e87da5002117f3266777a45a455f9a51fcc7195640"";
+        private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSinature);
         static NativeMemory()
         {{
-            lock (_ctorLock)
+            try
             {{
+                _nativeMemoryMutex.WaitOne();
+                // Safeguard against repeated static constructor invocation
                 if (_pNativeMemory != null)
                 {{
                     return;
                 }}
-                var ns = new NativeMemoryStruct();
-                _pNativeMemory = &ns;
+                // Return if the struct has already been initialized
+                else if ((_pNativeMemory = (NativeMemoryStruct*)Core.GetPtr(StructSinature)) != null)
+                {{
+                    Logger.Debug($""Using NativeMemoryStruct at address {{(IntPtr)_pNativeMemory}}"");
+                    return;
+                }}
+
+                var temp = new NativeMemoryStruct();
+                // Need to manually allocate it on unmanaged heap so it doesn't get popped from the stack (or GC'd?)
+                _pNativeMemory = (NativeMemoryStruct*)AllocHGlobal(sizeof(NativeMemoryStruct));
+                *_pNativeMemory = temp;
+                Core.SetPtr(StructSinature, (ulong)_pNativeMemory);
+                Logger.Debug($""Initialized NativeMemoryStruct at address {{(IntPtr)_pNativeMemory}}"");
+            }}
+            catch (Exception ex)
+            {{
+                Logger.Error($""NativeMemory init error: {{ex}}"");
+                throw;
+            }}
+            finally
+            {{
+                _nativeMemoryMutex.ReleaseMutex();
             }}
         }}
 
@@ -392,6 +410,7 @@ namespace SHVDN
         public string ReturnType;
         public string Name;
         public string Modifiers;
+        public string CallConv;
         public DelegateConverter(DelegateDeclarationSyntax dd)
         {
             Parameters = dd.ParameterList.Parameters.Select(x => (x.Type.ToString(), x.Identifier.ToString())).ToList();
@@ -407,7 +426,7 @@ namespace SHVDN
         {
             var ps = string.Join(',', Parameters.Select(x => x.Item1));
             var types = string.IsNullOrEmpty(ps) ? ReturnType : $"{ps},{ReturnType}";
-            return $"delegate* unmanaged<{types}>";
+            return $"delegate* unmanaged{CallConv}<{types}>";
         }
     }
 }

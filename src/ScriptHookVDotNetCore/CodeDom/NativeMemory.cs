@@ -26,25 +26,25 @@ namespace SHVDN
             IntPtr startAddressToSearch;
             // Get relative address and add it to the instruction address.
             address = FindPattern("\x74\x21\x48\x8B\x48\x20\x48\x85\xC9\x74\x18\x48\x8B\xD6\xE8", "xxxxxxxxxxxxxxx") - 10;
-            GetPtfxAddressFunc = (delegate* unmanaged<int, ulong> )(new IntPtr(*(int*)(address) + address + 4));
+            GetPtfxAddressFunc = (delegate* unmanaged[Stdcall]<int, ulong> )(new IntPtr(*(int*)(address) + address + 4));
             address = FindPattern("\xE8\x00\x00\x00\x00\x48\x8B\xD8\x48\x85\xC0\x74\x2E\x48\x83\x3D", "x????xxxxxxxxxxx");
-            GetEntityAddressFunc = (delegate* unmanaged<int, ulong> )(new IntPtr(*(int*)(address + 1) + address + 5));
+            GetEntityAddressFunc = (delegate* unmanaged[Stdcall]<int, ulong> )(new IntPtr(*(int*)(address + 1) + address + 5));
             address = FindPattern("\xB2\x01\xE8\x00\x00\x00\x00\x48\x85\xC0\x74\x1C\x8A\x88", "xxx????xxxxxxx");
-            GetPlayerAddressFunc = (delegate* unmanaged<int, ulong> )(new IntPtr(*(int*)(address + 3) + address + 7));
+            GetPlayerAddressFunc = (delegate* unmanaged[Stdcall]<int, ulong> )(new IntPtr(*(int*)(address + 3) + address + 7));
             address = FindPattern("\x48\xF7\xF9\x49\x8B\x48\x08\x48\x63\xD0\xC1\xE0\x08\x0F\xB6\x1C\x11\x03\xD8", "xxxxxxxxxxxxxxxxxxx");
-            AddEntityToPoolFunc = (delegate* unmanaged<ulong, int> )(new IntPtr(address - 0x68));
+            AddEntityToPoolFunc = (delegate* unmanaged[Stdcall]<ulong, int> )(new IntPtr(address - 0x68));
             address = FindPattern("\x48\x8B\xDA\xE8\x00\x00\x00\x00\xF3\x0F\x10\x44\x24", "xxxx????xxxxx");
-            EntityPosFunc = (delegate* unmanaged<ulong, float*, ulong> )(new IntPtr((address - 6)));
+            EntityPosFunc = (delegate* unmanaged[Stdcall]<ulong, float*, ulong> )(new IntPtr((address - 6)));
             address = FindPattern("\x0F\x85\x00\x00\x00\x00\x48\x8B\x4B\x20\xE8\x00\x00\x00\x00\x48\x8B\xC8", "xx????xxxxx????xxx");
-            EntityModel1Func = (delegate* unmanaged<ulong, ulong> )(new IntPtr((*(int*)address + 11) + address + 15));
+            EntityModel1Func = (delegate* unmanaged[Stdcall]<ulong, ulong> )(new IntPtr((*(int*)address + 11) + address + 15));
             address = FindPattern("\x45\x33\xC9\x3B\x05", "xxxxx");
-            EntityModel2Func = (delegate* unmanaged<ulong, ulong> )(new IntPtr(address - 0x46));
+            EntityModel2Func = (delegate* unmanaged[Stdcall]<ulong, ulong> )(new IntPtr(address - 0x46));
             // Find handling data functions
             address = FindPattern("\x0F\x84\x00\x00\x00\x00\x8B\x8B\x00\x00\x00\x00\xE8\x00\x00\x00\x00\xBA\x09\x00\x00\x00", "xx????xx????x????xxxxx");
-            GetHandlingDataByIndex = (delegate* unmanaged<int, ulong> )(new IntPtr(*(int*)(address + 13) + address + 17));
+            GetHandlingDataByIndex = (delegate* unmanaged[Stdcall]<int, ulong> )(new IntPtr(*(int*)(address + 13) + address + 17));
             handlingIndexOffsetInModelInfo = *(int*)(address + 8);
             address = FindPattern("\xE8\x00\x00\x00\x00\x48\x85\xC0\x75\x5A\xB2\x01", "x????xxxxxxx");
-            GetHandlingDataByHash = (delegate* unmanaged<IntPtr, ulong> )(new IntPtr(*(int*)(address + 1) + address + 5));
+            GetHandlingDataByHash = (delegate* unmanaged[Stdcall]<IntPtr, ulong> )(new IntPtr(*(int*)(address + 1) + address + 5));
             // Find entity pools and interior proxy pool
             address = FindPattern("\x48\x8B\x05\x00\x00\x00\x00\x41\x0F\xBF\xC8\x0F\xBF\x40\x10", "xxx????xxxxxxxx");
             PedPoolAddress = (ulong*)(*(int*)(address + 3) + address + 7);
@@ -77,21 +77,21 @@ namespace SHVDN
 
             // Find euphoria functions
             address = FindPattern("\x40\x53\x48\x83\xEC\x20\x83\x61\x0C\x00\x44\x89\x41\x08\x49\x63\xC0", "xxxxxxxxxxxxxxxxx");
-            InitMessageMemoryFunc = (delegate* unmanaged<ulong, ulong, int, ulong> )(new IntPtr(address));
+            InitMessageMemoryFunc = (delegate* unmanaged[Stdcall]<ulong, ulong, int, ulong> )(new IntPtr(address));
             address = FindPattern("\x41\x83\xFA\xFF\x74\x4A\x48\x85\xD2\x74\x19", "xxxxxxxxxxx") - 0xE;
-            SendMessageToPedFunc = (delegate* unmanaged<ulong, IntPtr, ulong, void> )(new IntPtr(address));
+            SendMessageToPedFunc = (delegate* unmanaged[Stdcall]<ulong, IntPtr, ulong, void> )(new IntPtr(address));
             address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8B\xF8", "xxxx?xxxxxxxxxxxxxxx");
-            SetNmIntAddress = (delegate* unmanaged<ulong, IntPtr, int, byte> )(new IntPtr(address));
+            SetNmIntAddress = (delegate* unmanaged[Stdcall]<ulong, IntPtr, int, byte> )(new IntPtr(address));
             address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8A\xF8", "xxxx?xxxxxxxxxxxxxxx");
-            SetNmBoolAddress = (delegate* unmanaged<ulong, IntPtr, bool, byte> )(new IntPtr(address));
+            SetNmBoolAddress = (delegate* unmanaged[Stdcall]<ulong, IntPtr, bool, byte> )(new IntPtr(address));
             address = FindPattern("\x40\x53\x48\x83\xEC\x30\x48\x8B\xD9\x48\x63\x49\x0C", "xxxxxxxxxxxxx");
-            SetNmFloatAddress = (delegate* unmanaged<ulong, IntPtr, float, byte> )(new IntPtr(address));
+            SetNmFloatAddress = (delegate* unmanaged[Stdcall]<ulong, IntPtr, float, byte> )(new IntPtr(address));
             address = FindPattern("\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x49\x8B\xE8", "xxxxxxxxxxxxxxx") - 15;
-            SetNmStringAddress = (delegate* unmanaged<ulong, IntPtr, IntPtr, byte> )(new IntPtr(address));
+            SetNmStringAddress = (delegate* unmanaged[Stdcall]<ulong, IntPtr, IntPtr, byte> )(new IntPtr(address));
             address = FindPattern("\x40\x53\x48\x83\xEC\x40\x48\x8B\xD9\x48\x63\x49\x0C", "xxxxxxxxxxxxx");
-            SetNmVector3Address = (delegate* unmanaged<ulong, IntPtr, float, float, float, byte> )(new IntPtr(address));
+            SetNmVector3Address = (delegate* unmanaged[Stdcall]<ulong, IntPtr, float, float, float, byte> )(new IntPtr(address));
             address = FindPattern("\x83\x79\x10\xFF\x7E\x1D\x48\x63\x41\x10", "xxxxxxxxxx");
-            GetActiveTaskFunc = (delegate* unmanaged<ulong, CTask*> )(new IntPtr(address));
+            GetActiveTaskFunc = (delegate* unmanaged[Stdcall]<ulong, CTask*> )(new IntPtr(address));
             address = FindPattern("\x75\xEF\x48\x8B\x5C\x24\x30\xB8\x00\x00\x00\x00", "xxxxxxxx????");
             if (address != null)
             {
@@ -109,10 +109,10 @@ namespace SHVDN
             address = FindPattern("\x84\xC0\x74\x34\x48\x8D\x0D\x00\x00\x00\x00\x48\x8B\xD3", "xxxxxxx????xxx");
             GetLabelTextByHashAddress = (ulong)(*(int*)(address + 7) + address + 11);
             address = FindPattern("\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x18\x89\x54\x24\x10\x56\x57\x41\x56\x48\x83\xEC\x20", "xxxxxxxxxxxxxxxxxxxxxx");
-            GetLabelTextByHashFunc = (delegate* unmanaged<ulong, int, ulong> )(new IntPtr(address));
+            GetLabelTextByHashFunc = (delegate* unmanaged[Stdcall]<ulong, int, ulong> )(new IntPtr(address));
             address = FindPattern("\x8A\x4C\x24\x60\x8B\x50\x10\x44\x8A\xCE", "xxxxxxxxxx");
             CheckpointPoolAddress = (ulong*)(*(int*)(address + 17) + address + 21);
-            GetCGameScriptHandlerAddressFunc = (delegate* unmanaged<ulong> )(new IntPtr(*(int*)(address - 19) + address - 15));
+            GetCGameScriptHandlerAddressFunc = (delegate* unmanaged[Stdcall]<ulong> )(new IntPtr(*(int*)(address - 19) + address - 15));
             address = FindPattern("\x4C\x8D\x05\x00\x00\x00\x00\x0F\xB7\xC1", "xxx????xxx");
             RadarBlipPoolAddress = (ulong*)(*(int*)(address + 3) + address + 7);
             address = FindPattern("\xFF\xC6\x49\x83\xC6\x08\x3B\x35\x00\x00\x00\x00\x7C\x9B", "xxxxxxxx????xx");
@@ -124,7 +124,7 @@ namespace SHVDN
             address = FindPattern("\x41\xB8\x06\x00\x00\x00\x8B\xD0\x89\x05\x00\x00\x00\x00\x41\x8D\x48\xFD", "xxxxxxxxxx????xxxx");
             CenterRadarBlipHandleAddress = (int*)(*(int*)(address + 10) + address + 14);
             address = FindPattern("\x33\xDB\xE8\x00\x00\x00\x00\x48\x85\xC0\x74\x07\x48\x8B\x40\x20\x8B\x58\x18", "xxx????xxxxxxxxxxxx");
-            GetLocalPlayerPedAddressFunc = (delegate* unmanaged<ulong> )(new IntPtr(*(int*)(address + 3) + address + 7));
+            GetLocalPlayerPedAddressFunc = (delegate* unmanaged[Stdcall]<ulong> )(new IntPtr(*(int*)(address + 3) + address + 7));
             address = FindPattern("\x4C\x8D\x05\x00\x00\x00\x00\x74\x07\xB8\x00\x00\x00\x00\xEB\x2D\x33\xC0", "xxx????xxx????xxxx");
             waypointInfoArrayStartAddress = (ulong*)(*(int*)(address + 3) + address + 7);
             if (waypointInfoArrayStartAddress != null)
@@ -137,13 +137,13 @@ namespace SHVDN
             address = FindPattern("\x48\x8D\x4C\x24\x20\x41\xB8\x02\x00\x00\x00\xE8\x00\x00\x00\x00\xF3", "xxxxxxxxxxxx????x");
             if (address != null)
             {
-                GetRotationFromMatrixFunc = (delegate* unmanaged<float*, ulong, int, float*> )(new IntPtr(*(int*)(address + 12) + address + 16));
+                GetRotationFromMatrixFunc = (delegate* unmanaged[Stdcall]<float*, ulong, int, float*> )(new IntPtr(*(int*)(address + 12) + address + 16));
             }
 
             address = FindPattern("\xF3\x0F\x11\x4D\x38\xF3\x0F\x11\x45\x3C\xE8\x00\x00\x00\x00", "xxxxxxxxxxx????");
             if (address != null)
             {
-                GetQuaternionFromMatrixFunc = (delegate* unmanaged<float*, ulong, int> )(new IntPtr(*(int*)(address + 11) + address + 15));
+                GetQuaternionFromMatrixFunc = (delegate* unmanaged[Stdcall]<float*, ulong, int> )(new IntPtr(*(int*)(address + 11) + address + 15));
             }
 
             address = FindPattern("\x48\x8B\x42\x20\x48\x85\xC0\x74\x09\xF3\x0F\x10\x80", "xxxxxxxxxxxxx");
@@ -173,7 +173,7 @@ namespace SHVDN
             }
 
             address = FindPattern("\x48\x8B\x0B\x33\xD2\xE8\x00\x00\x00\x00\x89\x03", "xxxxxx????xx");
-            GetHashKeyFunc = (delegate* unmanaged<IntPtr, uint, uint> )(new IntPtr(*(int*)(address + 6) + address + 10));
+            GetHashKeyFunc = (delegate* unmanaged[Stdcall]<IntPtr, uint, uint> )(new IntPtr(*(int*)(address + 6) + address + 10));
             address = FindPattern("\x74\x11\x8B\xD1\x48\x8D\x0D\x00\x00\x00\x00\x45\x33\xC0", "xxxxxxx????xxx");
             cursorSpriteAddr = (int*)(*(int*)(address - 4) + address);
             address = FindPattern("\x48\x63\xC1\x48\x8D\x0D\x00\x00\x00\x00\xF3\x0F\x10\x04\x81\xF3\x0F\x11\x05\x00\x00\x00\x00", "xxxxxx????xxxxxxxxx????");
@@ -476,7 +476,7 @@ namespace SHVDN
             address = FindPattern("\x74\x21\x8B\xD7\x48\x8B\xCB\xE8\x00\x00\x00\x00\x48\x8B\xC8\xE8\x00\x00\x00\x00", "xxxxxxxx????xxxx????");
             if (address != null)
             {
-                FixVehicleWheelFunc = (delegate* unmanaged<IntPtr, void> )(new IntPtr(*(int*)(address + 16) + address + 20));
+                FixVehicleWheelFunc = (delegate* unmanaged[Stdcall]<IntPtr, void> )(new IntPtr(*(int*)(address + 16) + address + 20));
                 address = FindPattern("\x80\xA1\x00\x00\x00\x00\xFD", "xx????x", new IntPtr(address + 20));
                 ShouldShowOnlyVehicleTiresWithPositiveHealthOffset = *(int*)(address + 2);
             }
@@ -484,18 +484,18 @@ namespace SHVDN
             address = FindPattern("\x4C\x8B\x81\x28\x01\x00\x00\x0F\x29\x70\xE8\x0F\x29\x78\xD8", "xxxxxxxxxxxxxxx");
             if (address != null)
             {
-                PunctureVehicleTireNewFunc = (delegate* unmanaged<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> )(new IntPtr((long)(address - 0x10)));
+                PunctureVehicleTireNewFunc = (delegate* unmanaged[Stdcall]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> )(new IntPtr((long)(address - 0x10)));
                 address = FindPattern("\x48\x83\xEC\x50\x48\x8B\x81\x00\x00\x00\x00\x48\x8B\xF1\xF6\x80", "xxxxxxx????xxxxx");
-                BurstVehicleTireOnRimNewFunc = (delegate* unmanaged<IntPtr, void> )(new IntPtr((long)(address - 0xB)));
+                BurstVehicleTireOnRimNewFunc = (delegate* unmanaged[Stdcall]<IntPtr, void> )(new IntPtr((long)(address - 0xB)));
             }
             else
             {
                 address = FindPattern("\x41\xF6\x81\x00\x00\x00\x00\x20\x0F\x29\x70\xE8\x0F\x29\x78\xD8\x49\x8B\xF9", "xxx????xxxxxxxxxxxx");
                 if (address != null)
                 {
-                    PunctureVehicleTireOldFunc = (delegate* unmanaged<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> )(new IntPtr((long)(address - 0x14)));
+                    PunctureVehicleTireOldFunc = (delegate* unmanaged[Stdcall]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> )(new IntPtr((long)(address - 0x14)));
                     address = FindPattern("\x48\x83\xEC\x50\xF6\x82\x00\x00\x00\x00\x20\x48\x8B\xF2\x48\x8B\xE9", "xxxxxx????xxxxxxx");
-                    BurstVehicleTireOnRimOldFunc = (delegate* unmanaged<IntPtr, IntPtr, void> )(new IntPtr((long)(address - 0x10)));
+                    BurstVehicleTireOnRimOldFunc = (delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void> )(new IntPtr((long)(address - 0x10)));
                 }
             }
 
@@ -629,14 +629,14 @@ namespace SHVDN
             address = FindPattern("\x39\x70\x10\x75\x17\x40\x84\xED\x74\x09\x33\xD2\xE8", "xxxxxxxxxxxxx");
             if (address != null)
             {
-                ExplodeProjectileFunc = (delegate* unmanaged<IntPtr, int, void> )(new IntPtr(*(int*)(address + 13) + address + 17));
+                ExplodeProjectileFunc = (delegate* unmanaged[Stdcall]<IntPtr, int, void> )(new IntPtr(*(int*)(address + 13) + address + 17));
             }
 
             address = FindPattern("\x0F\xBE\x5E\x06\x48\x8B\xCF\xFF\x50\x00\x8B\xD3\x48\x8B\xC8\xE8\x00\x00\x00\x00\x8B\x4E\x00", "xxxxxxxxx?xxxxxx????xx?");
             if (address != null)
             {
                 getFragInstVFuncOffset = *(sbyte*)(address + 9);
-                detachFragmentPartByIndexFunc = (delegate* unmanaged<FragInst*, int, FragInst*> )(new IntPtr(*(int*)(address + 16) + address + 20));
+                detachFragmentPartByIndexFunc = (delegate* unmanaged[Stdcall]<FragInst*, int, FragInst*> )(new IntPtr(*(int*)(address + 16) + address + 20));
             }
 
             address = FindPattern("\x00\x8B\x0D\x00\x00\x00\x00\x00\x83\x64\x00\x00\x00\x00\x0F\xB7\xD1\x00\x33\xC9\xE8", "?xx?????xx????xxx?xxx");
@@ -773,9 +773,9 @@ namespace SHVDN
 
         internal ulong* CameraPoolAddress;
         internal ulong* GameplayCameraAddress;
-        internal delegate* unmanaged<IntPtr, uint, uint> GetHashKeyFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, uint, uint> GetHashKeyFunc;
         internal ulong GetLabelTextByHashAddress;
-        internal delegate* unmanaged<ulong, int, ulong> GetLabelTextByHashFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, int, ulong> GetLabelTextByHashFunc;
         internal int* cursorSpriteAddr;
         public int CursorSprite
         {
@@ -827,8 +827,8 @@ namespace SHVDN
             }
         }
 
-        internal delegate* unmanaged<float*, ulong, int, float*> GetRotationFromMatrixFunc;
-        internal delegate* unmanaged<float*, ulong, int> GetQuaternionFromMatrixFunc;
+        internal delegate* unmanaged[Stdcall]<float*, ulong, int, float*> GetRotationFromMatrixFunc;
+        internal delegate* unmanaged[Stdcall]<float*, ulong, int> GetQuaternionFromMatrixFunc;
         public int EntityMaxHealthOffset { get; }
 
         public int SetAngularVelocityVFuncOfEntityOffset { get; }
@@ -919,11 +919,11 @@ namespace SHVDN
 
         public int FirstVehicleFlagsOffset { get; }
 
-        internal delegate* unmanaged<IntPtr, void> FixVehicleWheelFunc;
-        internal delegate* unmanaged<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc;
-        internal delegate* unmanaged<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc;
-        internal delegate* unmanaged<IntPtr, void> BurstVehicleTireOnRimNewFunc;
-        internal delegate* unmanaged<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, void> FixVehicleWheelFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, void> BurstVehicleTireOnRimNewFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc;
         public int VehicleWheelSteeringLimitMultiplierOffset { get; }
 
         public int VehicleWheelTemperatureOffset { get; }
@@ -1011,8 +1011,8 @@ namespace SHVDN
 
         public HeapArray<int> PedModels { get; }
 
-        internal delegate* unmanaged<IntPtr, ulong> GetHandlingDataByHash;
-        internal delegate* unmanaged<int, ulong> GetHandlingDataByIndex;
+        internal delegate* unmanaged[Stdcall]<IntPtr, ulong> GetHandlingDataByHash;
+        internal delegate* unmanaged[Stdcall]<int, ulong> GetHandlingDataByIndex;
         internal ulong* PedPoolAddress;
         internal ulong* EntityPoolAddress;
         internal ulong* ObjectPoolAddress;
@@ -1024,28 +1024,28 @@ namespace SHVDN
         internal ulong* InteriorProxyPoolAddress;
         internal ulong* ProjectilePoolAddress;
         internal int* ProjectileCountAddress;
-        internal delegate* unmanaged<ulong, float*, ulong> EntityPosFunc;
-        internal delegate* unmanaged<ulong, ulong> EntityModel1Func;
-        internal delegate* unmanaged<ulong, ulong> EntityModel2Func;
-        internal delegate* unmanaged<ulong, int> AddEntityToPoolFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, float*, ulong> EntityPosFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, ulong> EntityModel1Func;
+        internal delegate* unmanaged[Stdcall]<ulong, ulong> EntityModel2Func;
+        internal delegate* unmanaged[Stdcall]<ulong, int> AddEntityToPoolFunc;
         internal ulong* RadarBlipPoolAddress;
         internal int* PossibleRadarBlipCountAddress;
         internal int* UnkFirstRadarBlipIndexAddress;
         internal int* NorthRadarBlipHandleAddress;
         internal int* CenterRadarBlipHandleAddress;
         internal ulong* CheckpointPoolAddress;
-        internal delegate* unmanaged<ulong> GetCGameScriptHandlerAddressFunc;
+        internal delegate* unmanaged[Stdcall]<ulong> GetCGameScriptHandlerAddressFunc;
         internal ulong* waypointInfoArrayStartAddress;
         internal ulong* waypointInfoArrayEndAddress;
-        internal delegate* unmanaged<ulong> GetLocalPlayerPedAddressFunc;
-        internal delegate* unmanaged<int, ulong> GetPtfxAddressFunc;
-        internal delegate* unmanaged<int, ulong> GetEntityAddressFunc;
-        internal delegate* unmanaged<int, ulong> GetPlayerAddressFunc;
+        internal delegate* unmanaged[Stdcall]<ulong> GetLocalPlayerPedAddressFunc;
+        internal delegate* unmanaged[Stdcall]<int, ulong> GetPtfxAddressFunc;
+        internal delegate* unmanaged[Stdcall]<int, ulong> GetEntityAddressFunc;
+        internal delegate* unmanaged[Stdcall]<int, ulong> GetPlayerAddressFunc;
         public int ProjectileAmmoInfoOffset { get; }
 
         public int ProjectileOwnerOffset { get; }
 
-        internal delegate* unmanaged<IntPtr, int, void> ExplodeProjectileFunc;
+        internal delegate* unmanaged[Stdcall]<IntPtr, int, void> ExplodeProjectileFunc;
         public ulong* InteriorProxyPtrFromGameplayCamAddress { get; }
 
         public int InteriorInstPtrInInteriorProxyOffset { get; }
@@ -1059,18 +1059,18 @@ namespace SHVDN
         internal int weaponAttachPointElementSize;
         internal int weaponInfoHumanNameHashOffset;
         internal int getFragInstVFuncOffset;
-        internal delegate* unmanaged<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc;
+        internal delegate* unmanaged[Stdcall]<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc;
         internal ulong** phSimulatorInstPtr;
         internal int colliderCapacityOffset;
         internal int colliderCountOffset;
-        internal delegate* unmanaged<ulong, IntPtr, int, byte> SetNmIntAddress;
-        internal delegate* unmanaged<ulong, IntPtr, bool, byte> SetNmBoolAddress;
-        internal delegate* unmanaged<ulong, IntPtr, float, byte> SetNmFloatAddress;
-        internal delegate* unmanaged<ulong, IntPtr, IntPtr, byte> SetNmStringAddress;
-        internal delegate* unmanaged<ulong, IntPtr, float, float, float, byte> SetNmVector3Address;
-        internal delegate* unmanaged<ulong, CTask*> GetActiveTaskFunc;
-        internal delegate* unmanaged<ulong, ulong, int, ulong> InitMessageMemoryFunc;
-        internal delegate* unmanaged<ulong, IntPtr, ulong, void> SendMessageToPedFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, int, byte> SetNmIntAddress;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, bool, byte> SetNmBoolAddress;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, float, byte> SetNmFloatAddress;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, IntPtr, byte> SetNmStringAddress;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, float, float, float, byte> SetNmVector3Address;
+        internal delegate* unmanaged[Stdcall]<ulong, CTask*> GetActiveTaskFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, ulong, int, ulong> InitMessageMemoryFunc;
+        internal delegate* unmanaged[Stdcall]<ulong, IntPtr, ulong, void> SendMessageToPedFunc;
         internal int fragInstNMGtaOffset;
         internal int cTaskNMScriptControlTypeIndex;
         internal int cEventSwitch2NMTypeIndex;
@@ -1078,19 +1078,40 @@ namespace SHVDN
 
     public static unsafe class NativeMemory
     {
-        public const string StructSinature = "SHVDN.NativeMemory.9602d545fec51b5f7bbceb17ca8eee5cd66074a5b0331b5a2f7de769c9b7fee5";
-        private static object _ctorLock = new object ();
+        public const string StructSinature = "SHVDN.NativeMemory.98cd9e030a8f81d45cc9d2e87da5002117f3266777a45a455f9a51fcc7195640";
+        private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSinature);
         static NativeMemory()
         {
-            lock (_ctorLock)
+            try
             {
+                _nativeMemoryMutex.WaitOne();
+                // Safeguard against repeated static constructor invocation
                 if (_pNativeMemory != null)
                 {
                     return;
                 }
+                // Return if the struct has already been initialized
+                else if ((_pNativeMemory = (NativeMemoryStruct*)Core.GetPtr(StructSinature)) != null)
+                {
+                    Logger.Debug($"Using NativeMemoryStruct at address {(IntPtr)_pNativeMemory}");
+                    return;
+                }
 
-                var ns = new NativeMemoryStruct();
-                _pNativeMemory = &ns;
+                var temp = new NativeMemoryStruct();
+                // Need to manually allocate it on unmanaged heap so it doesn't get popped from the stack (or GC'd?)
+                _pNativeMemory = (NativeMemoryStruct*)AllocHGlobal(sizeof(NativeMemoryStruct));
+                *_pNativeMemory = temp;
+                Core.SetPtr(StructSinature, (ulong)_pNativeMemory);
+                Logger.Debug($"Initialized NativeMemoryStruct at address {(IntPtr)_pNativeMemory}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"NativeMemory init error: {ex}");
+                throw;
+            }
+            finally
+            {
+                _nativeMemoryMutex.ReleaseMutex();
             }
         }
 
@@ -1454,10 +1475,10 @@ namespace SHVDN
         {
 #region Fields
             IntPtr entityAddress;
-            delegate* unmanaged<IntPtr, float*, void> setAngularVelocityDelegate;
+            delegate* unmanaged[Stdcall]<IntPtr, float*, void> setAngularVelocityDelegate;
             float x, y, z;
 #endregion
-            internal SetEntityAngularVelocityTask(IntPtr entityAddress, delegate* unmanaged<IntPtr, float*, void> vFuncDelegate, float x, float y, float z)
+            internal SetEntityAngularVelocityTask(IntPtr entityAddress, delegate* unmanaged[Stdcall]<IntPtr, float*, void> vFuncDelegate, float x, float y, float z)
             {
                 this.entityAddress = entityAddress;
                 this.setAngularVelocityDelegate = vFuncDelegate;
@@ -1479,14 +1500,14 @@ namespace SHVDN
         public static float* GetEntityAngularVelocity(IntPtr entityAddress)
         {
             var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)GetAngularVelocityVFuncOfEntityOffset);
-            var getEntityAngularVelocity = (delegate* unmanaged<IntPtr, float*> )(vFuncAddr);
+            var getEntityAngularVelocity = (delegate* unmanaged[Stdcall]<IntPtr, float*> )(vFuncAddr);
             return getEntityAngularVelocity(entityAddress);
         }
 
         public static void SetEntityAngularVelocity(IntPtr entityAddress, float x, float y, float z)
         {
             var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)SetAngularVelocityVFuncOfEntityOffset);
-            var setEntityAngularVelocityDelegate = (delegate* unmanaged<IntPtr, float*, void> )(vFuncAddr);
+            var setEntityAngularVelocityDelegate = (delegate* unmanaged[Stdcall]<IntPtr, float*, void> )(vFuncAddr);
             var task = new SetEntityAngularVelocityTask(entityAddress, setEntityAngularVelocityDelegate, x, y, z);
             ScriptDomain.CurrentDomain.ExecuteTask(task);
         }
@@ -1990,13 +2011,19 @@ namespace SHVDN
         internal struct EntityPool
         {
             [FieldOffset(0x10)]
-            internal uint num1;
+            internal uint maxCount;
+            [FieldOffset(0x14)]
+            internal int itemSize;
+            [FieldOffset(0x18)]
+            internal int firstEmptySlot;
+            [FieldOffset(0x1C)]
+            internal int emptySlots;
             [FieldOffset(0x20)]
-            internal uint num2;
+            internal uint itemCount;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             internal bool IsFull()
             {
-                return num1 - (num2 & 0x3FFFFFFF) <= 256;
+                return maxCount - (itemCount & 0x3FFFFFFF) <= 256;
             }
         }
 
@@ -3473,7 +3500,7 @@ namespace SHVDN
         private static FragInst* GetFragInstAddressOfEntity(IntPtr entityAddress)
         {
             var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)getFragInstVFuncOffset);
-            var getFragInstFunc = (delegate* unmanaged<IntPtr, FragInst*> )(vFuncAddr);
+            var getFragInstFunc = (delegate* unmanaged[Stdcall]<IntPtr, FragInst*> )(vFuncAddr);
             return getFragInstFunc(entityAddress);
         }
 
@@ -3498,7 +3525,7 @@ namespace SHVDN
             ulong fragInstNMGtaAddress = *(ulong*)(pedAddress + fragInstNMGtaOffset);
             if (phInstGtaAddress == fragInstNMGtaAddress && !IsPedInjured((byte*)pedAddress))
             {
-                var funcUlongIntDelegate = (delegate* unmanaged<ulong, int> )(new IntPtr((long)*(ulong*)(*(ulong*)fragInstNMGtaAddress + 0x98)));
+                var funcUlongIntDelegate = (delegate* unmanaged[Stdcall]<ulong, int> )(new IntPtr((long)*(ulong*)(*(ulong*)fragInstNMGtaAddress + 0x98)));
                 if (funcUlongIntDelegate(fragInstNMGtaAddress) != -1)
                 {
                     var PedIntelligenceAddr = *(ulong*)(pedAddress + PedIntelligenceOffset);
@@ -3515,7 +3542,7 @@ namespace SHVDN
                             var eventAddress = *(ulong*)((byte*)PedIntelligenceAddr + CEventStackOffset + 8 * ((i + *(int*)((byte*)PedIntelligenceAddr + (CEventCountOffset - 4)) + 1) % 16));
                             if (eventAddress != 0)
                             {
-                                var getEventTypeIndexFunc = (delegate* unmanaged<ulong, int> )(eventAddress);
+                                var getEventTypeIndexFunc = (delegate* unmanaged[Stdcall]<ulong, int> )(eventAddress);
                                 if (getEventTypeIndexFunc(eventAddress) == cEventSwitch2NMTypeIndex)
                                 {
                                     var taskInEvent = *(CTask**)(eventAddress + 0x28);
@@ -3618,9 +3645,9 @@ namespace SHVDN
 #region Bridges
         static ulong* CameraPoolAddress => _pNativeMemory->CameraPoolAddress;
         static ulong* GameplayCameraAddress => _pNativeMemory->GameplayCameraAddress;
-        static delegate* unmanaged<IntPtr, uint, uint> GetHashKeyFunc => _pNativeMemory->GetHashKeyFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, uint, uint> GetHashKeyFunc => _pNativeMemory->GetHashKeyFunc;
         static ulong GetLabelTextByHashAddress => _pNativeMemory->GetLabelTextByHashAddress;
-        static delegate* unmanaged<ulong, int, ulong> GetLabelTextByHashFunc => _pNativeMemory->GetLabelTextByHashFunc;
+        static delegate* unmanaged[Stdcall]<ulong, int, ulong> GetLabelTextByHashFunc => _pNativeMemory->GetLabelTextByHashFunc;
         static int* cursorSpriteAddr => _pNativeMemory->cursorSpriteAddr;
         public static int CursorSprite => _pNativeMemory->CursorSprite;
         static float* timeScaleAddress => _pNativeMemory->timeScaleAddress;
@@ -3634,8 +3661,8 @@ namespace SHVDN
         static float* writeWorldGravityAddress => _pNativeMemory->writeWorldGravityAddress;
         public static float WorldGravity { get => _pNativeMemory->WorldGravity; set => _pNativeMemory->WorldGravity = value; }
 
-        static delegate* unmanaged<float*, ulong, int, float*> GetRotationFromMatrixFunc => _pNativeMemory->GetRotationFromMatrixFunc;
-        static delegate* unmanaged<float*, ulong, int> GetQuaternionFromMatrixFunc => _pNativeMemory->GetQuaternionFromMatrixFunc;
+        static delegate* unmanaged[Stdcall]<float*, ulong, int, float*> GetRotationFromMatrixFunc => _pNativeMemory->GetRotationFromMatrixFunc;
+        static delegate* unmanaged[Stdcall]<float*, ulong, int> GetQuaternionFromMatrixFunc => _pNativeMemory->GetQuaternionFromMatrixFunc;
         public static int EntityMaxHealthOffset => _pNativeMemory->EntityMaxHealthOffset;
         public static int SetAngularVelocityVFuncOfEntityOffset => _pNativeMemory->SetAngularVelocityVFuncOfEntityOffset;
         public static int GetAngularVelocityVFuncOfEntityOffset => _pNativeMemory->GetAngularVelocityVFuncOfEntityOffset;
@@ -3681,11 +3708,11 @@ namespace SHVDN
         public static int HeliTailBoomHealthOffset => _pNativeMemory->HeliTailBoomHealthOffset;
         public static int HandlingDataOffset => _pNativeMemory->HandlingDataOffset;
         public static int FirstVehicleFlagsOffset => _pNativeMemory->FirstVehicleFlagsOffset;
-        static delegate* unmanaged<IntPtr, void> FixVehicleWheelFunc => _pNativeMemory->FixVehicleWheelFunc;
-        static delegate* unmanaged<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc => _pNativeMemory->PunctureVehicleTireNewFunc;
-        static delegate* unmanaged<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc => _pNativeMemory->PunctureVehicleTireOldFunc;
-        static delegate* unmanaged<IntPtr, void> BurstVehicleTireOnRimNewFunc => _pNativeMemory->BurstVehicleTireOnRimNewFunc;
-        static delegate* unmanaged<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc => _pNativeMemory->BurstVehicleTireOnRimOldFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, void> FixVehicleWheelFunc => _pNativeMemory->FixVehicleWheelFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc => _pNativeMemory->PunctureVehicleTireNewFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc => _pNativeMemory->PunctureVehicleTireOldFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, void> BurstVehicleTireOnRimNewFunc => _pNativeMemory->BurstVehicleTireOnRimNewFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc => _pNativeMemory->BurstVehicleTireOnRimOldFunc;
         public static int VehicleWheelSteeringLimitMultiplierOffset => _pNativeMemory->VehicleWheelSteeringLimitMultiplierOffset;
         public static int VehicleWheelTemperatureOffset => _pNativeMemory->VehicleWheelTemperatureOffset;
         public static int VehicleWheelHealthOffset => _pNativeMemory->VehicleWheelHealthOffset;
@@ -3736,8 +3763,8 @@ namespace SHVDN
         public static HeapArray<HeapArray<int>> VehicleModels => _pNativeMemory->VehicleModels;
         public static HeapArray<HeapArray<int>> VehicleModelsGroupedByType => _pNativeMemory->VehicleModelsGroupedByType;
         public static HeapArray<int> PedModels => _pNativeMemory->PedModels;
-        static delegate* unmanaged<IntPtr, ulong> GetHandlingDataByHash => _pNativeMemory->GetHandlingDataByHash;
-        static delegate* unmanaged<int, ulong> GetHandlingDataByIndex => _pNativeMemory->GetHandlingDataByIndex;
+        static delegate* unmanaged[Stdcall]<IntPtr, ulong> GetHandlingDataByHash => _pNativeMemory->GetHandlingDataByHash;
+        static delegate* unmanaged[Stdcall]<int, ulong> GetHandlingDataByIndex => _pNativeMemory->GetHandlingDataByIndex;
         static ulong* PedPoolAddress => _pNativeMemory->PedPoolAddress;
         static ulong* EntityPoolAddress => _pNativeMemory->EntityPoolAddress;
         static ulong* ObjectPoolAddress => _pNativeMemory->ObjectPoolAddress;
@@ -3749,26 +3776,26 @@ namespace SHVDN
         static ulong* InteriorProxyPoolAddress => _pNativeMemory->InteriorProxyPoolAddress;
         static ulong* ProjectilePoolAddress => _pNativeMemory->ProjectilePoolAddress;
         static int* ProjectileCountAddress => _pNativeMemory->ProjectileCountAddress;
-        static delegate* unmanaged<ulong, float*, ulong> EntityPosFunc => _pNativeMemory->EntityPosFunc;
-        static delegate* unmanaged<ulong, ulong> EntityModel1Func => _pNativeMemory->EntityModel1Func;
-        static delegate* unmanaged<ulong, ulong> EntityModel2Func => _pNativeMemory->EntityModel2Func;
-        static delegate* unmanaged<ulong, int> AddEntityToPoolFunc => _pNativeMemory->AddEntityToPoolFunc;
+        static delegate* unmanaged[Stdcall]<ulong, float*, ulong> EntityPosFunc => _pNativeMemory->EntityPosFunc;
+        static delegate* unmanaged[Stdcall]<ulong, ulong> EntityModel1Func => _pNativeMemory->EntityModel1Func;
+        static delegate* unmanaged[Stdcall]<ulong, ulong> EntityModel2Func => _pNativeMemory->EntityModel2Func;
+        static delegate* unmanaged[Stdcall]<ulong, int> AddEntityToPoolFunc => _pNativeMemory->AddEntityToPoolFunc;
         static ulong* RadarBlipPoolAddress => _pNativeMemory->RadarBlipPoolAddress;
         static int* PossibleRadarBlipCountAddress => _pNativeMemory->PossibleRadarBlipCountAddress;
         static int* UnkFirstRadarBlipIndexAddress => _pNativeMemory->UnkFirstRadarBlipIndexAddress;
         static int* NorthRadarBlipHandleAddress => _pNativeMemory->NorthRadarBlipHandleAddress;
         static int* CenterRadarBlipHandleAddress => _pNativeMemory->CenterRadarBlipHandleAddress;
         static ulong* CheckpointPoolAddress => _pNativeMemory->CheckpointPoolAddress;
-        static delegate* unmanaged<ulong> GetCGameScriptHandlerAddressFunc => _pNativeMemory->GetCGameScriptHandlerAddressFunc;
+        static delegate* unmanaged[Stdcall]<ulong> GetCGameScriptHandlerAddressFunc => _pNativeMemory->GetCGameScriptHandlerAddressFunc;
         static ulong* waypointInfoArrayStartAddress => _pNativeMemory->waypointInfoArrayStartAddress;
         static ulong* waypointInfoArrayEndAddress => _pNativeMemory->waypointInfoArrayEndAddress;
-        static delegate* unmanaged<ulong> GetLocalPlayerPedAddressFunc => _pNativeMemory->GetLocalPlayerPedAddressFunc;
-        static delegate* unmanaged<int, ulong> GetPtfxAddressFunc => _pNativeMemory->GetPtfxAddressFunc;
-        static delegate* unmanaged<int, ulong> GetEntityAddressFunc => _pNativeMemory->GetEntityAddressFunc;
-        static delegate* unmanaged<int, ulong> GetPlayerAddressFunc => _pNativeMemory->GetPlayerAddressFunc;
+        static delegate* unmanaged[Stdcall]<ulong> GetLocalPlayerPedAddressFunc => _pNativeMemory->GetLocalPlayerPedAddressFunc;
+        static delegate* unmanaged[Stdcall]<int, ulong> GetPtfxAddressFunc => _pNativeMemory->GetPtfxAddressFunc;
+        static delegate* unmanaged[Stdcall]<int, ulong> GetEntityAddressFunc => _pNativeMemory->GetEntityAddressFunc;
+        static delegate* unmanaged[Stdcall]<int, ulong> GetPlayerAddressFunc => _pNativeMemory->GetPlayerAddressFunc;
         public static int ProjectileAmmoInfoOffset => _pNativeMemory->ProjectileAmmoInfoOffset;
         public static int ProjectileOwnerOffset => _pNativeMemory->ProjectileOwnerOffset;
-        static delegate* unmanaged<IntPtr, int, void> ExplodeProjectileFunc => _pNativeMemory->ExplodeProjectileFunc;
+        static delegate* unmanaged[Stdcall]<IntPtr, int, void> ExplodeProjectileFunc => _pNativeMemory->ExplodeProjectileFunc;
         public static ulong* InteriorProxyPtrFromGameplayCamAddress => _pNativeMemory->InteriorProxyPtrFromGameplayCamAddress;
         public static int InteriorInstPtrInInteriorProxyOffset => _pNativeMemory->InteriorInstPtrInInteriorProxyOffset;
         static RageAtArrayPtr* weaponAndAmmoInfoArrayPtr => _pNativeMemory->weaponAndAmmoInfoArrayPtr;
@@ -3780,18 +3807,18 @@ namespace SHVDN
         static int weaponAttachPointElementSize => _pNativeMemory->weaponAttachPointElementSize;
         static int weaponInfoHumanNameHashOffset => _pNativeMemory->weaponInfoHumanNameHashOffset;
         static int getFragInstVFuncOffset => _pNativeMemory->getFragInstVFuncOffset;
-        static delegate* unmanaged<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc => _pNativeMemory->detachFragmentPartByIndexFunc;
+        static delegate* unmanaged[Stdcall]<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc => _pNativeMemory->detachFragmentPartByIndexFunc;
         static ulong** phSimulatorInstPtr => _pNativeMemory->phSimulatorInstPtr;
         static int colliderCapacityOffset => _pNativeMemory->colliderCapacityOffset;
         static int colliderCountOffset => _pNativeMemory->colliderCountOffset;
-        static delegate* unmanaged<ulong, IntPtr, int, byte> SetNmIntAddress => _pNativeMemory->SetNmIntAddress;
-        static delegate* unmanaged<ulong, IntPtr, bool, byte> SetNmBoolAddress => _pNativeMemory->SetNmBoolAddress;
-        static delegate* unmanaged<ulong, IntPtr, float, byte> SetNmFloatAddress => _pNativeMemory->SetNmFloatAddress;
-        static delegate* unmanaged<ulong, IntPtr, IntPtr, byte> SetNmStringAddress => _pNativeMemory->SetNmStringAddress;
-        static delegate* unmanaged<ulong, IntPtr, float, float, float, byte> SetNmVector3Address => _pNativeMemory->SetNmVector3Address;
-        static delegate* unmanaged<ulong, CTask*> GetActiveTaskFunc => _pNativeMemory->GetActiveTaskFunc;
-        static delegate* unmanaged<ulong, ulong, int, ulong> InitMessageMemoryFunc => _pNativeMemory->InitMessageMemoryFunc;
-        static delegate* unmanaged<ulong, IntPtr, ulong, void> SendMessageToPedFunc => _pNativeMemory->SendMessageToPedFunc;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, int, byte> SetNmIntAddress => _pNativeMemory->SetNmIntAddress;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, bool, byte> SetNmBoolAddress => _pNativeMemory->SetNmBoolAddress;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, float, byte> SetNmFloatAddress => _pNativeMemory->SetNmFloatAddress;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, IntPtr, byte> SetNmStringAddress => _pNativeMemory->SetNmStringAddress;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, float, float, float, byte> SetNmVector3Address => _pNativeMemory->SetNmVector3Address;
+        static delegate* unmanaged[Stdcall]<ulong, CTask*> GetActiveTaskFunc => _pNativeMemory->GetActiveTaskFunc;
+        static delegate* unmanaged[Stdcall]<ulong, ulong, int, ulong> InitMessageMemoryFunc => _pNativeMemory->InitMessageMemoryFunc;
+        static delegate* unmanaged[Stdcall]<ulong, IntPtr, ulong, void> SendMessageToPedFunc => _pNativeMemory->SendMessageToPedFunc;
         static int fragInstNMGtaOffset => _pNativeMemory->fragInstNMGtaOffset;
         static int cTaskNMScriptControlTypeIndex => _pNativeMemory->cTaskNMScriptControlTypeIndex;
         static int cEventSwitch2NMTypeIndex => _pNativeMemory->cEventSwitch2NMTypeIndex;

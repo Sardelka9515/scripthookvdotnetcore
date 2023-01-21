@@ -21,7 +21,7 @@ public static unsafe class Function
     ///     Pushes a single string component on the text stack.
     /// </summary>
     /// <param name="str">The string to push.</param>
-    private static void PushString(ReadOnlySpan<char> str)
+    public static void PushString(ReadOnlySpan<char> str)
     {
         var len = Encoding.UTF8.GetByteCount(str);
         var buf = stackalloc byte[len + 1];
@@ -154,7 +154,7 @@ public static unsafe class Function
 
         throw new NotSupportedException($"Converting from native to {type.FullName} is not supported");
     }
-    
+
     #region Call overloads without return value
 
     public static void Call(Hash hash)

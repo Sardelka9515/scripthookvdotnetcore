@@ -39,6 +39,8 @@ public static unsafe class Core
     public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
     public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
     public static readonly delegate* unmanaged<HMODULE*,int,int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
+    public static readonly delegate* unmanaged<string, ulong> GetPtr = (delegate* unmanaged<string, ulong>)Import("GetPtr");
+    public static readonly delegate* unmanaged<string, ulong, void> SetPtr = (delegate* unmanaged<string, ulong, void>)Import("SetPtr");
 
     private static readonly bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
