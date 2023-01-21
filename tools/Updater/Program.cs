@@ -193,7 +193,7 @@ namespace Updater
 
                     Directory.Delete(dest, true);
                 }
-                catch (Exception ex) { }
+                catch (Exception) { }
             }
             Directory.CreateDirectory(dest);
             foreach (var s in SrcUpstream)

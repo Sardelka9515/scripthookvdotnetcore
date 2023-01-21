@@ -23,6 +23,7 @@ LPVOID DoJob(Job* pj) {
 		return ((CallBackFunc)pj->Parameter)(pj->ParameterEx);
 		break;
 	}
+	return NULL;
 }
 shared_ptr<spdlog::logger> Logger;
 LPVOID PtrBaseScript;

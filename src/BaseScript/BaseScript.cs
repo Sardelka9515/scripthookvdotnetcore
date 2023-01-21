@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using static GTA.Native.Function;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Diagnostics.Metrics;
 
 namespace SHVDN;
 
@@ -15,6 +16,7 @@ public static partial class EntryPoint
     static void ModuleSetup()
     {
         Core.RegisterScript(new BaseScript());
+        GTA.Console.RegisterCommands(typeof(BaseScript));
     }
 }
 
@@ -27,7 +29,7 @@ internal unsafe class BaseScript : Script
     {
         base.OnStart();
         while (Game.IsLoading) Yield();
-        Notification.Show($"ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka9515");
+        Notification.Show($"ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka");
         Directory.CreateDirectory("CoreScripts");
         foreach (var script in Directory.GetFiles("CoreScripts", "*.dll"))
         {
@@ -36,9 +38,6 @@ internal unsafe class BaseScript : Script
                 Core.ScheduleLoad(ptr);
             }
         }
-        Console.RegisterCommand(&GetObjectCount, "GetObjectCount", "[type]", "Get object count of specified type, possible types are: ped,vehicle,prop,projectile", typeof(BaseScript).Assembly.GetName().Name);
-        Console.RegisterCommand(&BenchMark, "BenchMark", "", "BenchMark GetHashKey performance", typeof(BaseScript).Assembly.GetName().Name);
-
     }
 
     static string[] TestStrings = new string[]
@@ -65,52 +64,34 @@ internal unsafe class BaseScript : Script
             "pYY1vrv7VjPAmcye2gRa",
         };
 
-    [UnmanagedCallersOnly]
-    public static IntPtr BenchMark(int argc, char** argv)
+    [GTA.ConsoleCommand("Benchmark GetHashKey performance")]
+    public static void BenchMark()
     {
-        try
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        for (int i = 0; i < 10000; i++)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            for (int i = 0; i < 10000; i++)
+            foreach (var str in TestStrings)
             {
-                foreach (var str in TestStrings)
-                {
-                    NativeMemory.GetHashKey(str);
-                }
+                NativeMemory.GetHashKey(str);
             }
-            stopwatch.Stop();
-            Console.PrintInfo("Elapsed ticks: " + stopwatch.ElapsedTicks);
         }
-        catch (Exception ex)
-        {
-            Console.PrintError(ex.Message);
-        }
-        return default;
+        stopwatch.Stop();
+        GTA.Console.PrintInfo("Elapsed ticks: " + stopwatch.ElapsedTicks);
     }
 
-    [UnmanagedCallersOnly]
-    public static IntPtr GetObjectCount(int argc, char** argv)
+    [GTA.ConsoleCommand("Get object count of specified type, possible types are: ped,vehicle,prop,projectile")]
+    public static void GetObjectCount(string type)
     {
-        try
+        var count = type switch
         {
-            int count = 0;
-            var type = Console.GetArguments(argc, argv)[0];
-            count = type switch
-            {
-                "ped" => World.PedCount,
-                "vehicle" => World.VehicleCount,
-                "prop" => World.PropCount,
-                "projectile" => World.ProjectileCount,
-                _ => throw new ArgumentException($"Type not found: {type}"),
-            };
-            Console.PrintInfo(count.ToString());
-        }
-        catch (Exception ex)
-        {
-            Console.PrintError(ex.Message);
-        }
-        return default;
+            "ped" => World.PedCount,
+            "vehicle" => World.VehicleCount,
+            "prop" => World.PropCount,
+            "projectile" => World.ProjectileCount,
+            _ => throw new ArgumentException($"Type not found: {type}"),
+        };
+        GTA.Console.PrintInfo(count.ToString());
     }
 
     protected override void OnTick()

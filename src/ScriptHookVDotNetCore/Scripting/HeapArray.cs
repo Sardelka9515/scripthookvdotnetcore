@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace SHVDN
 {
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+
     /// <summary>
     /// Simple struct that holds information of an array allocated on the heap or given address
     /// </summary>

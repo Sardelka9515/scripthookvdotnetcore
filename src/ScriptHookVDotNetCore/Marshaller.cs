@@ -50,7 +50,9 @@ public static unsafe class Marshaller
     {
         var len = arr.Length;
         var ha = new HeapArray<T>(len, canWrite);
+#pragma warning disable CS8500 // This takes the address of a managed type
         Buffer.MemoryCopy(&arr, ha.Address, len, len);
+#pragma warning restore CS8500
         return ha;
     }
     public static string PtrToStringUTF8(IntPtr ptr, int len)

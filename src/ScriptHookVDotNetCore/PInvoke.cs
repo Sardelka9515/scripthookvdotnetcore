@@ -24,15 +24,15 @@ public static unsafe class PInvoke
 
     public static delegate* unmanaged<HANDLE, string, string, uint, int> MessageBoxA = (delegate* unmanaged<HANDLE, string, string, uint, int>)NativeLibrary.GetExport(User32, "MessageBoxA");
     public static delegate* unmanaged<int, short> GetAsyncKeyState = (delegate* unmanaged<int, short>)NativeLibrary.GetExport(User32, "GetAsyncKeyState");
-    public static delegate* unmanaged<uint, IntPtr> GetClipboardData = (delegate* unmanaged<uint, IntPtr>)NativeLibrary.GetExport(User32, "GetClipboardData");
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
     public static ReadOnlySpan<char> GetClipboardText()
     {
-        if (!OpenClipboard(default)) throw new Win32Exception();
-        var pChar = (char*)GetClipboardData(1);
-        return new ReadOnlySpan<char>(pChar, StrLenUni(pChar));
+        return null;
     }
+
+
+    public static delegate* unmanaged<uint, IntPtr> GetClipboardData = (delegate* unmanaged<uint, IntPtr>)NativeLibrary.GetExport(User32, "GetClipboardData");
+
+    public static delegate* unmanaged<IntPtr, bool> OpenClipboard = (delegate* unmanaged<IntPtr, bool>)NativeLibrary.GetExport(User32, "OpenClipboard");
+
+    public static delegate* unmanaged<bool> CloseClipboard = (delegate* unmanaged<bool>)NativeLibrary.GetExport(User32, "CloseClipboard");
 }

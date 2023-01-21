@@ -28,6 +28,8 @@ public class Globals
 
     public const uint MB_OK = 0x0;
 
+    public const uint CF_UNICODETEXT = 13;
+
     public const Logger.LogLevel L_DBG = Logger.LogLevel.Debug;
     public const Logger.LogLevel L_INF = Logger.LogLevel.Info;
     public const Logger.LogLevel L_WRN = Logger.LogLevel.Warn;

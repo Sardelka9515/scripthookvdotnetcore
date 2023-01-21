@@ -99,10 +99,6 @@ namespace SHVDN
             }
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "RegisterConsoleCommand")]
-        public static void RegisterCommand(delegate* unmanaged<int, char**, IntPtr> func, char* name, char* param, char* help, char* assembly)
-            => RegisterCommand(func, PtrToSpanUni(name), PtrToSpanUni(param), PtrToSpanUni(help), PtrToSpanUni(assembly));
-
         /// <summary>
         /// Unregister all methods with a <see cref="ConsoleCommand"/> attribute that were previously registered.
         /// </summary>
@@ -190,33 +186,24 @@ namespace SHVDN
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintInfo(string msg, params object[] args)
-        {
-            if (args.Length > 0)
-                msg = String.Format(msg, args);
-            AddLines("[~b~INFO~w~] ", msg.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
-        }
+        public static void PrintInfo(string msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
         /// <summary>
         /// Writes an error message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintError(string msg, params object[] args)
-        {
-            if (args.Length > 0)
-                msg = String.Format(msg, args);
-            AddLines("[~r~ERROR~w~] ", msg.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
-        }
+        public static void PrintError(string msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
         /// <summary>
         /// Writes a warning message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintWarning(string msg, params object[] args)
+        public static void PrintWarning(string msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
+        public static void Print(string prefix, string msg, params object[] args)
         {
             if (args.Length > 0)
                 msg = String.Format(msg, args);
-            AddLines("[~o~WARNING~w~] ", msg.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
+            AddLines(prefix, msg.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         /// <summary>
@@ -480,31 +467,38 @@ namespace SHVDN
 
             lock (_commands)
             {
-                if (_commands.TryGetValue(command, out var cmdObj))
+                try
                 {
-                    var result = default(string);
-                    if (_input.Replace(" ", "").Length > command.Length)
+                    if (_commands.TryGetValue(command, out var cmdObj))
                     {
-                        var args = _input.Substring(command.Length);
-                        fixed(char* pStr = args)
+                        var result = default(string);
+                        if (_input.Replace(" ", "").Length > command.Length)
                         {
-                            var argv = Parse(pStr, out var argc);
-                            result = Marshal.PtrToStringUni(cmdObj.FuncPtr(argc, argv));
-                            Marshal.FreeHGlobal((IntPtr)argv);
+                            var args = _input.Substring(command.Length);
+                            fixed (char* pStr = args)
+                            {
+                                var argv = Parse(pStr, out var argc);
+                                result = Marshal.PtrToStringUni(cmdObj.FuncPtr(argc, argv));
+                                Marshal.FreeHGlobal((IntPtr)argv);
+                            }
+                        }
+                        else
+                        {
+                            result = Marshal.PtrToStringUni(cmdObj.FuncPtr(0, null));
+                        }
+                        if (result != null)
+                        {
+                            PrintInfo(result);
                         }
                     }
                     else
                     {
-                        result = Marshal.PtrToStringUni(cmdObj.FuncPtr(0, null));
-                    }
-                    if (result != null)
-                    {
-                        PrintInfo(result);
+                        throw new KeyNotFoundException("Command not found: " + command);
                     }
                 }
-                else
+                catch(Exception ex)
                 {
-                    PrintError("Command not found: " + command);
+                    PrintError(ex.ToString());
                 }
             }
             ClearInput();
@@ -691,6 +685,7 @@ namespace SHVDN
         }
 
         #region Argument parsing
+
         public static List<string> GetArguments(int argc, char** argv)
         {
             List<string> args = new(argc);
@@ -700,6 +695,7 @@ namespace SHVDN
             }
             return args;
         }
+
         [Flags]
         enum ParseState
         {
@@ -708,6 +704,7 @@ namespace SHVDN
             ReadEscape = 2,
             InQuotes = 4
         }
+
         static char** Parse(char* input, out int argc)
         {
             ParseState state = ParseState.Gap;
@@ -833,6 +830,26 @@ namespace SHVDN
             argc = results.Count;
             return pStrs;
         }
+
+        #endregion
+
+        #region Exports
+
+        [UnmanagedCallersOnly(EntryPoint = "RegisterConsoleCommand")]
+        public static void RegisterConsoleCommand(delegate* unmanaged<int, char**, IntPtr> func, char* name, char* param, char* help, char* assembly)
+            => RegisterCommand(func, PtrToSpanUni(name), PtrToSpanUni(param), PtrToSpanUni(help), PtrToSpanUni(assembly));
+
+        [UnmanagedCallersOnly(EntryPoint = "PrintConsoleMessage")]
+        public static void PrintConsoleMessage(char* preFix, char* msg) => Print(new string(preFix), new string(msg));
+
+
+        [UnmanagedCallersOnly(EntryPoint = "ExecuteConsoleCommand")]
+        public static void ExecuteConsoleCommand(char* command)
+        {
+            _input = new(command);
+            Execute();
+        }
+        
         #endregion
     }
 

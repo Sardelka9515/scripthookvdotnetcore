@@ -79,8 +79,8 @@ public static unsafe partial class EntryPoint
     {
         try
         {
-            ModuleSetup();
             Core.CurrentModule = module;
+            ModuleSetup();
         }
         catch (Exception ex)
         {

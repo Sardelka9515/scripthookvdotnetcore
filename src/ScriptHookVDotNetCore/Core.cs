@@ -110,7 +110,7 @@ public static unsafe class Core
     }
 
     /// <summary>
-    /// Register a script instance, create associated fibers and begin executing
+    /// Register a script instance, create associated fibers and begin the execution once the script thread has been launched
     /// </summary>
     /// <param name="script">The script instance to register</param>
     public static void RegisterScript(Script script)
