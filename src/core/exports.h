@@ -55,7 +55,7 @@ bool UnloadModuleInternal(LPCWSTR path) {
 			}
 		}
 	}
-	error("No script with such name was found");
+	error("No module with such name was found");
 	return false;
 }
 
@@ -108,14 +108,14 @@ DllExport void ScheduleTask(Job job) {
 DllExport void ScheduleLoad(LPCWSTR path) {
 	Job j = {};
 	j.Type = J_LOAD;
-	j.Parameter = (LPVOID)path;
+	j.Parameter = (LPVOID)new wstring(path);
 	ScheduleTask(j);
 }
 
 DllExport void ScheduleUnload(LPCWSTR path) {
 	Job j = {};
 	j.Type = J_UNLOAD;
-	j.Parameter = (LPVOID)path;
+	j.Parameter = (LPVOID)new wstring(path);
 	ScheduleTask(j);
 }
 

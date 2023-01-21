@@ -35,7 +35,7 @@ public static unsafe class Core
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
 
     public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
-    public static readonly delegate* unmanaged<char*, void> ScheduleUnoad = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
+    public static readonly delegate* unmanaged<char*, void> ScheduleUnload = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
     public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
     public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
     public static readonly delegate* unmanaged<HMODULE*,int,int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");

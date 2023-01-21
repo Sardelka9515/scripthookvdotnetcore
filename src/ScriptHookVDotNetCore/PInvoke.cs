@@ -20,13 +20,15 @@ public static unsafe class PInvoke
     public static delegate* unmanaged<LPVOID, void> SwitchToFiber = (delegate* unmanaged<LPVOID, void>)NativeLibrary.GetExport(Kernel32, "SwitchToFiber");
     public static delegate* unmanaged<nuint, IntPtr, LPVOID, LPVOID> CreateFiber = (delegate* unmanaged<nuint, IntPtr, LPVOID, LPVOID>)NativeLibrary.GetExport(Kernel32, "CreateFiber");
     public static delegate* unmanaged<LPVOID, void> DeleteFiber = (delegate* unmanaged<LPVOID, void>)NativeLibrary.GetExport(Kernel32, "DeleteFiber");
-
-
     public static delegate* unmanaged<HANDLE, string, string, uint, int> MessageBoxA = (delegate* unmanaged<HANDLE, string, string, uint, int>)NativeLibrary.GetExport(User32, "MessageBoxA");
     public static delegate* unmanaged<int, short> GetAsyncKeyState = (delegate* unmanaged<int, short>)NativeLibrary.GetExport(User32, "GetAsyncKeyState");
     public static ReadOnlySpan<char> GetClipboardText()
     {
-        return null;
+        if (!OpenClipboard(default)) throw new Win32Exception();
+        var pChar = (char*)GetClipboardData(CF_UNICODETEXT);
+        var text = new ReadOnlySpan<char>(pChar, StrLenUni(pChar));
+        CloseClipboard();
+        return text;
     }
 
 
@@ -35,4 +37,9 @@ public static unsafe class PInvoke
     public static delegate* unmanaged<IntPtr, bool> OpenClipboard = (delegate* unmanaged<IntPtr, bool>)NativeLibrary.GetExport(User32, "OpenClipboard");
 
     public static delegate* unmanaged<bool> CloseClipboard = (delegate* unmanaged<bool>)NativeLibrary.GetExport(User32, "CloseClipboard");
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [PreserveSig]
+    public static extern uint GetModuleFileNameW(HMODULE hModule, char* buf, uint nSize);
+
 }

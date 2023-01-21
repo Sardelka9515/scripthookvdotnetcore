@@ -94,6 +94,26 @@ internal unsafe class BaseScript : Script
         GTA.Console.PrintInfo(count.ToString());
     }
 
+    [GTA.ConsoleCommand("Request a module to be unloaded")]
+    public static void Unload(string filename)
+    {
+        HMODULE* modus = stackalloc HMODULE[256];
+        var cModu = Core.ListModules(modus, 256);
+
+        char* path = stackalloc char[256];
+        for (int i = 0; i < cModu; i++)
+        {
+            var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
+            if (fSucess && Path.GetFileName(new string(path)).ToLower() == filename.ToLower())
+            {
+                Core.ScheduleUnload(path);
+                GTA.Console.PrintInfo($"Module {filename} scheduled for unload");
+                return;
+            }
+        }
+        throw new FileNotFoundException($"Specified module was not found: " + filename);
+    }
+
     protected override void OnTick()
     {
         base.OnTick();

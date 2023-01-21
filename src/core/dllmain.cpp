@@ -11,10 +11,16 @@ static void FATAL(string msg) {
 
 LPVOID DoJob(Job* pj) {
 	switch (pj->Type) {
-	case J_UNLOAD:
-		return (LPVOID)UnloadModuleW((LPCWSTR)pj->Parameter);
-	case J_LOAD:
-		return (LPVOID)LoadModuleW((LPCWSTR)pj->Parameter);
+	case J_UNLOAD: {
+		auto result = (LPVOID)UnloadModuleW(((wstring*)pj->Parameter)->c_str());
+		delete (wstring*)pj->Parameter;
+		return result;
+	}
+	case J_LOAD: {
+		auto result = (LPVOID)LoadModuleW(((wstring*)pj->Parameter)->c_str());
+		delete (wstring*)pj->Parameter;
+		return result;
+	}
 	case J_UNLOAD_ALL:
 		return (LPVOID)UnloadAllModules();
 	case J_RELOAD:

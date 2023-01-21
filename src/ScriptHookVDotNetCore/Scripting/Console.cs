@@ -85,6 +85,10 @@ namespace GTA
                     }
                     command.Method.Invoke(command.Target, args);
                 }
+                catch(TargetInvocationException ex)
+                {
+                    PrintError(ex.InnerException.ToString());
+                }
                 catch (Exception ex)
                 {
                     PrintError(ex.ToString());
@@ -117,7 +121,7 @@ namespace GTA
         public string Assembly { get; private set; }
         internal object _wrapper; // To prevent the wrapper from being GC'd
         public (Type, string)[] Params { get; private set; }
-        public string ParamsString => string.Join(' ', $"<{Params.Select(x => x.Item2)}>");
+        public string ParamsString => string.Join(' ', Params.Select(x => $"~b~{x.Item2}:~g~{Type.GetTypeCode(x.Item1)}~s~"));
         private MethodInfo _method;
         public MethodInfo Method
         {

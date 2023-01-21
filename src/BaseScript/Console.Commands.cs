@@ -70,10 +70,6 @@ namespace SHVDN
             return default;
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [PreserveSig]
-        public static extern uint GetModuleFileNameW(HMODULE hModule, char* buf, uint nSize);
-
         [UnmanagedCallersOnly]
         static IntPtr Reload(int argc, char** argv)
         {
