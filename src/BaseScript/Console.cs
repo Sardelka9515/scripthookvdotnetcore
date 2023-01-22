@@ -119,7 +119,7 @@ namespace SHVDN
             ReadOnlySpan<char> line = $"~c~[{DateTime.Now.ToString("HH:mm:ss")}] ~w~{prefix} {color}{msg}";
             if (GetTextLength(line) > 0.95)
             {
-                msg = msg.Slice(0, msg.Length - Math.Max(5,msg.Length/10));
+                msg = msg.Slice(0, msg.Length - Math.Max(5, msg.Length / 10));
                 goto trim;
             }
             _outputQueue.Enqueue(line.ToString());
@@ -132,7 +132,7 @@ namespace SHVDN
         {
             fixed (char* p = str)
             {
-                return GetTextLength(p, str.Length);
+                return GetTextLength(p, str.Length, GetMarginLength());
             }
         }
         /// <summary>
@@ -282,12 +282,8 @@ namespace SHVDN
             if (now.Millisecond < 500)
             {
                 var input = _input.Substring(0, _cursorPos);
-                fixed (char* pi = input)
-                {
-                    float length = GetTextLength(pi, input.Length);
-                    DrawRect(25 + (length * CONSOLE_WIDTH) - 5, CONSOLE_HEIGHT + 3, 3, INPUT_HEIGHT - 6, Color.White);
-                }
-
+                float length = GetTextLength(input);
+                DrawRect(25 + (length * CONSOLE_WIDTH) - 5, CONSOLE_HEIGHT + 3, 3, INPUT_HEIGHT - 6, Color.White);
             }
 
             // Draw console history text
@@ -657,8 +653,9 @@ namespace SHVDN
             for (ulong i = 1; i <= 6; i++)
                 Function.Call(Hash.ENABLE_CONTROL_ACTION, 0, i, 0);
         }
-        static unsafe float GetTextLength(char* str, int count)
+        static unsafe float GetTextLength(char* str, int count, float marginLength)
         {
+            if (str == null) return 0;
             var calculated = count;
             if (calculated > 50) { calculated = 50; }
             while (Encoding.UTF8.GetByteCount(str, calculated) > 50) { calculated--; };
@@ -669,16 +666,16 @@ namespace SHVDN
             var len = Call<float>((Hash)0x85F061DA64ED2F67 /*_END_TEXT_COMMAND_GET_WIDTH*/, true);
             if (calculated < count)
             {
-                len += GetTextLength(str + calculated, count - calculated) - GetMarginLength();
+                len += GetTextLength(str + calculated, count - calculated, marginLength) - marginLength;
             }
             return len;
         }
         static unsafe float GetMarginLength()
         {
             char* pC = stackalloc char[3] { 'A', '\0', '\0' };
-            var len1 = GetTextLength(pC, 1);
+            var len1 = GetTextLength(pC, 1, 0);
             pC[1] = 'A';
-            var len2 = GetTextLength(pC, 2);
+            var len2 = GetTextLength(pC, 2, 0);
             return len1 - (len2 - len1); // [Margin][A] - [A] = [Margin]
         }
 

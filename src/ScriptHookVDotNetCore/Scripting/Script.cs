@@ -4,7 +4,7 @@ using GTA.UI;
 
 namespace GTA;
 
-public unsafe class Script : IDisposable
+public unsafe abstract class Script : IDisposable
 {
     private object _lock = new object();
     private bool _aborted = false;
