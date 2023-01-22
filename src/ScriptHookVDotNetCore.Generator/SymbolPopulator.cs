@@ -9,28 +9,38 @@ namespace ScriptHookVDotNetCore.Generator
 {
     public class SymbolPopulator
     {
-        public static List<ITypeSymbol> AllTypes = new();
-        public static List<IMethodSymbol> AllMethods = new();
+        public static IEnumerable<ITypeSymbol> AllTypes;
+        public static IEnumerable<IMethodSymbol> AllMethods;
         public GeneratorExecutionContext Ctx;
         public void Populate(GeneratorExecutionContext context)
         {
-            Ctx = context;
-            var cpl = Ctx.Compilation;
-            foreach (var tree in cpl.SyntaxTrees)
-            {
-                var model = Ctx.Compilation.GetSemanticModel(tree);
-                var methods = tree.GetRoot().DescendantNodes().Where(x => x is MethodDeclarationSyntax).Cast<MethodDeclarationSyntax>().Select(x => (IMethodSymbol)model.GetDeclaredSymbol(x));
-                AllMethods.AddRange(methods);
-            }
-            AllMethods = AllMethods.Distinct(SymbolEqualityComparer.Default).Cast<IMethodSymbol>().ToList();
+            AllTypes = GetAllTypes(context.Compilation);
+            AllMethods = GetAllStaticMethods(context.Compilation);
+        }
 
-            foreach (var tree in cpl.SyntaxTrees)
-            {
-                var classes = tree.GetRoot().DescendantNodes().Where(x => x is ClassDeclarationSyntax).Cast<ClassDeclarationSyntax>();
-                var model = Ctx.Compilation.GetSemanticModel(tree);
-                AllTypes.AddRange(classes.Select(x => (ITypeSymbol)model.GetDeclaredSymbol(x)));
-            }
-            AllTypes = AllTypes.Distinct(SymbolEqualityComparer.Default).Cast<ITypeSymbol>().ToList();
+        IEnumerable<IMethodSymbol> GetAllStaticMethods(Compilation compilation)
+            => GetAllTypes(compilation).SelectMany(x => x.GetMembers().OfType<IMethodSymbol>()).Where(x => x.IsStatic);
+
+        IEnumerable<INamedTypeSymbol> GetAllTypes(Compilation compilation)
+            => GetAllTypes(compilation.GlobalNamespace);
+
+        IEnumerable<INamedTypeSymbol> GetAllTypes(INamespaceSymbol @namespace)
+        {
+            foreach (var type in @namespace.GetTypeMembers())
+                foreach (var nestedType in GetNestedTypes(type))
+                    yield return nestedType;
+
+            foreach (var nestedNamespace in @namespace.GetNamespaceMembers())
+                foreach (var type in GetAllTypes(nestedNamespace))
+                    yield return type;
+        }
+
+        IEnumerable<INamedTypeSymbol> GetNestedTypes(INamedTypeSymbol type)
+        {
+            yield return type;
+            foreach (var nestedType in type.GetTypeMembers()
+                .SelectMany(nestedType => GetNestedTypes(nestedType)))
+                yield return nestedType;
         }
     }
 }

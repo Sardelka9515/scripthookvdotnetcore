@@ -37,4 +37,5 @@ public class Globals
     public const Logger.LogLevel L_ERR = Logger.LogLevel.Error;
 
     public const string BASE_SCRIPT_NAME = "ScriptHookVDotNetCore.BaseScript.dll";
+    public const string CONFIG_PATH = "ScriptHookVDotNetCore.ini";
 }

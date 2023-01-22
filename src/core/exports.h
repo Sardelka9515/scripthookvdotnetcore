@@ -1,18 +1,6 @@
 #include "pch.h"
 #include "AotLoader.h"
 #pragma once
-#define J_UNLOAD 0
-#define J_LOAD 1
-#define J_UNLOAD_ALL 2
-#define J_RELOAD 3
-#define J_CALLBACK 10
-#pragma pack(push, 1)
-struct Job {
-	uint16_t Type;
-	LPVOID Parameter;
-	LPVOID ParameterEx;
-};
-#pragma pack(pop)
 vector<AotLoader*> Modules = {};
 mutex ModulesMutex;
 HMODULE CurrentModule;

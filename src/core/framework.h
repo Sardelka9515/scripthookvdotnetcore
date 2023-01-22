@@ -29,10 +29,32 @@ using namespace std;
 using namespace spdlog;
 namespace fs = std::filesystem;
 
-#define MAX_UNLOAD_RETRIES 256
+#pragma pack(push, 1)
+struct Job {
+	uint16_t Type;
+	LPVOID Parameter;
+	LPVOID ParameterEx;
+};
+struct ConfigStruct {
+	uint16_t UnloadKey = 35;
+	uint16_t ReloadKey = 36;
+	uint16_t MaxUnloadRetries = 256;
+	uint16_t Reserved[13];
+};
+#pragma pack(pop)
+
+static ConfigStruct Config = ConfigStruct();
+
+#define J_UNLOAD 0
+#define J_LOAD 1
+#define J_UNLOAD_ALL 2
+#define J_RELOAD 3
+#define J_CALLBACK 10
+
+#define MAX_UNLOAD_RETRIES Config.MaxUnloadRetries
 #define BASE_SCRIPT_NAME L"ScriptHookVDotNetCore.BaseScript.dll"
-#define UNLOAD_KEY 35 // End
-#define RELOAD_KEY 36 // Home
+#define UNLOAD_KEY Config.UnloadKey // End
+#define RELOAD_KEY Config.ReloadKey // Home
 
 #define LOCK(mtx) std::scoped_lock lock(mtx)
 

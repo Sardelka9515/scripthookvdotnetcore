@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "exports.h"
 #include "resource.h"
-
+static bool Initialized = false;
 static void FATAL(string msg) {
 	msg = string("Fatal error ocurred: ") + msg;
 	spdlog::error(msg);
@@ -85,20 +85,19 @@ static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, 
 }
 
 
-// Main loop for processing queued jobs and flushing logger
-static DWORD Worker(LPVOID lparam) {
+static void Init() {
+	if (Initialized) return; // Gets called evertime after game loaded
 	AotLoader::Init();
 	info("API hook created");
-
 	auto hInfo = FindResource(CurrentModule, MAKEINTRESOURCE(BASE_SCRIPT_RES), MAKEINTRESOURCE(BASE_SCRIPT_RES));
 	if (!hInfo) {
 		FATAL("Failed to find base script in current module");
-		return -1;
+		return;
 	}
 	auto hBS = LoadResource(CurrentModule, hInfo);
 	if (!hBS) {
 		FATAL("Failed to load base script resource");
-		return -1;
+		return;
 	}
 
 	info("Loading base script module");
@@ -123,14 +122,15 @@ static DWORD Worker(LPVOID lparam) {
 	}
 
 	ScheduleLoad(BASE_SCRIPT_NAME);
-
-	return 0;
+	Initialized = true;
+	return;
 }
 void ScriptMain() {
+	Init();
 	while (true) {
 
 		// execute scheduled jobs
-		{ 
+		{
 			Job job = {};
 		doWork:
 			bool hasJob = false;
@@ -171,18 +171,16 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-
+		SetPtr("Config", (uint64_t)&Config);
 		Logger = basic_logger_mt("Core", "ScriptHookVDotNetCore.log", true);
 		Logger->set_level(level::trace);
 		Logger->flush_on(level::err);
 		set_default_logger(Logger);
 		flush_every(chrono::seconds(3));
 		info("Logging system initilized");
-
 		presentCallbackRegister(OnPresent);
 		keyboardHandlerRegister(OnKeyboard);
 		scriptRegister(hModule, ScriptMain);
-		CreateThread(NULL, 0, Worker, NULL, NULL, NULL);
 		break;
 	case DLL_PROCESS_DETACH:
 		// Not supported currently, game will crash once we unloaded another script

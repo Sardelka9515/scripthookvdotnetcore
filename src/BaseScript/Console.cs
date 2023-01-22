@@ -15,6 +15,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using GTA.UI;
 
 namespace SHVDN
 {
@@ -31,7 +32,7 @@ namespace SHVDN
         static List<string> _lineHistory = new();
         static List<string> _commandHistory = new(); // This must be set via CommandHistory property
         static ConcurrentQueue<string> _outputQueue = new();
-        static Dictionary<string, ConsoleCommand> _commands = new();
+        static Dictionary<string, Command> _commands = new();
         static DateTime _lastClosed;
         const int BASE_WIDTH = 1280;
         const int BASE_HEIGHT = 720;
@@ -83,7 +84,7 @@ namespace SHVDN
         /// <param name="methodInfo">The method information.</param>
         public static void RegisterCommand(delegate* unmanaged<int, char**, IntPtr> func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
         {
-            var command = new ConsoleCommand((IntPtr)func, name, param, help, assembly);
+            var command = new Command((IntPtr)func, name, param, help, assembly);
             var sName = name.ToString();
             Logger.Debug("Registering command: " + sName);
             lock (_commands)
@@ -100,7 +101,7 @@ namespace SHVDN
         }
 
         /// <summary>
-        /// Unregister all methods with a <see cref="ConsoleCommand"/> attribute that were previously registered.
+        /// Unregister all methods with a <see cref="Command"/> attribute that were previously registered.
         /// </summary>
         /// <param name="type">The type to search for console command methods.</param>
         public static void UnregisterCommand(string name)
@@ -848,23 +849,25 @@ namespace SHVDN
         }
 
         #endregion
-    }
 
-    public unsafe class ConsoleCommand
-    {
-        public ConsoleCommand(IntPtr func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
+
+        unsafe class Command
         {
-            Name = name.ToString();
-            Parameters = param.ToString();
-            Help = help.ToString();
-            Assembly = assembly.ToString();
-            FuncPtr = (delegate* unmanaged<int, char**, IntPtr>)func;
-        }
-        public delegate* unmanaged<int, char**, IntPtr> FuncPtr; // argc,argv,result
-        public string Help { get; }
+            public Command(IntPtr func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
+            {
+                Name = name.ToString();
+                Parameters = param.ToString();
+                Help = help.ToString();
+                Assembly = assembly.ToString();
+                FuncPtr = (delegate* unmanaged<int, char**, IntPtr>)func;
+            }
+            public delegate* unmanaged<int, char**, IntPtr> FuncPtr; // argc,argv,result
+            public string Help { get; }
 
-        internal string Name { get; }
-        internal string Parameters { get; }
-        internal string Assembly { get; }
+            internal string Name { get; }
+            internal string Parameters { get; }
+            internal string Assembly { get; }
+        }
     }
+
 }
