@@ -10,6 +10,15 @@ namespace GTA
     {
         public string Author;
         public string SupportURL;
-        public bool NoDefaultInstance;
+
+        /// <summary>
+        /// Set this to true to prevent a default instances from being created and registered during module init
+        /// </summary>
+        public bool NoDefaultInstance = false;
+
+        /// <summary>
+        /// Disallow multiple instance of the script object with same type to be registered, default is true
+        /// </summary>
+        public bool SingleInstance = true;
     }
 }

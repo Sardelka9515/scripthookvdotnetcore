@@ -14,9 +14,34 @@ struct ConfigStruct
     public ushort ConsoleKey;
 }
 
+[ScriptAttributes]
 internal unsafe class BaseScript : Script
 {
-    static ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config"); 
+    static ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
+
+    protected override void OnStart()
+    {
+        base.OnStart();
+        try
+        {
+            ReloadConfig();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Error loading configuration file: \n" + ex);
+        }
+        while (Game.IsLoading) Yield();
+        Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka ---");
+        Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
+        Directory.CreateDirectory("CoreScripts");
+        foreach (var script in Directory.GetFiles("CoreScripts", "*.dll"))
+        {
+            fixed (char* ptr = script)
+            {
+                Core.ScheduleLoad(ptr);
+            }
+        }
+    }
 
     protected override void OnTick()
     {
@@ -41,29 +66,6 @@ internal unsafe class BaseScript : Script
     }
 
     #region Commands
-
-    protected override void OnStart()
-    {
-        base.OnStart();
-        try
-        {
-            ReloadConfig();
-        }
-        catch(Exception ex)
-        {
-            Logger.Error("Error loading configuration file: \n" + ex);
-        }
-        while (Game.IsLoading) Yield();
-        Notification.Show($"ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka");
-        Directory.CreateDirectory("CoreScripts");
-        foreach (var script in Directory.GetFiles("CoreScripts", "*.dll"))
-        {
-            fixed (char* ptr = script)
-            {
-                Core.ScheduleLoad(ptr);
-            }
-        }
-    }
 
     [ConsoleCommand("Unload and reload all scripts")]
     public static void Reload()

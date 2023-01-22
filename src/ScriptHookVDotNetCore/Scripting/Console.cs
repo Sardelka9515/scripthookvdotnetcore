@@ -40,7 +40,7 @@ namespace GTA
                 {
                     try
                     {
-                        foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(true))
+                        foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(false))
                         {
                             attribute.Method = method;
                             RegisterCommand(attribute);
@@ -54,7 +54,7 @@ namespace GTA
                 _registeredTypes.Add(type);
                 Logger.Info($"Registered commands for type {type.FullName}");
             }
-            
+
         }
 
         /// <summary>
@@ -63,13 +63,13 @@ namespace GTA
         /// <param name="type"></param>
         /// <param name="target"></param>
         /// <remarks>Automatically called when registering a <see cref="Script"/> object</remarks>
-        public static void RegisterCommands([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type,object target)
+        public static void RegisterCommands([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type, object target)
         {
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
                 try
                 {
-                    foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(true))
+                    foreach (var attribute in method.GetCustomAttributes<ConsoleCommand>(false))
                     {
                         attribute.Method = method;
                         attribute.Target = target;

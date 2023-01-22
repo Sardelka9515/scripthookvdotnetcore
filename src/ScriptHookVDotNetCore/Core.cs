@@ -121,6 +121,14 @@ public static unsafe class Core
         // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
         lock (_scripts)
         {
+            var type = script.GetType();
+            if ((script.GetAttribute(typeof(ScriptAttributes), nameof(ScriptAttributes.SingleInstance)) as bool?) != false
+                && _scripts.Any(x => x.GetType() == type))
+                throw new InvalidOperationException($"A script with the same type has already been registered");
+
+            if (_scripts.Any(x => x == script))
+                throw new InvalidOperationException($"Same script object has already been registered");
+
             Logger.Info("Registering script: " + script.GetType().ToString());
             script.ScriptFiber = CreateFiber(default, script.PtrFiberEntry, default);
             if (script.ScriptFiber == default) { throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create fiber"); }

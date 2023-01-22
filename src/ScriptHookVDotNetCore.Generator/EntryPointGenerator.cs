@@ -56,7 +56,9 @@ public static unsafe partial class EntryPoint
             }
             catch (Exception ex)
             {
+#if DEBUG
                 MessageBox(default, ex.ToString(), "ScriptHookVDotNet source generator error", default);
+#endif
             }
         }
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
@@ -74,8 +76,8 @@ public static unsafe partial class EntryPoint
             var scripts = AllTypes.Where(x => x.TypeKind == TypeKind.Class && !x.IsAbstract && x.BaseType?.ToString() == "GTA.Script");
             foreach (var script in scripts)
             {
-                if (script.GetAttributes().Any(x => $"{x.AttributeClass.ContainingNamespace}.{x.AttributeClass.Name}" == "GTA.ScriptAttributes" && x.NamedArguments.Any(x => x.Key == "NoDefaultInstance" && ((bool)x.Value.Value)))) continue;
-                var fullName = $"{script.ContainingNamespace}.{script.Name}";
+                if (script.GetAttributes().Any(x => x.AttributeClass.ToString() == "GTA.ScriptAttributes" && x.NamedArguments.Any(x => x.Key == "NoDefaultInstance" && ((bool)x.Value.Value)))) continue;
+                var fullName = script.ToString();
                 source += $"script = new {fullName}();";
                 source += $"Core.RegisterScript(script);\n";
                 source += $"GTA.Console.RegisterCommands(typeof({fullName}));\n";
