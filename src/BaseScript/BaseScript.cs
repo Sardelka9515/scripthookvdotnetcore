@@ -14,7 +14,6 @@ struct ConfigStruct
     public ushort ConsoleKey;
 }
 
-[ScriptAttributes]
 internal unsafe class BaseScript : Script
 {
     static ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
