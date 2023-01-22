@@ -35,10 +35,6 @@ namespace SHVDN
             AddEntityToPoolFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int> )(new IntPtr(address - 0x68));
             address = FindPattern("\x48\x8B\xDA\xE8\x00\x00\x00\x00\xF3\x0F\x10\x44\x24", "xxxx????xxxxx");
             EntityPosFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, float*, ulong> )(new IntPtr((address - 6)));
-            address = FindPattern("\x0F\x85\x00\x00\x00\x00\x48\x8B\x4B\x20\xE8\x00\x00\x00\x00\x48\x8B\xC8", "xx????xxxxx????xxx");
-            EntityModel1Func = (delegate* unmanaged[SuppressGCTransition]<ulong, ulong> )(new IntPtr((*(int*)address + 11) + address + 15));
-            address = FindPattern("\x45\x33\xC9\x3B\x05", "xxxxx");
-            EntityModel2Func = (delegate* unmanaged[SuppressGCTransition]<ulong, ulong> )(new IntPtr(address - 0x46));
             // Find handling data functions
             address = FindPattern("\x0F\x84\x00\x00\x00\x00\x8B\x8B\x00\x00\x00\x00\xE8\x00\x00\x00\x00\xBA\x09\x00\x00\x00", "xx????xx????x????xxxxx");
             GetHandlingDataByIndex = (delegate* unmanaged[SuppressGCTransition]<int, ulong> )(new IntPtr(*(int*)(address + 13) + address + 17));
@@ -657,6 +653,30 @@ namespace SHVDN
                 InteriorInstPtrInInteriorProxyOffset = (int)*(byte*)(address + 49);
             }
 
+            // These 2 nopping are done by some trainers such as Simple Trainer, Menyoo, and Enhanced Native Trainer, but we try to do this if they are not done yet
+#region -- Bypass model requests block for some models --
+            // Nopping this enables to spawn some drawable objects without a dedicated collision (e.g. prop_fan_palm_01a)
+            address = FindPattern("\x48\x85\xC0\x00\x00\x38\x45\x00\x0F", "xxx??xx?x");
+            address = address != null ? (address + 0x4D) : null;
+            if (address != null && *address != 0x90)
+            {
+                const int bytesToWriteInstructions = 0x18;
+                var nopBytes = Enumerable.Repeat((byte)0x90, bytesToWriteInstructions).ToArray();
+                Marshal.Copy(nopBytes, 0, new IntPtr(address), bytesToWriteInstructions);
+            }
+
+#endregion
+#region -- Bypass is player model allowed to spawn checks --
+            address = FindPattern("\xFF\x52\x00\x84\xC0\x00\x00\x48\x8B\xC3", "xx?xx??xxx");
+            address = address != null ? (address + 5) : null;
+            if (address != null && *address != 0x90)
+            {
+                const int bytesToWriteInstructions = 2;
+                var nopBytes = Enumerable.Repeat((byte)0x90, bytesToWriteInstructions).ToArray();
+                Marshal.Copy(nopBytes, 0, new IntPtr(address), bytesToWriteInstructions);
+            }
+
+#endregion
             // Generate vehicle model list
             var vehicleHashesGroupedByClass = new List<int>[0x20];
             for (int i = 0; i < 0x20; i++)
@@ -1022,8 +1042,6 @@ namespace SHVDN
         internal ulong* ProjectilePoolAddress;
         internal int* ProjectileCountAddress;
         internal delegate* unmanaged[SuppressGCTransition]<ulong, float*, ulong> EntityPosFunc;
-        internal delegate* unmanaged[SuppressGCTransition]<ulong, ulong> EntityModel1Func;
-        internal delegate* unmanaged[SuppressGCTransition]<ulong, ulong> EntityModel2Func;
         internal delegate* unmanaged[SuppressGCTransition]<ulong, int> AddEntityToPoolFunc;
         internal ulong* RadarBlipPoolAddress;
         internal int* PossibleRadarBlipCountAddress;
@@ -1075,7 +1093,7 @@ namespace SHVDN
 
     public static unsafe class NativeMemory
     {
-        public const string StructSignature = "SHVDN.NativeMemory.902b4e8de709810fea5033cdc3a02bfecf4ce7c1f6692cbac17aa432a43c8bc3";
+        public const string StructSignature = "SHVDN.NativeMemory.ceee79636e5306531977db9ab5150f4d19b26384b3c11bf3309124622e8f002f";
         private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSignature);
         static NativeMemory()
         {
@@ -3557,8 +3575,8 @@ namespace SHVDN
                             var eventAddress = *(ulong*)((byte*)PedIntelligenceAddr + CEventStackOffset + 8 * ((i + *(int*)((byte*)PedIntelligenceAddr + (CEventCountOffset - 4)) + 1) % 16));
                             if (eventAddress != 0)
                             {
-                                var getEventTypeIndexFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int> )(eventAddress);
-                                if (getEventTypeIndexFunc(eventAddress) == cEventSwitch2NMTypeIndex)
+                                var getEventTypeIndexVirtualFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int> )(*(ulong*)(*(ulong*)eventAddress + 0x18));
+                                if (getEventTypeIndexVirtualFunc(eventAddress) == cEventSwitch2NMTypeIndex)
                                 {
                                     var taskInEvent = *(CTask**)(eventAddress + 0x28);
                                     if (taskInEvent != null)
@@ -3791,8 +3809,6 @@ namespace SHVDN
         static ulong* ProjectilePoolAddress => _pNativeMemory->ProjectilePoolAddress;
         static int* ProjectileCountAddress => _pNativeMemory->ProjectileCountAddress;
         static delegate* unmanaged[SuppressGCTransition]<ulong, float*, ulong> EntityPosFunc => _pNativeMemory->EntityPosFunc;
-        static delegate* unmanaged[SuppressGCTransition]<ulong, ulong> EntityModel1Func => _pNativeMemory->EntityModel1Func;
-        static delegate* unmanaged[SuppressGCTransition]<ulong, ulong> EntityModel2Func => _pNativeMemory->EntityModel2Func;
         static delegate* unmanaged[SuppressGCTransition]<ulong, int> AddEntityToPoolFunc => _pNativeMemory->AddEntityToPoolFunc;
         static ulong* RadarBlipPoolAddress => _pNativeMemory->RadarBlipPoolAddress;
         static int* PossibleRadarBlipCountAddress => _pNativeMemory->PossibleRadarBlipCountAddress;

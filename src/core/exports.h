@@ -7,6 +7,7 @@ HMODULE CurrentModule;
 queue<Job> JobQueue;
 mutex JobMutex;
 map<string, uint64_t> PtrMap;
+mutex PtrMapMutex;
 #pragma region Internal
 
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
@@ -195,16 +196,20 @@ DllExport void LogErrorW(LPCWSTR msg) {
 #pragma endregion
 
 DllExport uint64_t GetPtr(LPCSTR key) {
+	LOCK(PtrMapMutex);
 	auto i_ptr = PtrMap.find(string(key));
 	return i_ptr == PtrMap.end() ? NULL : i_ptr->second;
 }
 DllExport void SetPtr(LPCSTR key, uint64_t value) {
+	LOCK(PtrMapMutex);
 	PtrMap[key] = value;
 }
 DllExport void ClearAllPtr() {
+	LOCK(PtrMapMutex);
 	PtrMap.clear();
 }
 DllExport void RemovePtr(LPCSTR key) {
+	LOCK(PtrMapMutex);
 	auto i = PtrMap.find(string(key));
 	if (i != PtrMap.end()) {
 		PtrMap.erase(i);

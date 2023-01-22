@@ -17,6 +17,9 @@
 		<Authors>Sardelka</Authors>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
+		<Version>1.1.0</Version>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
