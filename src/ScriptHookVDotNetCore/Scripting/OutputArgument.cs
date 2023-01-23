@@ -1,23 +1,55 @@
-﻿namespace GTA.Native;
+﻿
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-public unsafe readonly ref struct OutputArgument
+namespace GTA.Native;
+
+/// <summary>
+/// An output argument passed to a script function.
+/// </summary>
+public unsafe class OutputArgument : IDisposable
 {
-    public readonly IntPtr Ptr;
+    bool disposed = false;
+    internal ulong* _storage = null;
 
-    public OutputArgument(ulong* result)
+    public OutputArgument()
     {
-        Ptr = (IntPtr)result;
+        _storage = (ulong*)Marshal.AllocCoTaskMem(24);
+    }
+
+    public OutputArgument(object value) : this()
+    {
+        *_storage = Convert.ToUInt64(value);
     }
 
     /// <summary>
-    /// Cast the returned native value to specified unmanaged type
+    /// Frees the unmanaged resources associated with this <see cref="OutputArgument"/>.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public T To<T>() where T : unmanaged
+    ~OutputArgument()
     {
-        T result = default;
-        *&result = *(T*)Ptr;
-        return result;
+        Dispose(false);
     }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        Marshal.FreeCoTaskMem((IntPtr)_storage);
+        disposed = true;
+    }
+
+    /// <summary>
+    /// Gets the value of data stored in this <see cref="OutputArgument"/>.
+    /// </summary>
+    public TResult GetResult<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] TResult>() => ConvertFromNative<TResult>(_storage);
+
+    public static implicit operator InputArgument(OutputArgument argument) => InputArgument.FromPtr(argument._storage);
 }
