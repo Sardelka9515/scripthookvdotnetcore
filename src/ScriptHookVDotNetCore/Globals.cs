@@ -38,4 +38,12 @@ public class Globals
 
     public const string BASE_SCRIPT_NAME = "ScriptHookVDotNetCore.BaseScript.dll";
     public const string CONFIG_PATH = "ScriptHookVDotNetCore.ini";
+
+    public const uint SPDLOG_LEVEL_TRACE = 0;
+    public const uint SPDLOG_LEVEL_DEBUG = 1;
+    public const uint SPDLOG_LEVEL_INFO = 2;
+    public const uint SPDLOG_LEVEL_WARN = 3;
+    public const uint SPDLOG_LEVEL_ERROR = 4;
+    public const uint SPDLOG_LEVEL_CRITICAL = 5;
+    public const uint SPDLOG_LEVEL_OFF = 6;
 }

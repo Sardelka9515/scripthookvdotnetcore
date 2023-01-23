@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "AotLoader.h"
 #pragma once
+typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
+typedef VOID(WINAPI* LogHandler)(uint64_t time,uint32_t level,LPCSTR msg);
+
 vector<AotLoader*> Modules = {};
 mutex ModulesMutex;
 HMODULE CurrentModule;
@@ -8,13 +11,19 @@ queue<Job> JobQueue;
 mutex JobMutex;
 map<string, uint64_t> PtrMap;
 mutex PtrMapMutex;
+vector<LogHandler> LogHandlers = {};
+mutex LogHandlersMutex;
 #pragma region Internal
 
-typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
 
 
 HMODULE LoadModuleInternal(LPCWSTR path) {
 	try {
+		auto sPath = wstring(path);
+		auto sName = sPath.substr(sPath.find_last_of(L"/\\") + 1);
+		if (GetModuleHandleW(sName.c_str())) {
+			throw runtime_error("Module with same name already loaded: " + WTS(sName));
+		}
 		auto script = new AotLoader(path);
 		Modules.push_back(script);
 		info("Loaded module {0}", string(script->ModulePath.begin(), script->ModulePath.end()));
@@ -216,5 +225,24 @@ DllExport void RemovePtr(LPCSTR key) {
 	}
 }
 
+DllExport void AddLogHandler(LogHandler lh) {
+	try {
+		LOCK(LogHandlersMutex);
+		LogHandlers.push_back(lh);
+	}
+	catch (exception ex) {
+		error(ex.what());
+	}
+}
+
+DllExport void RemoveLogHandler(LogHandler lh) {
+	try {
+		LOCK(LogHandlersMutex);
+		LogHandlers.erase(remove_if(LogHandlers.begin(), LogHandlers.end(), [lh](LogHandler toCheck) {return toCheck == lh; }));
+	}
+	catch (exception ex) {
+		error(ex.what());
+	}
+}
 
 

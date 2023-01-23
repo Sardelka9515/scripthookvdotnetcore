@@ -72,6 +72,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AotLoader.h" />
+    <ClInclude Include="callback_sink.h" />
     <ClInclude Include="exports.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />

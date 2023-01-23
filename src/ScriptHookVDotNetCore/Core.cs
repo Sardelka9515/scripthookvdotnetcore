@@ -34,7 +34,7 @@ public interface IScriptTask
 #endregion
 public static unsafe class Core
 {
-    public static HMODULE CurrentModule { get; set; }
+    public static HMODULE CurrentModule { get;private set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
 
     public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
@@ -184,11 +184,17 @@ public static unsafe class Core
         }
     }
 
+    public static void OnInit(HMODULE currentModule)
+    {
+        CurrentModule = currentModule;
+    }
+
     /// <summary>
     /// Don't use
     /// </summary>
-    public static void OnUnload()
+    public static void OnUnload(HMODULE currentModule)
     {
+        CurrentModule = currentModule;
         DisposeScripts();
         _scripts = null;
         KeyboardState = null;

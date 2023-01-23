@@ -1,46 +1,84 @@
-﻿#define FUNC
-public class Program
+﻿global using NativeData = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, CodeGen.NativeInfo>>;
+using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Newtonsoft.Json;
+namespace CodeGen;
+
+internal static class Program
 {
-    static StreamWriter sw;
-    public static void Main()
+    public static GenOptions Options = GenOptions.All;
+    public static readonly string Destination = Path.Combine("src", "ScriptHookVDotNetCore", "Scripting","Generated");
+    private static void Main(string[] args)
     {
-#if FUNC
-        sw = new("Function.cs");
-        sw.WriteLine("#region Call overloads without return value");
-        sw.WriteLine();
-        for (int i = 0; i < 25; i++)
+
+        Directory.SetCurrentDirectory(@"..\..\");
+        Console.WriteLine("SHVDN source generator by Sardelka9515");
+        Console.WriteLine("Available options:");
+        Console.WriteLine("\t" + string.Join(", ", Enum.GetValues<GenOptions>()));
+
+        if (args.Length > 0)
         {
-            Write(i, false);
+            Options = GenOptions.None;
+            foreach (var a in args) Options |= Enum.Parse<GenOptions>(a, true);
         }
-        sw.WriteLine();
-        sw.WriteLine("#endregion");
-        sw.WriteLine();
-        sw.WriteLine();
-        sw.WriteLine("#region Call overloads with return value");
-        sw.WriteLine();
-        for (int i = 0; i < 25; i++)
+
+        Console.WriteLine("Generating with configuration: " + Options);
+
+        Console.WriteLine("Downloading natives...");
+        string nativeData;
+        using (var wc = new HttpClient())
         {
-            Write(i, true);
+            nativeData =
+                wc.GetStringAsync("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json").GetAwaiter().GetResult();
         }
-        sw.WriteLine();
-        sw.WriteLine("#endregion");
-        sw.Dispose();
-#endif
+
+
+        Console.WriteLine("Parsing data...");
+        var namespaces = JsonConvert.DeserializeObject<NativeData>(nativeData);
+
+        Directory.CreateDirectory(Destination);
+        foreach (var generator in typeof(Program).Assembly.GetTypes().
+            Where(x => x.IsAssignableTo(typeof(Generator)) && x.IsClass && !x.IsAbstract)
+            .Select(x => x.GetConstructor(Type.EmptyTypes).Invoke(null) as Generator))
+        {
+            Console.WriteLine("Running generator: " + generator.GetType());
+            var sw = new StreamWriter(Path.Combine(Destination, generator.FileName));
+            var result = generator.Generate(namespaces, Options);
+            if (generator.NeedFormatting)
+            {
+                Console.WriteLine("Formatting result");
+                result = FormatSource(result);
+            }
+            Console.WriteLine("Writing to " + generator.FileName);
+            sw.Write(result);
+            sw.Close();
+            sw.Dispose();
+        }
+
     }
-    public static void Write(int argCount,bool ret)
+    public static string FormatSource(string source)
     {
-        string args = "";
-        for (int i = 0; i < argCount; i++)
+        return CSharpSyntaxTree.ParseText(source).GetRoot().NormalizeWhitespace().SyntaxTree.GetText().ToString();
+    }
+    public static string ToSharpType(this string name)
+    {
+        return name switch
         {
-            args += ", InputArgument arg" + i;
-        }
-        sw.WriteLine(ret?$"public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash{args})": $"public static void Call(Hash hash{args})");
-        string push = "";
-        for (int i = 0; i < argCount; i++)
-        {
-            push += $"NativePush64(arg{i}.Value);\n";
-        }
-        var call = ret ? "return ConvertFromNative<T>(NativeCall());" : "NativeCall();";
-        sw.WriteLine($"{{\nNativeInit((ulong)hash);\n{push}{call}\n}}");
+            "Any" or "ScrHandle" or "SrcHandle" or "FireId" or "Interior" or "ScrHandle*" or "SrcHandle*"
+                or "Any*" => "IntPtr",
+            "BOOL*" => "bool*",
+            "Ped*" or "Entity*" or "Vehicle*" or "Object*" or "Blip*" => "int*",
+            "Cam" => "Camera",
+            "Object" => "int",
+            "Hash" => "uint",
+            "Hash*" => "uint*",
+            "const char*" => "string",
+            "char*" => "byte*",
+            "BOOL" => "bool",
+            _ => name
+        };
     }
 }

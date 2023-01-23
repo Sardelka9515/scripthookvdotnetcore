@@ -96,7 +96,7 @@ public static unsafe partial class EntryPoint
     {
         try
         {
-            Core.CurrentModule = module;
+            Core.OnInit(module);
             ModuleSetup();
         }
         catch (Exception ex)
@@ -112,8 +112,14 @@ public static unsafe partial class EntryPoint
     [UnmanagedCallersOnly(EntryPoint = ""OnUnload"")]
     public static void OnUnload(HMODULE module)
     {
-        Core.CurrentModule = module;
-        Core.OnUnload();
+        try
+        {
+            Core.OnUnload(module);
+        }
+        catch(Exception ex)
+        {
+            Logger.Error(""Module unload error: "" + ex.ToString());
+        }
     }";
         const string KeyboardCode = @"[UnmanagedCallersOnly(EntryPoint = ""OnKeyboard"")]
     public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt,

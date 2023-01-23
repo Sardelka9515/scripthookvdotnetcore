@@ -4,6 +4,7 @@ using GTA.Math;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System;
+using System.Reflection.Metadata;
 
 namespace AirStrike
 {

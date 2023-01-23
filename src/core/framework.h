@@ -19,11 +19,11 @@
 // ScriptHookV
 #include <main.h> 
 // MinHook
-#include<MinHook.h>
+#include <MinHook.h>
 // spdlog
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
-
+#include "callback_sink.h"
 
 using namespace std;
 using namespace spdlog;

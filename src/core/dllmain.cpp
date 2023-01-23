@@ -27,7 +27,6 @@ LPVOID DoJob(Job* pj) {
 		return (LPVOID)(UnloadAllModules() && LoadModuleW(BASE_SCRIPT_NAME));
 	case J_CALLBACK:
 		return ((CallBackFunc)pj->Parameter)(pj->ParameterEx);
-		break;
 	}
 	return NULL;
 }
@@ -130,6 +129,7 @@ void ScriptMain() {
 	while (true) {
 
 		// execute scheduled jobs
+		try
 		{
 			Job job = {};
 		doWork:
@@ -140,14 +140,12 @@ void ScriptMain() {
 				if (!JobQueue.empty()) { job = JobQueue.front(); JobQueue.pop(); hasJob = true; }
 			}
 			if (hasJob) {
-				try {
-					DoJob(&job);
-				}
-				catch (exception ex) {
-					error(format("Failed to execute queued job: {}", ex.what()));
-				}
+				DoJob(&job);
 				goto doWork;
 			}
+		}
+		catch (exception ex) {
+			error(format("Failed to execute queued job: {}", ex.what()));
 		}
 
 		// Tick
@@ -170,11 +168,23 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	CurrentModule = hModule;
 	switch (ul_reason_for_call)
 	{
-	case DLL_PROCESS_ATTACH:
+	case DLL_PROCESS_ATTACH: {
 		SetPtr("Config", (uint64_t)&Config);
-		Logger = basic_logger_mt("Core", "ScriptHookVDotNetCore.log", true);
+		auto callback_sink = std::make_shared<sinks::callback_sink_mt>([](const details::log_msg& msg) {
+			LOCK(LogHandlersMutex);
+			auto time = (uint64_t)msg.time.time_since_epoch().count();
+			auto level = (uint32_t)msg.level;
+			auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
+			for (auto lh : LogHandlers) {
+				lh(time, level, payload);
+			}
+		});
+
+		auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
+		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
 		Logger->set_level(level::trace);
 		Logger->flush_on(level::err);
+		Logger->set_pattern("[%H:%M:%S] [%^%l%$] %v");
 		set_default_logger(Logger);
 		flush_every(chrono::seconds(3));
 		info("Logging system initilized");
@@ -182,6 +192,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		keyboardHandlerRegister(OnKeyboard);
 		scriptRegister(hModule, ScriptMain);
 		break;
+	}
 	case DLL_PROCESS_DETACH:
 		// Not supported currently, game will crash once we unloaded another script
 		info("Shutting down");

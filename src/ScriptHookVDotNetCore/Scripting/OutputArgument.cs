@@ -1,4 +1,4 @@
-﻿namespace scripting.GTA.GTA.Native;
+﻿namespace GTA.Native;
 
 public unsafe readonly ref struct OutputArgument
 {
