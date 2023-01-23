@@ -1,5 +1,5 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)' != '*Undefined*'">
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)' != '*Undefined*' And '$(NoAotCompile)' != 'true'">
 		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(OutDir)\native&quot;  -p:PublishAOT=true -r win-x64 " />
 	</Target>
 	<PropertyGroup>
