@@ -122,6 +122,31 @@ public static unsafe partial class Function
 
     #endregion
 
+    #region call with params
+
+    /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
+    public static void Call(Hash hash, params InputArgument[] args)
+    {
+        NativeInit((ulong)hash);
+        for (int i = 0; i < args.Length; i++)
+        {
+            NativePush64(args[i].Value);
+        }
+        NativeCall();
+    }
+
+    /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
+    public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash, params InputArgument[] args)
+    {
+        NativeInit((ulong)hash);
+        for (int i = 0; i < args.Length; i++)
+        {
+            NativePush64(args[i].Value);
+        }
+        return ConvertFromNative<T>(NativeCall());
+    }
+    #endregion
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T ConvertFromNative<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(ulong* pNative)
     {

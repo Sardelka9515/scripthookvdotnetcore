@@ -3,7 +3,7 @@ using GTA.Math;
 
 namespace GTA.Native;
 
-public unsafe readonly ref struct InputArgument
+public unsafe readonly struct InputArgument
 {
     public readonly ulong Value;
 
