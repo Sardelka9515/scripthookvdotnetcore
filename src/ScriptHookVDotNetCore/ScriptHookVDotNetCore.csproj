@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<NoWarn>CS1591</NoWarn>
+		<NoWarn>CS1591;CA2211</NoWarn>
 		<OutDir>$(SolutionDir)bin\obj</OutDir>
 		<OutputPath>$(SolutionDir)bin\obj</OutputPath>
 		<TargetFramework>net7.0</TargetFramework>

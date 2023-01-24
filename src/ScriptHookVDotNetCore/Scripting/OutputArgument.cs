@@ -17,10 +17,15 @@ public unsafe class OutputArgument : IDisposable
         _storage = (ulong*)Marshal.AllocCoTaskMem(24);
     }
 
-    public OutputArgument(object value) : this()
+    public OutputArgument(ulong value) : this()
     {
-        *_storage = Convert.ToUInt64(value);
+        *_storage = value;
     }
+
+    public OutputArgument(object value) : this(Convert.ToUInt64(value))
+    {
+    }
+
 
     /// <summary>
     /// Frees the unmanaged resources associated with this <see cref="OutputArgument"/>.
