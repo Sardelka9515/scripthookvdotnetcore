@@ -143,6 +143,11 @@ internal unsafe class BaseScript : Script
         }
         else
         {
+            path = File.Exists(path) ? path : Path.Combine("CoreScripts",path);
+
+            if(!File.Exists(path))
+                throw new FileNotFoundException("Module not found",path);
+            
             fixed (char* p = path)
             {
                 Core.ScheduleLoad(p);
