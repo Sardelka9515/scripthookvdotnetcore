@@ -24,7 +24,13 @@ internal unsafe class BaseScript : Script
 
     public BaseScript()
     {
-        Aborted += ()=> RemoveLogHandler(&PrintLogMessage);
+        Aborted += (e) =>
+        {
+            if (e.IsUnloading)
+            {
+                RemoveLogHandler(&PrintLogMessage);
+            }
+        };
     }
 
     protected override void OnStart()

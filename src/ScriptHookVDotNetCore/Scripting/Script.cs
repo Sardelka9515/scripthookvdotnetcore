@@ -4,12 +4,12 @@ using GTA.UI;
 
 namespace GTA;
 
-public unsafe abstract class Script : IDisposable
+public unsafe abstract class Script
 {
-    private object _lock = new object();
-    private bool _aborted = false;
     public delegate void ScriptEntryDelegate(IntPtr lParam);
     private readonly ScriptEntryDelegate _fiberEntry;
+    private bool _aborted;
+    public Type ScriptType { get; private set; }
     internal ulong Continue = 0;
     internal readonly LPVOID PtrFiberEntry;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
@@ -22,13 +22,9 @@ public unsafe abstract class Script : IDisposable
 
 
     /// <summary>
-    /// Invoked when the script is aborted, whether during the module unload or a call to <see cref="Abort"/>
+    /// Invoked when the script is aborted, whether during the module unload or a manual call to <see cref="Abort"/>
     /// </summary>
-    /// <remarks>The handler can be used to perform cleanup tasks. 
-    /// This is mostly invoked from the main thread unless <see cref="Abort"/> is called from another thread.
-    /// To determine whether the executing thread is main thread, call <see cref="Core.IsMainThread()"/>
-    /// </remarks>
-    public event Action Aborted;
+    public event Action<AbortedEventArgs> Aborted;
 
     /// <summary>
     /// Invoked when a key is down
@@ -50,6 +46,7 @@ public unsafe abstract class Script : IDisposable
         // Need to store it somewhere to prevent GC from messing with it.
         _fiberEntry = ScriptMain;
         PtrFiberEntry = Marshal.GetFunctionPointerForDelegate(_fiberEntry);
+        ScriptType = GetType();
     }
 
     /// <summary>
@@ -106,17 +103,18 @@ public unsafe abstract class Script : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Error($"Script {GetType()} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
-            Notification.Show("~r~Unhandled exception~s~ in script \"~h~" + GetType().ToString() + "~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
-            var attribute = GetType().GetCustomAttributesData().FirstOrDefault(x => x.AttributeType.FullName == typeof(ScriptAttributes).FullName);
+            Logger.Error($"Script {ScriptType} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
+            Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{ScriptType}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
+            var attribute = ScriptType.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType.FullName == typeof(ScriptAttributes).FullName);
             var supportUrl = GetAttribute(typeof(ScriptAttributes), nameof(ScriptAttributes.SupportURL));
             if (supportUrl != null)
             {
                 Logger.Error($"Please check the following site for support on the issue: {supportUrl}");
             }
+
+            Abort(new AbortedEventArgs() { Exception = ex, IsUnloading = false });
         }
 
-        Abort();
 
         // Continue yielding the execution, just in case
         while (true)
@@ -127,16 +125,15 @@ public unsafe abstract class Script : IDisposable
 
     public object GetAttribute(Type attrType, string name)
     {
-        var attribute = GetType().GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
+        var attribute = ScriptType.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
         return (attribute?.NamedArguments.FirstOrDefault(x => x.MemberName == name))?.TypedValue;
     }
 
     /// <summary>
-    /// Pause the script execution, can be called from any thread. If the call was made to and from currently executing script, the script will pause execution immediately until it was resumed by another script or thread
+    /// Pause the script execution, can be called from any thread. If the call was made to and from currently executing script, the script will pause execution and block the caller's context immediately and indefinitely until resumed
     /// </summary>
     public void Pause()
     {
-        ThrowIfAborted();
         Continue = ulong.MaxValue;
         if (Core.IsMainThread() && this == Core.ExecutingScript) { Yield(); }
     }
@@ -146,7 +143,9 @@ public unsafe abstract class Script : IDisposable
     /// </summary>
     public void Resume()
     {
-        ThrowIfAborted();
+        if (_aborted)
+            throw new InvalidOperationException("The script has been aborted");
+
         Continue = 0;
     }
 
@@ -166,6 +165,20 @@ public unsafe abstract class Script : IDisposable
         Tick?.Invoke();
     }
 
+    /// <summary>
+    /// Invoked when the script is aborted, might be called multiple times.
+    /// </summary>
+    /// <param name="args">The event arguments for the script abortion</param>
+    /// <remarks> This will be called when an unhandled exception is caught,
+    /// the module is unloading, or <see cref="Abort(AbortedEventArgs)"/> is called by user. 
+    /// Use <paramref name="args"/> to gather more information about the event.
+    /// Remeber to call the base method when overriding. 
+    /// </remarks>
+    protected virtual void OnAborted(AbortedEventArgs args)
+    {
+        Aborted?.Invoke(args);
+    }
+
     /// <remarks>
     /// Remeber to call the base method when overriding
     /// </remarks>
@@ -182,52 +195,58 @@ public unsafe abstract class Script : IDisposable
         KeyUp?.Invoke(e);
     }
 
-    /// <summary>
-    /// Abort this script and delete associated fiber
-    /// </summary>
     public void Dispose()
     {
-        lock (_lock)
+        if (!_aborted)
+            throw new InvalidOperationException("The script has not been aborted yet");
+
+        if (ScriptFiber != default)
         {
-            Abort();
-            if (ScriptFiber != default)
-            {
-                DeleteFiber(ScriptFiber);
-                ScriptFiber = default;
-            }
+            DeleteFiber(ScriptFiber);
+            ScriptFiber = default;
         }
     }
 
     /// <summary>
-    /// Basically has the same effect as <see cref="Pause"/>, except <see cref="Aborted"/> will be invoked and the script can't be resumed
+    /// Basically has the same effect as <see cref="Pause"/>. Repective virtual method and event handlers will be called
     /// </summary>
     /// <remarks>
     /// Unlike SHVDN, this method does not actually abort the execution thread. 
     /// As all script lives in the game thread, blocking it will cause the game to hang forever 
     /// and this method won't have any effect
     /// </remarks>
-    public void Abort()
+    public void Abort(AbortedEventArgs args)
     {
-        lock (_lock)
+        try
         {
-            if (_aborted) return;
-            try
-            {
-                Aborted?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Error during script abortion:\n {ex}");
-            }
-            finally
-            {
-                Pause();
-            }
+            OnAborted(args);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"Error during script abortion:\n {ex}");
+        }
+        finally
+        {
+            _aborted = true;
+            Pause();
         }
     }
+}
 
-    private void ThrowIfAborted()
-    {
-        if (_aborted) { throw new InvalidOperationException("The script has been aborted"); }
-    }
+public class AbortedEventArgs : EventArgs
+{
+    /// <summary>
+    /// Indicates whether the event is caused by module unload
+    /// </summary>
+    public bool IsUnloading { get; internal set; } = false;
+
+    /// <summary>
+    /// Carry the information about the error occurred if script is aborted due to an unhandled exception, otherwise, null
+    /// </summary>
+    public Exception Exception { get; internal set; } = null;
+
+    /// <summary>
+    /// User-supplied object to store the context about the event
+    /// </summary>
+    public object Context { get; set; }
 }
