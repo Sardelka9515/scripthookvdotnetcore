@@ -14,12 +14,12 @@ namespace GTA
     /// </summary>
     public static unsafe class Console
     {
-        public static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
+        private static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
+        private static HashSet<Type> _registeredTypes = new();
+        private static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
         public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Import("ExecuteConsoleCommand");
         public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Import("RegisterConsoleCommand");
         public static readonly delegate* unmanaged<char*, char*, void> PrintConsoleMessage = (delegate* unmanaged<char*, char*, void>)Import("PrintConsoleMessage");
-        public static HashSet<Type> _registeredTypes = new();
-        public static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
         public static IntPtr Import(string name) => NativeLibrary.GetExport(BaseScript, name);
 
         /// <summary>
@@ -161,7 +161,11 @@ namespace GTA
 
         internal static void OnUnload()
         {
-            NativeLibrary.Free(BaseScript);
+            try
+            {
+                NativeLibrary.Free(BaseScript);
+            }
+            catch { }
             _registeredTypes = null;
             _registeredCommands = null;
         }
