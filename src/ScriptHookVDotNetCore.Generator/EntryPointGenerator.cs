@@ -123,18 +123,32 @@ public static unsafe partial class EntryPoint
     public static void OnKeyboard(DWORD key, ushort repeats, bool scanCode, bool isExtended, bool isWithAlt,
         bool wasDownBefore, bool isUpNow)
     {
-        Core.DoKeyEvent(
+        try
+        {
+            Core.DoKeyEvent(
             key,
             !isUpNow,
             (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
             (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
             isWithAlt);
+        }
+        catch(Exception ex)
+        {
+            Logger.Error(""Keyboard event error: "" + ex.ToString());
+        }
     }";
         const string TickCode = @"
     [UnmanagedCallersOnly(EntryPoint = ""OnTick"")]
     public static void OnTick(LPVOID currentFiber)
     {
-        Core.DoTick(currentFiber);
+        try
+        {
+           Core.DoTick(currentFiber);
+        }
+        catch(Exception ex)
+        {
+            Logger.Error(""Tick error: "" + ex.ToString());
+        }
     }";
         const string Globals = $@"
 global using System;
