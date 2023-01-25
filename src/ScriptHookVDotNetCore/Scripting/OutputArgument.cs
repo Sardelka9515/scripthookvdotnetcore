@@ -22,7 +22,7 @@ public unsafe class OutputArgument : IDisposable
         *_storage = value;
     }
 
-    public OutputArgument(object value) : this(Convert.ToUInt64(value))
+    public OutputArgument(object value) : this(ObjectToNative(value))
     {
     }
 

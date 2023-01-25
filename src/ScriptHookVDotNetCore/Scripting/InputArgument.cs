@@ -123,8 +123,8 @@ public unsafe readonly struct InputArgument
     public static implicit operator InputArgument(DlcWeaponData* val) => FromPtr(val);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator InputArgument(Enum val) => From(Convert.ToUInt64(val));
+    public static implicit operator InputArgument(Enum val) => EnumToNative(val);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator InputArgument(string val) => From(Marshaller.PinString(val));
+    public static implicit operator InputArgument(string val) => From(PinString(val));
 }

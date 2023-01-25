@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace SHVDN;
@@ -79,7 +80,7 @@ public static unsafe class Marshaller
     {
         var handle = StringToCoTaskMemUTF8(str);
 
-        if (handle == IntPtr.Zero) return IntPtr.Zero;
+        if (handle == IntPtr.Zero) return NativeMemory.NullString;
 
         _pinnedStrings.Add(handle);
         return handle;
@@ -98,8 +99,8 @@ public static unsafe class Marshaller
     /// </remarks>
     public static IntPtr StringToCoTaskMemUTF8(ReadOnlySpan<char> s)
     {
-        if (s == null)
-            return NullString;
+        if (s == null || s.Length == 0)
+            return default;
 
         fixed (char* pChar = s)
         {
@@ -217,6 +218,62 @@ public static unsafe class Marshaller
     public static ReadOnlySpan<char> PtrToSpanUni(char* pChar)
     {
         return new(pChar, StrLenUni(pChar));
+    }
+    /// <summary>
+    /// Converts a managed object to a native value.
+    /// </summary>
+    /// <param name="value">The object to convert.</param>
+    /// <returns>A native value representing the input <paramref name="value"/>.</returns>
+    /// <remarks>This method requires boxing, and is somewhat slow compared to the implicit operator, use the generic variant when possible</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static ulong ObjectToNative(object value)
+    {
+        if (value is null)
+        {
+            return 0;
+        }
+
+        if (value is string valueString)
+        {
+            return (ulong)PinString(valueString).ToInt64();
+        }
+
+        var type = value.GetType();
+        if (typeof(INativeValue).IsAssignableFrom(type))
+        {
+            return ((INativeValue)value).NativeValue;
+        }
+
+        if (typeof(Enum).IsAssignableFrom(type))
+        {
+            return EnumToNative((Enum)value);
+        }
+
+        if (value is long valueLong)
+        {
+            unchecked
+            {
+                return (ulong)valueLong;
+            }
+        }
+
+        return Convert.ToUInt64(value);
+
+    }
+
+    public static ulong EnumToNative(Enum val)
+    {
+        try
+        {
+            unchecked
+            {
+                return (ulong)Convert.ToInt64(val);
+            }
+        }
+        catch (OverflowException) // Edge case. But seriously, who would do this?
+        {
+            return Convert.ToUInt64(val);
+        }
     }
 
     internal static void OnUnload()
