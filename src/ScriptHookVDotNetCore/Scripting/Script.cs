@@ -12,7 +12,7 @@ public unsafe abstract class Script
     public Type ScriptType { get; private set; }
     internal ulong Continue = 0;
     internal readonly LPVOID PtrFiberEntry;
-    internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
+    internal Queue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
     internal LPVOID ScriptFiber;
 
     /// <summary>
