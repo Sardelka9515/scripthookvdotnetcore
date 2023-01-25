@@ -183,7 +183,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
 		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
 		Logger->set_level(level::trace);
-		Logger->flush_on(level::err);
+		Logger->flush_on(level::info);
 		Logger->set_pattern("[%H:%M:%S] [%^%l%$] %v");
 		set_default_logger(Logger);
 		flush_every(chrono::seconds(3));
