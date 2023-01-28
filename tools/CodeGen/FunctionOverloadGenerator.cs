@@ -57,6 +57,6 @@ class FunctionOverloadGenerator : Generator
         Core.ExecuteTask(task);
 ";
         var call = ret ? "return ConvertFromNative<T>(task.Result);" : "";
-        sb.AppendLine($"{{\nNativeInit((ulong)hash);\n{alloc}{copy}{execTask}{call}\n}}");
+        sb.AppendLine($"{{\n{alloc}{copy}{execTask}{call}\n}}");
     }
 }
