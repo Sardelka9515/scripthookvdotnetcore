@@ -47,6 +47,11 @@
     <TargetName>ScriptHookVDotNetCore</TargetName>
     <TargetExt>.asi</TargetExt>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>DEBUG;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Label="Globals">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

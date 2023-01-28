@@ -3,6 +3,7 @@ using GTA.UI;
 using System;
 using System.IO;
 using System.Linq;
+using System.Collections;
 using System.Runtime.InteropServices;
 
 namespace SHVDN;
@@ -15,6 +16,7 @@ struct ConfigStruct
     public ushort ConsoleKey;
 }
 
+[ScriptAttributes(NoScriptThread = true)]
 internal unsafe class BaseScript : Script
 {
 
@@ -45,9 +47,9 @@ internal unsafe class BaseScript : Script
         {
             Logger.Error("Error loading configuration file: \n" + ex);
         }
-        while (Game.IsLoading) Yield();
         Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka ---");
         Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
+        Notification.Show("Hello");
         Load();
     }
 
@@ -57,11 +59,11 @@ internal unsafe class BaseScript : Script
         var msg = Marshal.PtrToStringAnsi(pMsg);
         switch (level)
         {
-            case SPDLOG_LEVEL_INFO:
+            case L_INF:
                 Console.PrintInfo(msg); break;
-            case SPDLOG_LEVEL_WARN:
+            case L_WRN:
                 Console.PrintWarning(msg); break;
-            case SPDLOG_LEVEL_ERROR:
+            case L_ERR:
                 Console.PrintError(msg); break;
             default: break;
         }
@@ -71,6 +73,7 @@ internal unsafe class BaseScript : Script
     {
         base.OnTick();
         Console.DoTick();
+
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -149,11 +152,11 @@ internal unsafe class BaseScript : Script
         }
         else
         {
-            path = File.Exists(path) ? path : Path.Combine("CoreScripts",path);
+            path = File.Exists(path) ? path : Path.Combine("CoreScripts", path);
 
-            if(!File.Exists(path))
-                throw new FileNotFoundException("Module not found",path);
-            
+            if (!File.Exists(path))
+                throw new FileNotFoundException("Module not found", path);
+
             fixed (char* p = path)
             {
                 Core.ScheduleLoad(p);

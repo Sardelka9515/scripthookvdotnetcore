@@ -12,6 +12,11 @@ namespace GTA
         public string SupportURL;
 
         /// <summary>
+        /// Whether to execute script directly in main thread
+        /// </summary>
+		public bool NoScriptThread = false;
+
+        /// <summary>
         /// Set this to true to prevent a default instances from being created and registered during module init
         /// </summary>
         public bool NoDefaultInstance = false;

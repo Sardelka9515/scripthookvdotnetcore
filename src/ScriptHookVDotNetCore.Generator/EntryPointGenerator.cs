@@ -57,7 +57,9 @@ public static unsafe partial class EntryPoint
             catch (Exception ex)
             {
 #if DEBUG
-                MessageBox(default, ex.ToString(), "ScriptHookVDotNet source generator error", default);
+                // MessageBox(default, ex.ToString(), "ScriptHookVDotNet source generator error", default);
+#else
+                throw;
 #endif
             }
         }

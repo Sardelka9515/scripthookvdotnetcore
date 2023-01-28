@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -15,11 +16,8 @@ public class ScriptDomain
     public bool IsKeyPressed(Keys k) => Core.IsKeyPressed(k);
     public void PauseKeyEvents(bool pause) => Core.PauseKeyEvents(pause);
     public IntPtr PinString(ReadOnlySpan<char> str) => Marshaller.PinString(str);
-    public void ExecuteTask(IScriptTask task)
-    {
-        Core.EnsureMainThread();
-        task.Run();
-    }
+
+    public void ExecuteTask(IScriptTask task) => Core.ExecuteTask(task);
 }
 public static class NativeFunc
 {
@@ -34,7 +32,7 @@ public interface IScriptTask
 #endregion
 public static unsafe class Core
 {
-    public static HMODULE CurrentModule { get;private set; }
+    public static HMODULE CurrentModule { get; private set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
 
     public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
@@ -50,9 +48,9 @@ public static unsafe class Core
 
 
     private static List<Script> _scripts = new();
-    private static int _executingScriptIndex = -1;
     private static DWORD _mainThread;
-    private static LPVOID _mainFiber;
+
+    private static ConcurrentQueue<IScriptTask> _taskQueue = new();
 
     /// <summary>
     /// List all scripts in this module
@@ -66,16 +64,7 @@ public static unsafe class Core
         }
     }
 
-    public static Script ExecutingScript
-    {
-        get
-        {
-            lock (_scripts)
-            {
-                return _executingScriptIndex < 0 ? null : _scripts[_executingScriptIndex];
-            }
-        }
-    }
+    public static Script ExecutingScript { get; private set; }
 
     public static IntPtr Import(string entryPoint)
         => NativeLibrary.GetExport(CoreModule, entryPoint);
@@ -101,8 +90,7 @@ public static unsafe class Core
             {
                 try
                 {
-                    script.Abort(new AbortedEventArgs() { IsUnloading = true }); ;
-                    script.Dispose();
+                    script.Abort(new AbortedEventArgs() { IsUnloading = true });
                 }
                 catch (Exception ex)
                 {
@@ -122,19 +110,18 @@ public static unsafe class Core
         // We don't use enumerator to iterate through scripts, so it's safe to add script in the same thread.
         lock (_scripts)
         {
-            var type = script.ScriptType;
-            if ((script.GetAttribute(typeof(ScriptAttributes), nameof(ScriptAttributes.SingleInstance)) as bool?) != false
-                && _scripts.Any(x => x.ScriptType == type))
+            var type = script.Name;
+            if ((script.GetAttribute(nameof(ScriptAttributes.SingleInstance)) as bool?) != false
+                && _scripts.Any(x => x.Name == type))
                 throw new InvalidOperationException($"A script with the same type has already been registered");
 
-            if (_scripts.Any(x => x == script))
+            if (_scripts.Any(x => ReferenceEquals(x,script)))
                 throw new InvalidOperationException($"Same script object has already been registered");
 
-            Logger.Info("Registering script: " + script.ScriptType.ToString());
-            script.ScriptFiber = CreateFiber(default, script.PtrFiberEntry, default);
-            if (script.ScriptFiber == default) { throw new Win32Exception(Marshal.GetLastWin32Error(), "Failed to create fiber"); }
             _scripts.Add(script);
-            Logger.Info("Script registered: " + script.ScriptType.ToString());
+
+            var noThread = script.GetAttribute(nameof(ScriptAttributes.NoScriptThread));
+            script.Start(noThread == null || !(bool)noThread);
         }
     }
 
@@ -144,17 +131,51 @@ public static unsafe class Core
     /// </summary>
     public static void DoTick(LPVOID currentFiber)
     {
-        _mainFiber = currentFiber;
         _mainThread = GetCurrentThreadId();
         lock (_scripts)
         {
-            if (_scripts.Count > 0)
+            // Execute running scripts
+            for (int i = 0; i < _scripts.Count; i++)
             {
-                _executingScriptIndex = -1;
-                // Switch to the first script's fiber to begin the ticking chain and wait for the last script to switch back
-                SwitchToNextFiber();
-                CleanupStrings();
+
+                var script = _scripts[i];
+
+                if (script.Continue > GetTickCount64())
+                    continue;
+
+                _taskQueue.Clear();
+                ExecutingScript = script;
+
+                try
+                {
+                    if (script.IsUsingThread)
+                    {
+                        bool finishedInTime = true;
+
+                        // Resume script thread and execute any incoming tasks from it
+                        while ((finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000)) && _taskQueue.TryDequeue(out var task))
+                            task.Run();
+
+                        if (!finishedInTime)
+                        {
+                            throw new TimeoutException("Script execution has timed out after 5 seconds.");
+                        }
+                    }
+                    else
+                    {
+                        script.DoTick();
+                    }
+                    ExecutingScript = null;
+                }
+                catch (Exception ex)
+                {
+                    ExecutingScript = null;
+                    script.HandleException(ex);
+                }
+
             }
+
+            CleanupStrings();
         }
     }
 
@@ -187,6 +208,7 @@ public static unsafe class Core
 
     public static void OnInit(HMODULE currentModule)
     {
+        _mainThread = GetCurrentThreadId();
         CurrentModule = currentModule;
     }
 
@@ -210,26 +232,6 @@ public static unsafe class Core
     }
 
     /// <summary>
-    /// Switch to next script fiber or back to main fiber if all scripts have finished execution in this tick
-    /// </summary>
-    internal static void SwitchToNextFiber()
-    {
-        LPVOID fiber;
-        var time = GetTickCount64();
-        while (++_executingScriptIndex < _scripts.Count && _scripts[_executingScriptIndex].Continue > time) ;
-        if (_executingScriptIndex >= _scripts.Count)
-        {
-            _executingScriptIndex = -1;
-            fiber = _mainFiber;
-        }
-        else
-        {
-            fiber = _scripts[_executingScriptIndex].ScriptFiber;
-        }
-        SwitchToFiber(fiber);
-    }
-
-    /// <summary>
     /// Determine if the current thread is the main script thread
     /// </summary>
     public static bool IsMainThread() => GetCurrentThreadId() == _mainThread;
@@ -240,4 +242,36 @@ public static unsafe class Core
             throw new InvalidOperationException("This function can only be called from main thread.");
     }
 
+    public static void ExecuteTask(IScriptTask task)
+    {
+        if (IsMainThread())
+        {
+            task.Run();
+        }
+        else
+        {
+            // MessageBoxA(default, $"Scheduling task {task.GetType()}, {task}", "", 0);
+            var script = ExecutingScript;
+
+            if (script == null)
+                throw new InvalidOperationException("No script is currently executing");
+
+            script.ThrowIfAborted();
+            _taskQueue.Enqueue(task);
+
+            SignalAndWait(script.WaitEvent, script.ContinueEvent);
+            // MessageBoxA(default, $"Task completed {task}", "", 0);
+        }
+    }
+
+    static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)
+    {
+        toSignal.Release();
+        toWaitOn.Wait();
+    }
+    static bool SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn, int timeout)
+    {
+        toSignal.Release();
+        return toWaitOn.Wait(timeout);
+    }
 }

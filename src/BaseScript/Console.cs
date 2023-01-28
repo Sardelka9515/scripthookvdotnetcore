@@ -113,20 +113,7 @@ namespace SHVDN
         }
         static void AddLine(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, string color)
         {
-            var full = msg;
-            if (msg.Length <= 0) return;
-            trim:
-            ReadOnlySpan<char> line = $"~c~[{DateTime.Now.ToString("HH:mm:ss")}] ~w~{prefix} {color}{msg}";
-            if (GetTextLength(line) > 0.95)
-            {
-                msg = msg.Slice(0, msg.Length - Math.Max(5, msg.Length / 10));
-                goto trim;
-            }
-            _outputQueue.Enqueue(line.ToString());
-            if (msg != full)
-            {
-                AddLine(prefix, full.Slice(msg.Length), color);
-            }
+            _outputQueue.Enqueue($"~c~[{DateTime.Now.ToString("HH:mm:ss")}] ~w~{prefix} {color}{msg}");
         }
         static float GetTextLength(ReadOnlySpan<char> str)
         {

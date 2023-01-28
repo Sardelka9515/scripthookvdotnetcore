@@ -31,19 +31,14 @@ public class Globals
 
     public const uint CF_UNICODETEXT = 13;
 
-    public const Logger.LogLevel L_DBG = Logger.LogLevel.Debug;
-    public const Logger.LogLevel L_INF = Logger.LogLevel.Info;
-    public const Logger.LogLevel L_WRN = Logger.LogLevel.Warn;
-    public const Logger.LogLevel L_ERR = Logger.LogLevel.Error;
-
     public const string BASE_SCRIPT_NAME = "ScriptHookVDotNetCore.BaseScript.dll";
     public const string CONFIG_PATH = "ScriptHookVDotNetCore.ini";
 
-    public const uint SPDLOG_LEVEL_TRACE = 0;
-    public const uint SPDLOG_LEVEL_DEBUG = 1;
-    public const uint SPDLOG_LEVEL_INFO = 2;
-    public const uint SPDLOG_LEVEL_WARN = 3;
-    public const uint SPDLOG_LEVEL_ERROR = 4;
-    public const uint SPDLOG_LEVEL_CRITICAL = 5;
-    public const uint SPDLOG_LEVEL_OFF = 6;
+    public const uint L_TRC = 0;
+    public const uint L_DBG = 1;
+    public const uint L_INF = 2;
+    public const uint L_WRN = 3;
+    public const uint L_ERR = 4;
+    public const uint L_CRI = 5;
+    public const uint L_OFF = 6;
 }

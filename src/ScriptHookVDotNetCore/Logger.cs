@@ -2,7 +2,6 @@
 {
     public unsafe class Logger
     {
-        public enum LogLevel { Debug, Info, Warn, Error }
         static Logger()
         {
             _debug = (delegate* unmanaged<char*, void>)Core.Import("LogDebugW");
@@ -14,7 +13,7 @@
         public static void Info(ReadOnlySpan<char> msg) => Write(msg, L_INF);
         public static void Warn(ReadOnlySpan<char> msg) => Write(msg, L_WRN);
         public static void Error(ReadOnlySpan<char> msg) => Write(msg, L_ERR);
-        public static void Write(ReadOnlySpan<char> msg, LogLevel lev)
+        public static void Write(ReadOnlySpan<char> msg, uint lev)
         {
             delegate* unmanaged<char*, void> func =
             lev switch

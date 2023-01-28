@@ -120,7 +120,11 @@ static void Init() {
 		info("Symlink detected, base script will not be overwritten");
 	}
 
+#if DEBUG
+#else
 	ScheduleLoad(BASE_SCRIPT_NAME);
+#endif
+
 	Initialized = true;
 	return;
 }

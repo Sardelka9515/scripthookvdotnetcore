@@ -41,12 +41,22 @@ class FunctionOverloadGenerator : Generator
             args += ", InputArgument arg" + i;
         }
         sb.AppendLine(ret ? $"public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash{args})" : $"public static void Call(Hash hash{args})");
-        string push = "";
+        string alloc = argCount == 0 ? "" : $"var pArgs = stackalloc InputArgument[{argCount}];\n";
+        string copy = "";
         for (int i = 0; i < argCount; i++)
         {
-            push += $"NativePush64(arg{i}.Value);\n";
+            copy += $"pArgs[{i}] = arg{i};\n";
         }
-        var call = ret ? "return ConvertFromNative<T>(NativeCall());" : "NativeCall();";
-        sb.AppendLine($"{{\nNativeInit((ulong)hash);\n{push}{call}\n}}");
+        var execTask = $@"
+        var task = new NativeCallTask()
+        {{
+            Hash = (ulong)hash,
+            PtrArgs = {(argCount == 0 ? "null" : "(ulong*)pArgs")},
+            ArgsCount = {argCount},
+        }};
+        Core.ExecuteTask(task);
+";
+        var call = ret ? "return ConvertFromNative<T>(task.Result);" : "";
+        sb.AppendLine($"{{\nNativeInit((ulong)hash);\n{alloc}{copy}{execTask}{call}\n}}");
     }
 }

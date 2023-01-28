@@ -1,25 +1,34 @@
 ﻿using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
+using System.Threading;
+using System.Xml.Linq;
 using GTA.UI;
 
 namespace GTA;
 
 public unsafe abstract class Script
 {
-    public delegate void ScriptEntryDelegate(IntPtr lParam);
-    private readonly ScriptEntryDelegate _fiberEntry;
-    private bool _aborted;
-    public Type ScriptType { get; private set; }
+    private bool _aborted = false;
+    private Thread _thread;
+    internal SemaphoreSlim WaitEvent = null;
+    internal SemaphoreSlim ContinueEvent = null;
     internal ulong Continue = 0;
-    internal readonly LPVOID PtrFiberEntry;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
-    internal LPVOID ScriptFiber;
+    public Type Name { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the interval in ms between each <see cref="Tick"/>.
+    /// </summary>
+    public ulong Interval { get; set; }
+
+    /// <summary>
+    /// Gets whether this is the currently executing script.
+    /// </summary>
+    public bool IsExecuting => Core.ExecutingScript == this;
 
     /// <summary>
     /// Invoked every frame
     /// </summary>
     public event Action Tick;
-
 
     /// <summary>
     /// Invoked when the script is aborted, whether during the module unload or a manual call to <see cref="Abort"/>
@@ -41,12 +50,56 @@ public unsafe abstract class Script
     /// </summary>
     public event Action Started;
 
+    /// <summary>
+    /// Gets whether a dedicated thread is hosting the execution of this script.
+    /// </summary>
+    public bool IsUsingThread => _thread != null;
+
     public Script()
     {
-        // Need to store it somewhere to prevent GC from messing with it.
-        _fiberEntry = ScriptMain;
-        PtrFiberEntry = Marshal.GetFunctionPointerForDelegate(_fiberEntry);
-        ScriptType = GetType();
+        Name = GetType();
+        _ = NativeMemory.ArmorOffset; // Initialize NativeMemory
+    }
+
+    internal void DoTick()
+    {
+        // Process keyboard events
+        while (KeyboardEvents.TryDequeue(out Tuple<bool, KeyEventArgs> ev))
+        {
+            if (!ev.Item1)
+                OnKeyUp(ev.Item2);
+            else
+                OnKeyDown(ev.Item2);
+        }
+
+        OnTick();
+    }
+
+    /// <summary>
+    /// Starts execution of this script.
+    /// </summary>
+    public void Start(bool useThread = true)
+    {
+        try
+        {
+            if (useThread)
+            {
+                WaitEvent = new(0);
+                ContinueEvent = new(0);
+
+                _thread = new Thread(new ThreadStart(MainLoop));
+                _thread.Start();
+            }
+            else
+            {
+                OnStart();
+            }
+            Logger.Info($"Started script {Name}, thread:{(_thread == null ? "null" : _thread.ManagedThreadId)}.");
+        }
+        catch (Exception ex)
+        {
+            HandleException(ex);
+        }
     }
 
     /// <summary>
@@ -54,88 +107,120 @@ public unsafe abstract class Script
     /// </summary>
     public static void Yield()
     {
-        Core.EnsureMainThread();
-        Core.SwitchToNextFiber();
+        var script = Core.ExecutingScript;
+        if (script == null)
+            throw new InvalidOperationException("No script is currently executing");
+
+        Yield(script);
     }
 
     /// <summary>
     /// Yield the execution and continue after specified time in milliseconds
     /// </summary>
     /// <param name="ms"></param>
+    /// <exception cref="InvalidOperationException"></exception>
     public static void Wait(ulong ms)
     {
-        Core.EnsureMainThread();
         var script = Core.ExecutingScript;
-        if (script == null) throw new InvalidOperationException("No script is currently executing");
-        var time = GetTickCount64();
-        script.Continue = unchecked(time + ms);
-        // Overflow check
-        if (script.Continue < time || script.Continue < ms) script.Continue = ulong.MaxValue;
-        Core.SwitchToNextFiber();
+        if (script == null)
+            throw new InvalidOperationException("No script is currently executing");
+
+        Wait(script, ms);
     }
 
     /// <summary>
-    /// Override this method only if you want to manually control the script fiber, you're responsible for the yielding and exception handling yourself.
+    /// Yield the execution back to other scripts and game engine for one frame
     /// </summary>
-    /// <param name="lParam"></param>
-    protected virtual void ScriptMain(IntPtr lParam)
+    public static unsafe void Yield(Script script)
+    {
+        if (!script.IsUsingThread)
+            throw new InvalidOperationException("Cannot yield execution when not running in script thread");
+
+        script.ThrowIfAborted();
+        script.WaitEvent.Release();
+        script.ContinueEvent.Wait();
+    }
+
+    /// <summary>
+    /// Yield the execution and continue after specified time in milliseconds
+    /// </summary>
+    /// <param name="script"></param>
+    /// <param name="ms"></param>
+    public static void Wait(Script script, ulong ms)
+    {
+        script.ThrowIfAborted();
+        if (script.IsUsingThread)
+        {
+            var time = GetTickCount64();
+            script.Continue = unchecked(time + ms);
+            // Overflow check
+            if (script.Continue < time || script.Continue < ms) script.Continue = ulong.MaxValue;
+
+            Yield(script);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Cannot yield execution as script {script.Name} is not running in a dedicated thread");
+        }
+    }
+
+    /// <summary>
+    /// Override this method only if you want to manually control the script execution flow, you're responsible for the yielding and exception handling yourself.
+    /// </summary>
+    protected virtual void MainLoop()
     {
         try
         {
+            ContinueEvent.Wait();
             OnStart();
-            while (true)
-            {
-                while (KeyboardEvents.TryDequeue(out var e))
-                {
-                    if (e.Item1)
-                    {
-                        OnKeyDown(e.Item2);
-                    }
-                    else
-                    {
-                        OnKeyUp(e.Item2);
-                    }
-                }
+            Yield();
 
-                OnTick();
-                Yield();
+            while (!_aborted)
+            {
+                DoTick();
+
+                if (Interval != default)
+                    Wait(this, Interval);
+                else
+                    Yield(this);
             }
         }
         catch (Exception ex)
         {
-            Logger.Error($"Script {ScriptType} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
-            Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{ScriptType}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
-            var attribute = ScriptType.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType.FullName == typeof(ScriptAttributes).FullName);
-            var supportUrl = GetAttribute(typeof(ScriptAttributes), nameof(ScriptAttributes.SupportURL));
-            if (supportUrl != null)
-            {
-                Logger.Error($"Please check the following site for support on the issue: {supportUrl}");
-            }
-
-            Abort(new AbortedEventArgs() { Exception = ex, IsUnloading = false });
+            HandleException(ex);
         }
-
-
-        // Continue yielding the execution, just in case
-        while (true)
-        {
-            Yield();
-        }
-    }
-
-    public object GetAttribute(Type attrType, string name)
-    {
-        var attribute = ScriptType.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
-        return (attribute?.NamedArguments.FirstOrDefault(x => x.MemberName == name))?.TypedValue;
     }
 
     /// <summary>
-    /// Pause the script execution, can be called from any thread. If the call was made to and from currently executing script, the script will pause execution and block the caller's context immediately and indefinitely until resumed
+    /// Generate respective error message and abort script execution
     /// </summary>
+    /// <param name="ex"></param>
+    internal void HandleException(Exception ex)
+    {
+        Logger.Error($"Script {Name} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
+        Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{Name}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
+        var supportUrl = GetAttribute(nameof(ScriptAttributes.SupportURL));
+        if (supportUrl != null)
+        {
+            Logger.Error($"Please check the following site for support on the issue: {supportUrl}");
+        }
+        if (!_aborted)
+        {
+            Abort(new AbortedEventArgs() { Exception = ex, IsUnloading = false });
+        }
+    }
+
+    public object GetAttribute(string name) => GetAttribute(typeof(ScriptAttributes), name);
+
+    public object GetAttribute(Type attrType, string name)
+    {
+        var attribute = Name.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
+        return (attribute?.NamedArguments.FirstOrDefault(x => x.MemberName == name))?.TypedValue.Value;
+    }
+
     public void Pause()
     {
         Continue = ulong.MaxValue;
-        if (Core.IsMainThread() && this == Core.ExecutingScript) { Yield(); }
     }
 
     /// <summary>
@@ -195,31 +280,11 @@ public unsafe abstract class Script
         KeyUp?.Invoke(e);
     }
 
-    public void Dispose()
-    {
-        if (!_aborted)
-            throw new InvalidOperationException("The script has not been aborted yet");
-
-        if (ScriptFiber != default)
-        {
-            DeleteFiber(ScriptFiber);
-            ScriptFiber = default;
-        }
-    }
-
-    /// <summary>
-    /// Basically has the same effect as <see cref="Pause"/>. Repective virtual method and event handlers will be called
-    /// </summary>
-    /// <remarks>
-    /// Unlike SHVDN, this method does not actually abort the execution thread. 
-    /// As all script lives in the game thread, blocking it will cause the game to hang forever 
-    /// and this method won't have any effect
-    /// </remarks>
-    public void Abort(AbortedEventArgs args)
+    public void Abort(AbortedEventArgs e)
     {
         try
         {
-            OnAborted(args);
+            OnAborted(e);
         }
         catch (Exception ex)
         {
@@ -227,10 +292,40 @@ public unsafe abstract class Script
         }
         finally
         {
+            Continue = ulong.MaxValue;
             _aborted = true;
-            Pause();
+            if (IsUsingThread)
+            {
+                if (_thread.IsAlive == true)
+                {
+                    ContinueEvent.Release();
+                    if (!_thread.Join(5000))
+                    {
+                        Logger.Error($"Failed to join script thread: {Name}, instability is expected after module unload");
+                    }
+                    else
+                    {
+                        Logger.Debug($"Thread stopped: {Name}");
+                    }
+                }
+
+                if (this == Core.ExecutingScript)
+                {
+                    WaitEvent.Release();
+                }
+            }
         }
     }
+
+    internal void ThrowIfAborted()
+    {
+        if (_aborted) throw new ScriptAbortedException();
+    }
+}
+
+public class ScriptAbortedException : Exception
+{
+    public ScriptAbortedException() : base("The script has been aborted") { }
 }
 
 public class AbortedEventArgs : EventArgs

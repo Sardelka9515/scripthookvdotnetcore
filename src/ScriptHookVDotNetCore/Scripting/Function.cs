@@ -10,6 +10,28 @@ public interface INativeValue
     ulong NativeValue { get; set; }
 }
 
+public unsafe class NativeCallTask : IScriptTask
+{
+    public ulong Hash;
+    public ulong* PtrArgs;
+    public int ArgsCount;
+    public ulong* Result;
+    public void Run()
+    {
+        Core.EnsureMainThread();
+        NativeInit(Hash);
+        for (int i = 0; i < ArgsCount; i++)
+        {
+            NativePush64(PtrArgs[i]);
+        }
+        Result = NativeCall();
+    }
+    public override string ToString()
+    {
+        return $"{(Hash)Hash},{(ulong)PtrArgs},{ArgsCount},{(ulong)Result}";
+    }
+}
+
 public static unsafe partial class Function
 {
     #region Push string
@@ -127,23 +149,32 @@ public static unsafe partial class Function
     /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
     public static void Call(Hash hash, params InputArgument[] args)
     {
-        NativeInit((ulong)hash);
-        for (int i = 0; i < args.Length; i++)
+        fixed(InputArgument* pArgs = args)
         {
-            NativePush64(args[i].Value);
+            var task = new NativeCallTask()
+            {
+                Hash = (ulong)hash,
+                PtrArgs =(ulong*)pArgs,
+                ArgsCount=args.Length,
+            };
+            Core.ExecuteTask(task);
         }
-        NativeCall();
     }
 
     /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
     public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash, params InputArgument[] args)
     {
-        NativeInit((ulong)hash);
-        for (int i = 0; i < args.Length; i++)
+        fixed (InputArgument* pArgs = args)
         {
-            NativePush64(args[i].Value);
+            var task = new NativeCallTask()
+            {
+                Hash = (ulong)hash,
+                PtrArgs = (ulong*)pArgs,
+                ArgsCount = args.Length,
+            };
+            Core.ExecuteTask(task);
+            return ConvertFromNative<T>(task.Result);
         }
-        return ConvertFromNative<T>(NativeCall());
     }
     #endregion
 
