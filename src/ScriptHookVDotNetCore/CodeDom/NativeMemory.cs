@@ -1094,7 +1094,7 @@ namespace SHVDN
     public static unsafe class NativeMemory
     {
         public const string StructSignature = "SHVDN.NativeMemory.ceee79636e5306531977db9ab5150f4d19b26384b3c11bf3309124622e8f002f";
-        private static readonly Mutex _nativeMemoryMutex = new Mutex(true, StructSignature);
+        private static readonly Mutex _nativeMemoryMutex = new Mutex(false, StructSignature);
         static NativeMemory()
         {
             try
@@ -1108,7 +1108,7 @@ namespace SHVDN
                 // Return if the struct has already been initialized
                 else if ((_pNativeMemory = (NativeMemoryStruct*)Core.GetPtr(StructSignature)) != null)
                 {
-                    Logger.Debug($"Using NativeMemoryStruct at address {(IntPtr)_pNativeMemory}");
+                    Logger.Debug($"Using NativeMemoryStruct at address {(IntPtr)_pNativeMemory}, size: {sizeof(NativeMemoryStruct)}");
                     return;
                 }
 
