@@ -41,7 +41,7 @@ As the entire runtime is based on NativeAOT, all limitations apply.
 - No dynamic assembly loading and code execution, executing code on the fly with console is thus impossible
 - Only scripts from the same module are visible to each other, see [cross-module comunication](https://github.com/Sardelka9515/scripthookvdotnetcore/master/README.md#cross-module-communication)
 - Longer compile time and larger binary size
-- No fail-safe script abortion, the game will hang if you block the main thread
+- ~~No fail-safe script abortion, the game will hang if you block the main thread~~ starting with 1.1, dedicated script thread was reintroduced
 - C# is the only language the source generator supports as for now, support for VB might be added in the future
 
 ## Cross-module communication
@@ -68,13 +68,15 @@ To call functions from other modules, you first need to export functions in the 
   }
  }
  ```
+ 
 ## Upgrade & migration guide
 The code is written in such way that should make the migration from ScriptHookVDotNet pretty easy. 
 - Remove the reference from SHVDN
 - Upgrade project TFM to .NET 7
 - Remove WinForms reference as it's not supported by NativeAOT (yet). `Keys` and `KeyEvent` are now defined in the `GTA` namespace.
 - Install the nuget package, then you should be good to go.
-- Some internal APIs were removed, such as `SHVDN.ScriptDomain` and `SHVDN.Console`(console will be added in the future), so changes might be needed if you made use of them.
+- Some internal APIs were removed, such as `SHVDN.ScriptDomain` and `SHVDN.Console`. A new static class `GTA.Console` was introduced in 1.1, which expose access to the in-game console.
+- If you use the reflection api(or serialization library such as Newtonsoft.json), you'll probaly need to configure [trimming options](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options?pivots=dotnet-7-0), using the [descriptor format](https://github.com/dotnet/linker/blob/main/docs/data-formats.md#descriptor-format) xml file is recommended.
 
 ## Building the project
 - Install .NET 7 SDK, C++ desktop development workload and build tools v143
