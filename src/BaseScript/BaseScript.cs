@@ -49,7 +49,6 @@ internal unsafe class BaseScript : Script
         }
         Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka ---");
         Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
-        Notification.Show("Hello");
         Load();
     }
 
