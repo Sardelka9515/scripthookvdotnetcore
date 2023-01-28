@@ -1091,7 +1091,7 @@ namespace SHVDN
         internal int cEventSwitch2NMTypeIndex;
     }
 
-    public static unsafe class NativeMemory
+    public static unsafe partial class NativeMemory
     {
         public const string StructSignature = "SHVDN.NativeMemory.ceee79636e5306531977db9ab5150f4d19b26384b3c11bf3309124622e8f002f";
         private static readonly Mutex _nativeMemoryMutex = new Mutex(false, StructSignature);

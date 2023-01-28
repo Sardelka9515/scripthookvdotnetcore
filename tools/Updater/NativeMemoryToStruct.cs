@@ -304,7 +304,7 @@ namespace SHVDN
         {members}
     }}
 
-    public static unsafe class NativeMemory
+    public static unsafe partial class NativeMemory
     {{
         public const string StructSignature;
         private static readonly Mutex _nativeMemoryMutex = new Mutex(false, StructSignature);
