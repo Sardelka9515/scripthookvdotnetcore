@@ -185,6 +185,7 @@ public unsafe abstract class Script
                     Yield(this);
             }
         }
+        catch (ScriptAbortedException) { }
         catch (Exception ex)
         {
             HandleException(ex);
@@ -198,7 +199,10 @@ public unsafe abstract class Script
     internal void HandleException(Exception ex)
     {
         Logger.Error($"Script {Name} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
-        Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{Name}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
+        if (Core.ExecutingScript == this || Core.IsMainThread())
+        {
+            Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{Name}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
+        }
         var supportUrl = GetAttribute(nameof(ScriptAttributes.SupportURL));
         if (supportUrl != null)
         {
@@ -307,11 +311,6 @@ public unsafe abstract class Script
                     {
                         Logger.Debug($"Thread stopped: {Name}");
                     }
-                }
-
-                if (this == Core.ExecutingScript)
-                {
-                    WaitEvent.Release();
                 }
             }
         }
