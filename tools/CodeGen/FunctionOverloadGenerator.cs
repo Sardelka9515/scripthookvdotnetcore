@@ -41,22 +41,41 @@ class FunctionOverloadGenerator : Generator
             args += ", InputArgument arg" + i;
         }
         sb.AppendLine(ret ? $"public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash{args})" : $"public static void Call(Hash hash{args})");
-        string alloc = argCount == 0 ? "" : $"var pArgs = stackalloc InputArgument[{argCount}];\n";
-        string copy = "";
-        for (int i = 0; i < argCount; i++)
-        {
-            copy += $"pArgs[{i}] = arg{i};\n";
-        }
+        // var debug = "";
+        // var ps = "";
+        // for (int i = 0; i < argCount; i++)
+        // {
+        //     ps += $"{{(ulong)&arg{i}}},";
+        // }
+        // if (argCount > 0)
+        // {
+        //     debug = $@"MessageBoxA(0, $""{ps}"", """", 0);";
+        // }
+        var pArgs = argCount > 0 ? $"&arg0" : "null";
         var execTask = $@"
-        var task = new NativeCallTask()
-        {{
-            Hash = (ulong)hash,
-            PtrArgs = {(argCount == 0 ? "null" : "(ulong*)pArgs")},
-            ArgsCount = {argCount},
-        }};
-        Core.ExecuteTask(task);
+        var task = new NativeCallTask((ulong)hash, {pArgs}, {argCount});
+        Core.DispatchTask(task);
 ";
         var call = ret ? "return ConvertFromNative<T>(task.Result);" : "";
-        sb.AppendLine($"{{\n{alloc}{copy}{execTask}{call}\n}}");
+        var thread = $"{execTask}{call}";
+
+
+        string push = "";
+        for (int i = 0; i < argCount; i++)
+        {
+            push += $"NativePush64(arg{i});\n";
+        }
+        var callDirect = ret ? "return ConvertFromNative<T>(NativeCall());" : "NativeCall();";
+        var noThread = $"NativeInit((ulong)hash);\n{push}{callDirect}";
+        sb.AppendLine($@"{{
+        if (Core.IsMainThread())
+        {{
+            {noThread}
+        }}
+        else
+        {{
+            {thread}
+        }}
+}}");
     }
 }

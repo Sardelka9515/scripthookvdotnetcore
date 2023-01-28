@@ -115,7 +115,7 @@ public static unsafe class Core
                 && _scripts.Any(x => x.Name == type))
                 throw new InvalidOperationException($"A script with the same type has already been registered");
 
-            if (_scripts.Any(x => ReferenceEquals(x,script)))
+            if (_scripts.Any(x => ReferenceEquals(x, script)))
                 throw new InvalidOperationException($"Same script object has already been registered");
 
             _scripts.Add(script);
@@ -241,7 +241,12 @@ public static unsafe class Core
         if (!IsMainThread())
             throw new InvalidOperationException("This function can only be called from main thread.");
     }
-
+    
+    /// <summary>
+    /// Dispatch the task to main thread and wait for it to finish if the script is running in a dedicated thread, otherwise, execute it directly
+    /// </summary>
+    /// <param name="task"></param>
+    /// <exception cref="InvalidOperationException"></exception>
     public static void ExecuteTask(IScriptTask task)
     {
         if (IsMainThread())
@@ -250,18 +255,26 @@ public static unsafe class Core
         }
         else
         {
-            // MessageBoxA(default, $"Scheduling task {task.GetType()}, {task}", "", 0);
-            var script = ExecutingScript;
-
-            if (script == null)
-                throw new InvalidOperationException("No script is currently executing");
-
-            script.ThrowIfAborted();
-            _taskQueue.Enqueue(task);
-
-            SignalAndWait(script.WaitEvent, script.ContinueEvent);
-            // MessageBoxA(default, $"Task completed {task}", "", 0);
+            DispatchTask(task);
         }
+    }
+
+    /// <summary>
+    /// Dispatch a task to main thread and wait for the execution to finish no matter what
+    /// </summary>
+    /// <param name="task"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    internal static void DispatchTask(IScriptTask task)
+    {
+        var script = ExecutingScript;
+
+        if (script?.IsUsingThread != true)
+            throw new InvalidOperationException("No script is currently executing or script is not using dedicated thread");
+
+        script.ThrowIfAborted();
+        _taskQueue.Enqueue(task);
+
+        SignalAndWait(script.WaitEvent, script.ContinueEvent);
     }
 
     static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)

@@ -20,7 +20,7 @@ struct ConfigStruct
 internal unsafe class BaseScript : Script
 {
 
-    static ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
+    static readonly ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
     static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> AddLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("AddLogHandler");
     static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> RemoveLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("RemoveLogHandler");
 

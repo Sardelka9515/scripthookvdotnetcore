@@ -13,7 +13,7 @@ public static unsafe class ScriptHookV
     {
         ScriptWait = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?scriptWait@@YAXK@Z");
         NativeInit = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?nativeInit@@YAX_K@Z");
-        NativePush64 = (delegate* unmanaged[SuppressGCTransition]<ulong, void>)Import("?nativePush64@@YAX_K@Z");
+        NativePush64 = (delegate* unmanaged[SuppressGCTransition]<InputArgument, void>)Import("?nativePush64@@YAX_K@Z");
         NativeCall = (delegate* unmanaged[SuppressGCTransition]<ulong*>)Import("?nativeCall@@YAPEA_KXZ");
         GetGlobalPtr = (delegate* unmanaged[SuppressGCTransition]<int, IntPtr>)Import("?getGlobalPtr@@YAPEA_KH@Z");
     }
@@ -21,7 +21,7 @@ public static unsafe class ScriptHookV
     public static delegate* unmanaged[SuppressGCTransition]<ulong, void> ScriptWait;
 
     public static delegate* unmanaged[SuppressGCTransition]<ulong, void> NativeInit;
-    public static delegate* unmanaged[SuppressGCTransition]<ulong, void> NativePush64;
+    public static delegate* unmanaged[SuppressGCTransition]<InputArgument, void> NativePush64;
     public static delegate* unmanaged[SuppressGCTransition]<ulong*> NativeCall;
 
     public static delegate* unmanaged[SuppressGCTransition]<int, IntPtr> GetGlobalPtr;

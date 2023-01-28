@@ -12,13 +12,18 @@ public interface INativeValue
 
 public unsafe class NativeCallTask : IScriptTask
 {
+    public NativeCallTask(ulong hash, InputArgument* ptrArgs, int argCount)
+    {
+        Hash = hash;
+        PtrArgs = ptrArgs;
+        ArgsCount = argCount;
+    }
     public ulong Hash;
-    public ulong* PtrArgs;
+    public InputArgument* PtrArgs;
     public int ArgsCount;
     public ulong* Result;
     public void Run()
     {
-        Core.EnsureMainThread();
         NativeInit(Hash);
         for (int i = 0; i < ArgsCount; i++)
         {
@@ -29,6 +34,34 @@ public unsafe class NativeCallTask : IScriptTask
     public override string ToString()
     {
         return $"{(Hash)Hash},{(ulong)PtrArgs},{ArgsCount},{(ulong)Result}";
+    }
+}
+
+/// <summary>
+/// Push arguments that are placed in reverse order. <see cref="PtrArgLast"/> points to the last argument 
+/// </summary>
+/// <remarks>Example memory layout: [arg2][arg1][arg0], <see cref="PtrArgLast"/> points to arg2</remarks>
+public unsafe class ReversedNativeCallTask : IScriptTask
+{
+    public ReversedNativeCallTask(ulong hash, InputArgument* ptrArgLast, int argCount)
+    {
+        Hash = hash;
+        PtrArgLast = ptrArgLast;
+        ArgsCount = argCount;
+    }
+    public ulong Hash;
+    public InputArgument* PtrArgLast;
+    public int ArgsCount;
+    public ulong* Result;
+    public void Run()
+    {
+        NativeInit(Hash);
+        while (ArgsCount > 0) { NativePush64(PtrArgLast[--ArgsCount]); }
+        Result = NativeCall();
+    }
+    public override string ToString()
+    {
+        return $"{(Hash)Hash},{(ulong)PtrArgLast},{ArgsCount},{(ulong)Result}";
     }
 }
 
@@ -149,14 +182,9 @@ public static unsafe partial class Function
     /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
     public static void Call(Hash hash, params InputArgument[] args)
     {
-        fixed(InputArgument* pArgs = args)
+        fixed (InputArgument* pArgs = args)
         {
-            var task = new NativeCallTask()
-            {
-                Hash = (ulong)hash,
-                PtrArgs =(ulong*)pArgs,
-                ArgsCount=args.Length,
-            };
+            var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
             Core.ExecuteTask(task);
         }
     }
@@ -166,12 +194,7 @@ public static unsafe partial class Function
     {
         fixed (InputArgument* pArgs = args)
         {
-            var task = new NativeCallTask()
-            {
-                Hash = (ulong)hash,
-                PtrArgs = (ulong*)pArgs,
-                ArgsCount = args.Length,
-            };
+            var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
             Core.ExecuteTask(task);
             return ConvertFromNative<T>(task.Result);
         }
