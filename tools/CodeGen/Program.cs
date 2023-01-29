@@ -1,7 +1,4 @@
 ﻿global using NativeData = System.Collections.Generic.Dictionary<string, System.Collections.Generic.Dictionary<string, CodeGen.NativeInfo>>;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Newtonsoft.Json;

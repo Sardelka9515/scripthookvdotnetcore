@@ -44,7 +44,7 @@ namespace CodeGen
         /// <summary>
         /// Generator GTA.Native.Function overloads
         /// </summary>
-        GenFunctionOverloads = 32,
+        GenFunctionOverloads = 64,
 
         /// <summary>
         ///     All the above, default
