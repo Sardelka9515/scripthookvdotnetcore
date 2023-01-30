@@ -177,13 +177,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		SetPtr("Config", (uint64_t)&Config);
 		auto callback_sink = std::make_shared<sinks::callback_sink_mt>([](const details::log_msg& msg) {
 			LOCK(LogHandlersMutex);
-			auto time = (uint64_t)msg.time.time_since_epoch().count();
-			auto level = (uint32_t)msg.level;
-			auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
-			for (auto lh : LogHandlers) {
-				lh(time, level, payload);
-			}
-		});
+		auto time = (uint64_t)msg.time.time_since_epoch().count();
+		auto level = (uint32_t)msg.level;
+		auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
+		for (auto lh : LogHandlers) {
+			lh(time, level, payload);
+		}
+			});
 
 		auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
 		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
@@ -199,10 +199,23 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 		// Memory stuff
 		auto p_launcherCheck = Pattern::Scan("E8 ? ? ? ? 84 C0 75 0C B2 01 B9 2F");
-		memset(p_launcherCheck, 0x90, 21);
+		if (p_launcherCheck) {
+			memset(p_launcherCheck, 0x90, 21);
+		}
+		else {
+			warn("Can't find pattern for launcher check");
+		}
+
 		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
-		memset(p_legalNotice, 0x90, 2);
-		
+		if (p_legalNotice) {
+			memset(p_legalNotice, 0x90, 2);
+		}
+		else {
+			warn("Can't find pattern for legal notice");
+		}
+
+		auto scrThreadCollection = Pattern::Scan("48 8B C8 EB 03 48 8B CB 48 8B 05");
+
 		break;
 	}
 	case DLL_PROCESS_DETACH:
