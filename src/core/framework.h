@@ -7,6 +7,7 @@
 #include <tlhelp32.h>
 #include <tchar.h>
 #include <winternl.h>
+#include <Psapi.h>
 // std
 #include <iostream>
 #include <string> 

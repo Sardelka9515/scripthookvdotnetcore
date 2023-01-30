@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "exports.h"
 #include "resource.h"
+#include "Pattern.h"
 static bool Initialized = false;
 static void FATAL(string msg) {
 	msg = string("Fatal error ocurred: ") + msg;
@@ -195,6 +196,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		presentCallbackRegister(OnPresent);
 		keyboardHandlerRegister(OnKeyboard);
 		scriptRegister(hModule, ScriptMain);
+
+		// Memory stuff
+		auto p_launcherCheck = Pattern::Scan("E8 ? ? ? ? 84 C0 75 0C B2 01 B9 2F");
+		memset(p_launcherCheck, 0x90, 21);
+		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
+		memset(p_legalNotice, 0x90, 2);
+		
 		break;
 	}
 	case DLL_PROCESS_DETACH:
