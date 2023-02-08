@@ -14,6 +14,10 @@ A screenshot from the [AirStrike example script](https://github.com/Sardelka9515
 - Reload scripts without restarting the game. Press **End** to unload all scripts, **Home** to reload
 - Better performance
 
+## Troubleshooting
+- [Issue running with ScriptHookVDotNet](https://github.com/Sardelka9515/scripthookvdotnetcore/issues/3)
+- Since NativeAOT does not run under the normal .NET runtime, fatal crash is usally harder to debug. Normal CLR exceptions in script thread should be handled by the runtime, but a fatal error such as access violation or memory/GC corruption due to the use of unsafe code will result in a violent crash with few clues to debug. In that case, you should wait for the game and SHVDNC to fininsh loading, attach to the process with Visual Studio's debugger, then load your module through the in-game console, it isn't perfect, but at least gives you some insight of what might be causing the trouble.
+
 ## How it works?
 NativeAOT allow us to compile .NET code to native machine code, so it can be loaded like a regular Win32 module. Each module can have multiple scripts in it, just define a class that inherits from `GTA.Script` with default constructor. An instance will be automatically created.
 
