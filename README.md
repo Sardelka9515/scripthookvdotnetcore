@@ -91,7 +91,7 @@ The code is written in such way that should make the migration from ScriptHookVD
 ```
 vcpkg integrate install
 vcpkg install minhook:x64-windows-static
-vcpkg install boost:x64-windows-static
+vcpkg install spdlog:x64-windows-static
 ```
 - Download and extract ScriptHookV SDK to **sdk** folder
 - Build the solution with Visual Studio 2022
