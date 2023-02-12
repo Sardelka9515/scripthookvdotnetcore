@@ -13,22 +13,11 @@ BOOL ListProcessThreads(DWORD dwOwnerPID, DWORD results[] = NULL, LPCWSTR termin
 BOOL GetModuleHandleExWHook(DWORD   dwFlags, LPCWSTR  lpModuleName, HMODULE* phModule);
 DWORD FlsAllocHook(PFLS_CALLBACK_FUNCTION lpCallback);
 
-static void FATAL(string msg) {
-	msg = string("Fatal error ocurred: ") + msg;
-	spdlog::error(msg);
-	MessageBoxA(NULL, msg.c_str(), "FATAL!", MB_OK);
-	throw exception(msg.c_str());
-}
 mutex FlsMutex;
 DWORD FlsIndecies[256] = { 0 };
 int FlsCount = 0;
 GETMODULEHANDLEEXW GetModuleHandleExWOrg = NULL;
 FLSALLOC FlsAllocOrg = NULL;
-void MH_Check(MH_STATUS code) {
-	if (code != MH_OK) {
-		FATAL(string("Failed to create API hook => ") + string(MH_StatusToString(code)));
-	}
-}
 
 #pragma endregion
 #pragma region Static

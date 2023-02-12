@@ -5,13 +5,14 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace SHVDN;
 
 /// <summary>
 /// Some imports of required WINAPI
 /// </summary>
-public static unsafe class PInvoke
+public static unsafe partial class PInvoke
 {
     public static readonly HMODULE User32 = NativeLibrary.Load("User32.dll");
     public static readonly HMODULE Kernel32 = NativeLibrary.Load("Kernel32.dll");
@@ -35,8 +36,10 @@ public static unsafe class PInvoke
 
     public static delegate* unmanaged<bool> CloseClipboard = (delegate* unmanaged<bool>)NativeLibrary.GetExport(User32, "CloseClipboard");
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [LibraryImport("kernel32.dll", SetLastError = true)]
     [PreserveSig]
-    public static extern uint GetModuleFileNameW(HMODULE hModule, char* buf, uint nSize);
-
+    public static partial uint GetModuleFileNameW(HMODULE hModule, char* buf, uint nSize);
+    
+    [LibraryImport("kernel32.dll")]
+    public static partial IntPtr GetConsoleWindow();
 }

@@ -23,6 +23,7 @@
 #include <MinHook.h>
 // spdlog
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "callback_sink.h"
 
@@ -68,6 +69,20 @@ static string WTS(wstring ws) {
 static wstring STW(string s) {
 	return wstring(s.begin(), s.end());
 }
+
+static void FATAL(string msg) {
+	msg = string("Fatal error ocurred: ") + msg;
+	spdlog::error(msg);
+	MessageBoxA(NULL, msg.c_str(), "FATAL!", MB_OK);
+	throw exception(msg.c_str());
+}
+
+static void MH_Check(MH_STATUS code) {
+	if (code != MH_OK) {
+		FATAL(string("Failed to create API hook => ") + string(MH_StatusToString(code)));
+	}
+}
+
 #define PWTS(lpcwstr) WTS(wstring(lpcwstr)).c_str()
 #define PSTW(lpcstr) STW(string(lpcstr)).c_str()
 

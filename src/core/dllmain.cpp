@@ -2,13 +2,8 @@
 #include "exports.h"
 #include "resource.h"
 #include "Pattern.h"
+#include "natives.h"
 static bool Initialized = false;
-static void FATAL(string msg) {
-	msg = string("Fatal error ocurred: ") + msg;
-	spdlog::error(msg);
-	MessageBoxA(NULL, msg.c_str(), "FATAL!", MB_OK);
-	throw exception(msg.c_str());
-}
 
 LPVOID DoJob(Job* pj) {
 	switch (pj->Type) {
@@ -84,9 +79,8 @@ static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, 
 	}
 }
 
-
 static void Init() {
-	if (Initialized) return; // Gets called evertime after game loaded
+	if (Initialized) return; // Gets called everytime after game loaded
 	AotLoader::Init();
 	info("API hook created");
 	auto hInfo = FindResource(CurrentModule, MAKEINTRESOURCE(BASE_SCRIPT_RES), MAKEINTRESOURCE(BASE_SCRIPT_RES));
@@ -125,7 +119,6 @@ static void Init() {
 #else
 	ScheduleLoad(BASE_SCRIPT_NAME);
 #endif
-
 	Initialized = true;
 	return;
 }
@@ -165,6 +158,67 @@ void ScriptMain() {
 		scriptWait(0);
 	}
 }
+DWORD Background(LPVOID lParam) {
+
+	SetPtr("Config", (uint64_t)&Config);
+
+	// Memory stuff
+	auto p_launcherCheck = Pattern::Scan("E8 ? ? ? ? 84 C0 75 0C B2 01 B9 2F");
+	if (p_launcherCheck) {
+		memset(p_launcherCheck, 0x90, 21);
+	}
+	else {
+		warn("Can't find pattern for launcher check");
+	}
+
+	auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
+	if (p_legalNotice) {
+		memset(p_legalNotice, 0x90, 2);
+	}
+	else {
+		warn("Can't find pattern for legal notice");
+	}
+
+	auto scrThreadCollection = Pattern::Scan("48 8B C8 EB 03 48 8B CB 48 8B 05");
+
+#ifdef DEBUG
+	AllocConsole();
+	SetConsoleTitle(L"GTAV debug console");
+	FILE* s;
+	freopen_s(&s, "CONIN$", "r", stdin);
+	freopen_s(&s, "CONOUT$", "w", stdout);
+	freopen_s(&s, "CONOUT$", "w", stderr);
+#endif // DEBUG
+
+
+
+	auto callback_sink = std::make_shared<sinks::callback_sink_mt>([](const details::log_msg& msg) {
+		LOCK(LogHandlersMutex);
+	auto time = (uint64_t)msg.time.time_since_epoch().count();
+	auto level = (uint32_t)msg.level;
+	auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
+	for (auto lh : LogHandlers) {
+		lh(time, level, payload);
+	}
+		});
+
+	auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
+#ifdef DEBUG
+	auto console_sink = std::make_shared<sinks::stdout_color_sink_mt>(color_mode::automatic);
+	Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink,console_sink }));
+#else
+	Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
+#endif // DEBUG
+
+	Logger->set_level(level::trace);
+	Logger->flush_on(level::info);
+	Logger->set_pattern("[%H:%M:%S] [%^%l%$] %v");
+	set_default_logger(Logger);
+	flush_every(chrono::seconds(3));
+	info("Logging system initilized");
+	return 0;
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved
@@ -174,48 +228,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH: {
-		SetPtr("Config", (uint64_t)&Config);
-		auto callback_sink = std::make_shared<sinks::callback_sink_mt>([](const details::log_msg& msg) {
-			LOCK(LogHandlersMutex);
-		auto time = (uint64_t)msg.time.time_since_epoch().count();
-		auto level = (uint32_t)msg.level;
-		auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
-		for (auto lh : LogHandlers) {
-			lh(time, level, payload);
-		}
-			});
+		CreateThread(NULL, NULL, &Background, NULL, NULL, NULL);
 
-		auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
-		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
-		Logger->set_level(level::trace);
-		Logger->flush_on(level::info);
-		Logger->set_pattern("[%H:%M:%S] [%^%l%$] %v");
-		set_default_logger(Logger);
-		flush_every(chrono::seconds(3));
-		info("Logging system initilized");
 		presentCallbackRegister(OnPresent);
 		keyboardHandlerRegister(OnKeyboard);
 		scriptRegister(hModule, ScriptMain);
-
-		// Memory stuff
-		auto p_launcherCheck = Pattern::Scan("E8 ? ? ? ? 84 C0 75 0C B2 01 B9 2F");
-		if (p_launcherCheck) {
-			memset(p_launcherCheck, 0x90, 21);
-		}
-		else {
-			warn("Can't find pattern for launcher check");
-		}
-
-		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
-		if (p_legalNotice) {
-			memset(p_legalNotice, 0x90, 2);
-		}
-		else {
-			warn("Can't find pattern for legal notice");
-		}
-
-		auto scrThreadCollection = Pattern::Scan("48 8B C8 EB 03 48 8B CB 48 8B 05");
-
 		break;
 	}
 	case DLL_PROCESS_DETACH:

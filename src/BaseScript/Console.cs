@@ -199,7 +199,7 @@ namespace SHVDN
         {
             lock (_commands)
             {
-                StringBuilder help = new StringBuilder();
+                StringBuilder help = new();
                 var commands = _commands.Values.OrderBy(x => x.Assembly);
                 if (!commands.Any()) return;
                 string assm = null;

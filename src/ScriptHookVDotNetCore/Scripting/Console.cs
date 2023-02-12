@@ -85,10 +85,18 @@ namespace GTA
 
         public static void Print(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, params object[] args)
         {
-            msg = string.Format(msg.ToString(), args);
+            if (args != null && args.Length > 0)
+            {
+                msg = string.Format(msg.ToString(), args);
+            }
             fixed (char* pp = prefix, pm = msg)
             {
                 PrintConsoleMessage(pp, pm);
+            }
+
+            if (GetConsoleWindow() != default)
+            {
+                System.Console.WriteLine($"{prefix} {msg}");
             }
         }
 
