@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using GTA;
-using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace SHVDN;
 
@@ -34,7 +34,8 @@ public static unsafe class Core
 {
     public static HMODULE CurrentModule { get; private set; }
     public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
-
+    public static readonly Version AsiVersion = Version.Parse(FileVersionInfo.GetVersionInfo("ScriptHookVDotNetCore.asi").FileVersion ?? "0.0.0.0");
+    public static readonly Version ScriptingApiVersion = typeof(Core).Assembly.GetName().Version;
     public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
     public static readonly delegate* unmanaged<char*, void> ScheduleUnload = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
     public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
@@ -210,6 +211,10 @@ public static unsafe class Core
     {
         _mainThread = GetCurrentThreadId();
         CurrentModule = currentModule;
+        if (AsiVersion < ScriptingApiVersion)
+        {
+            MessageBoxA(default, $"Current ScriptHookVDotNetCore version is {AsiVersion}, while {ScriptingApiVersion} or higher is required. Update ScriptHookVDotNetCore if you experience random crashes", "Warning", default);
+        }
     }
 
     /// <summary>
@@ -241,7 +246,7 @@ public static unsafe class Core
         if (!IsMainThread())
             throw new InvalidOperationException("This function can only be called from main thread.");
     }
-    
+
     /// <summary>
     /// Dispatch the task to main thread and wait for it to finish if the script is running in a dedicated thread, otherwise, execute it directly
     /// </summary>

@@ -12,10 +12,13 @@
     <ClInclude Include="exports.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="Pattern.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="core.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="basescri.bin" />
   </ItemGroup>
 </Project>

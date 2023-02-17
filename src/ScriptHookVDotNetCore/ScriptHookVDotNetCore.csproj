@@ -17,7 +17,7 @@
 		<Authors>Sardelka</Authors>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
-		<Version>1.1.0</Version>
+		<Version>1.1.1</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>
