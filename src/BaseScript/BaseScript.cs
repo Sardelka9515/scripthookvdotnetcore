@@ -47,7 +47,7 @@ internal unsafe class BaseScript : Script
         {
             Logger.Error("Error loading configuration file: \n" + ex);
         }
-        Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {typeof(Core).Assembly.GetName().Version} by Sardelka ---");
+        Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {Core.AsiVersion} by Sardelka, base script version: {Core.ScriptingApiVersion} ---");
         Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
         Load();
     }
