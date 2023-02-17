@@ -72,7 +72,7 @@ public static unsafe partial class EntryPoint
         string GenerateScriptsRegister()
         {
             var source = "GTA.Script script;\n";
-            var scripts = AllClasses.Where(x => x.TypeKind == TypeKind.Class && !x.IsAbstract && x.BaseType?.ToString() == "GTA.Script");
+            var scripts = AllClasses.Where(x => x.TypeKind == TypeKind.Class && !x.IsAbstract && x.IsSubClassOf("GTA.Script"));
             if (!scripts.Any()) return null;
             foreach (var script in scripts)
             {
