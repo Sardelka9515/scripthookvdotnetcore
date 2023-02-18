@@ -5,6 +5,10 @@
 		<AssemblyName>ScriptHookVDotNetCore.Generator</AssemblyName>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>preview</LangVersion>
+		<SHVDNC_VERSION Condition="'$(SHVDNC_VERSION)' == ''">1.0.0.0</SHVDNC_VERSION>
+		<Version>$(SHVDNC_VERSION)</Version>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.4.0" PrivateAssets="all" />

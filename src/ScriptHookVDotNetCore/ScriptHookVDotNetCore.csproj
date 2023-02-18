@@ -17,7 +17,8 @@
 		<Authors>Sardelka</Authors>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
-		<Version>1.1.1</Version>
+		<SHVDNC_VERSION Condition="'$(SHVDNC_VERSION)' == ''">1.0.0.0</SHVDNC_VERSION>
+		<Version>$(SHVDNC_VERSION)</Version>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>

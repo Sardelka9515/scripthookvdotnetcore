@@ -64,7 +64,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
+	</ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)sdk\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>ScriptHookV.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
@@ -93,8 +93,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="core.rc" />
-  </ItemGroup>
+	  <ResourceCompile Include="core.rc">
+		  <PreprocessorDefinitions Condition="'$(SHVDNC_VERSION)'==''">SHVDNC_VERSION="1.0.0.0";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		  <PreprocessorDefinitions Condition="'$(SHVDNC_VERSION)'!=''">SHVDNC_VERSION="$(SHVDNC_VERSION)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		  <PreprocessorDefinitions Condition="'$(SHVDNC_VERSION_NUM)'==''">SHVDNC_VERSION_NUM=1,0,0,0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		  <PreprocessorDefinitions Condition="'$(SHVDNC_VERSION_NUM)'!=''">SHVDNC_VERSION_NUM=$(SHVDNC_VERSION_NUM);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+	  </ResourceCompile>
+     </ItemGroup>
   <ItemGroup>
     <None Include="basescri.bin" />
   </ItemGroup>
