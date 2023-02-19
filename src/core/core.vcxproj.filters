@@ -18,7 +18,4 @@
   <ItemGroup>
     <ResourceCompile Include="core.rc" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="basescri.bin" />
-  </ItemGroup>
 </Project>

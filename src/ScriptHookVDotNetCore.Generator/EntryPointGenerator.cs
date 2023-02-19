@@ -54,14 +54,7 @@ public static unsafe partial class EntryPoint
 ";
                 context.AddSource("EntryPoint.g.cs", source);
             }
-            catch (Exception ex)
-            {
-#if DEBUG
-                // MessageBox(default, ex.ToString(), "ScriptHookVDotNet source generator error", default);
-#else
-                throw;
-#endif
-            }
+            catch { }
         }
          bool EntryPointExists(string entry)
         {

@@ -4,6 +4,8 @@
 //
 
 #define BASE_SCRIPT_RES 101
+#define SHVDNC_VERSION "1.0.0.0"
+#define SHVDNC_VERSION_NUM 1,0,0,0
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED

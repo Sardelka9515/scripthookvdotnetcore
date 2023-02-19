@@ -64,7 +64,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-	</ClCompile>
+    </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)sdk\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>ScriptHookV.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
@@ -93,10 +93,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-	  <ResourceCompile Include="core.rc"/>
-     </ItemGroup>
-  <ItemGroup>
-    <None Include="basescri.bin" />
+    <ResourceCompile Include="core.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
