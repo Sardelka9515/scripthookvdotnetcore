@@ -21,6 +21,7 @@ internal unsafe class BaseScript : Script
 {
 
     static readonly ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
+    static delegate* unmanaged<void> ReloadCoreConfig = (delegate* unmanaged<void>)Core.Import("ReloadCoreConfig");
     static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> AddLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("AddLogHandler");
     static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> RemoveLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("RemoveLogHandler");
 
@@ -206,10 +207,10 @@ internal unsafe class BaseScript : Script
     public static void ReloadConfig()
     {
         string Default =
-@"UnloadKey = End
-ReloadKey = Home
-MaxUnloadRetries = 256
-ConsoleKey = F6";
+@"UnloadKey=End
+ReloadKey=Home
+MaxUnloadRetries=256
+ConsoleKey=F6";
         if (!File.Exists(CONFIG_PATH)) File.WriteAllText(CONFIG_PATH, Default);
         var lines = File.ReadAllLines(CONFIG_PATH);
         foreach (var kv in lines.Select(x => x.Split('=', StringSplitOptions.RemoveEmptyEntries)))
@@ -232,10 +233,11 @@ ConsoleKey = F6";
                     _pConfig->ConsoleKey = (ushort)Enum.Parse<Keys>(value);
                     break;
                 default:
-                    Logger.Error($"Unrecognized key: {value}");
+                    // Logger.Error($"Unrecognized key: {key}");
                     break;
             }
         }
+        ReloadCoreConfig();
     }
     #endregion
 

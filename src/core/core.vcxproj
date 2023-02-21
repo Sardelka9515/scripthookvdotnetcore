@@ -80,6 +80,7 @@
     <ClInclude Include="callback_sink.h" />
     <ClInclude Include="exports.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="INIReader.h" />
     <ClInclude Include="Pattern.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
@@ -87,6 +88,7 @@
   <ItemGroup>
     <ClCompile Include="AotLoader.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="INIReader.cpp" />
     <ClCompile Include="Pattern.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -94,6 +96,11 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="core.rc" />
+  </ItemGroup>
+  <ItemGroup>
+	<Content Include="ScriptHookVDotNetCore.ini">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

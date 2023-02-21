@@ -38,10 +38,20 @@ struct Job {
 	LPVOID ParameterEx;
 };
 struct ConfigStruct {
+	// Parsed by base script
 	uint16_t UnloadKey = 35;
 	uint16_t ReloadKey = 36;
 	uint16_t MaxUnloadRetries = 256;
-	uint16_t Reserved[13];
+	uint16_t ConsoleKey = 0; 
+	uint16_t Reserved[28] = { 0 };
+	// core only
+#ifdef DEBUG
+	uint16_t AllocDebugConsole = TRUE;
+#else
+	uint16_t AllocDebugConsole = FALSE;
+#endif // DEBUG
+	uint16_t SkipLegalScreen = TRUE;
+	uint16_t Reserved2[32] = { 0 };
 };
 #pragma pack(pop)
 
@@ -55,6 +65,7 @@ static ConfigStruct Config = ConfigStruct();
 
 #define MAX_UNLOAD_RETRIES Config.MaxUnloadRetries
 #define BASE_SCRIPT_NAME L"ScriptHookVDotNetCore.BaseScript.dll"
+#define CONFIG_PATH "ScriptHookVDotNetCore.ini"
 #define UNLOAD_KEY Config.UnloadKey // End
 #define RELOAD_KEY Config.ReloadKey // Home
 

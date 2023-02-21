@@ -5,17 +5,33 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Pattern.cpp" />
+    <ClCompile Include="INIReader.cpp">
+      <Filter>ext</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AotLoader.h" />
-    <ClInclude Include="callback_sink.h" />
     <ClInclude Include="exports.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pattern.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="INIReader.h">
+      <Filter>ext</Filter>
+    </ClInclude>
+    <ClInclude Include="callback_sink.h">
+      <Filter>ext</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="core.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ext">
+      <UniqueIdentifier>{30bc5a54-efec-441f-9c25-89e6adc13440}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ScriptHookVDotNetCore.ini" />
   </ItemGroup>
 </Project>

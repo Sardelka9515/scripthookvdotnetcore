@@ -3,6 +3,7 @@
 #include "resource.h"
 #include "Pattern.h"
 #include "natives.h"
+
 static bool Initialized = false;
 
 LPVOID DoJob(Job* pj) {
@@ -162,35 +163,33 @@ void ScriptMain() {
 }
 DWORD Background(LPVOID lParam) {
 
+	// Parse and expose config struct
+#ifndef DEBUG
+	ReloadCoreConfig();
+#endif // !DEBUG
 	SetPtr("Config", (uint64_t)&Config);
 
 	// Memory stuff
-	auto p_launcherCheck = Pattern::Scan("E8 ? ? ? ? 84 C0 75 0C B2 01 B9 2F");
-	if (p_launcherCheck) {
-		memset(p_launcherCheck, 0x90, 21);
-	}
-	else {
-		warn("Can't find pattern for launcher check");
-	}
-
-	auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
-	if (p_legalNotice) {
-		memset(p_legalNotice, 0x90, 2);
-	}
-	else {
-		warn("Can't find pattern for legal notice");
+	if (Config.SkipLegalScreen) {
+		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
+		if (p_legalNotice) {
+			memset(p_legalNotice, 0x90, 2);
+		}
+		else {
+			warn("Can't find pattern for legal notice");
+		}
 	}
 
 
-#ifdef DEBUG
-	Sleep(10000); // Wait for the game window to open otherwise the console will be closed for some reason
-	AllocConsole();
-	SetConsoleTitle(L"GTAV debug console");
-	FILE* s;
-	freopen_s(&s, "CONIN$", "r", stdin);
-	freopen_s(&s, "CONOUT$", "w", stdout);
-	freopen_s(&s, "CONOUT$", "w", stderr);
-#endif // DEBUG
+	if (Config.AllocDebugConsole && !GetConsoleWindow()) {
+		Sleep(10000); // Wait for the game window to open otherwise the console will be closed for some reason
+		AllocConsole();
+		SetConsoleTitle(L"GTAV debug console");
+		FILE* s;
+		freopen_s(&s, "CONIN$", "r", stdin);
+		freopen_s(&s, "CONOUT$", "w", stdout);
+		freopen_s(&s, "CONOUT$", "w", stderr);
+	}
 
 	// Dispatch log message to handlers registered through AddLogHandler()
 	auto logCallBack = [](const details::log_msg& msg) {
@@ -204,13 +203,13 @@ DWORD Background(LPVOID lParam) {
 	};
 	auto callback_sink = std::make_shared<sinks::callback_sink_mt>(logCallBack);
 	auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
-#ifdef DEBUG
-	auto console_sink = std::make_shared<sinks::stdout_color_sink_mt>(color_mode::automatic);
-	Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink,console_sink }));
-#else
-	Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
-#endif // DEBUG
-
+	if (Config.AllocDebugConsole) {
+		auto console_sink = std::make_shared<sinks::stdout_color_sink_mt>(color_mode::automatic);
+		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink,console_sink }));
+	}
+	else {
+		Logger = shared_ptr<logger>(new logger("Core", { callback_sink, file_sink }));
+	}
 	Logger->set_level(level::trace);
 	Logger->flush_on(level::info);
 	Logger->set_pattern("[%H:%M:%S] [%^%l%$] %v");

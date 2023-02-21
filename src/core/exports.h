@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "AotLoader.h"
+#include "INIReader.h"
 #pragma once
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
 typedef VOID(WINAPI* LogHandler)(uint64_t time,uint32_t level,LPCSTR msg);
@@ -251,6 +252,12 @@ DllExport void RemoveLogHandler(LogHandler lh) {
 	catch (exception ex) {
 		error(ex.what());
 	}
+}
+
+DllExport void ReloadCoreConfig() {
+	INIReader reader(CONFIG_PATH);
+	Config.AllocDebugConsole = reader.GetBoolean("","AllocDebugConsole", Config.AllocDebugConsole);
+	Config.SkipLegalScreen = reader.GetBoolean("", "SkipLegalScreen", Config.SkipLegalScreen);
 }
 
 
