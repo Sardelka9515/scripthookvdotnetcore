@@ -21,7 +21,8 @@ public:
 	HMODULE Module;
 	wstring ModulePath;
 	void Unload();
+	void FreeFls();
+	void FreeVeh();
 	static void Init();
 	static void Shutdown();
-	static void FreeFls();
 };

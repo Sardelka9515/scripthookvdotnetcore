@@ -15,10 +15,9 @@ BOOL GetModuleHandleExWHook(DWORD   dwFlags, LPCWSTR  lpModuleName, HMODULE* phM
 DWORD FlsAllocHook(PFLS_CALLBACK_FUNCTION lpCallback);
 PVOID AddVectoredExceptionHandlerHook(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler);
 mutex FlsMutex;
-DWORD FlsIndecies[256] = { 0 };
+map<DWORD, PFLS_CALLBACK_FUNCTION> RegisterFls;
 mutex VehMutex;
-map<PVOID, PVECTORED_EXCEPTION_HANDLER> VectoredExceptionHandlers;
-int FlsCount = 0;
+map<PVOID, PVECTORED_EXCEPTION_HANDLER> RegisteredVeh;
 GETMODULEHANDLEEXW GetModuleHandleExWOrg = NULL;
 FLSALLOC FlsAllocOrg = NULL;
 ADDVECEXHAND AddVecExHandOrg = NULL;
@@ -31,25 +30,54 @@ void AotLoader::Shutdown() {
 	MH_Check(MH_RemoveHook(&GetModuleHandleExW));
 	MH_Check(MH_RemoveHook(&FlsAlloc));
 	MH_Check(MH_Uninitialize());
-	FreeFls();
 }
 
 void AotLoader::Init() {
 	MH_Check(MH_Initialize());
 	MH_Check(MH_CreateHook(&GetModuleHandleExW, &GetModuleHandleExWHook, (LPVOID*)&GetModuleHandleExWOrg));
 	MH_Check(MH_CreateHook(&FlsAlloc, &FlsAllocHook, (LPVOID*)&FlsAllocOrg));
-	MH_Check(MH_EnableHook(&GetModuleHandleExW));
-	// MH_Check(MH_EnableHook(&FlsAlloc));
 	MH_Check(MH_CreateHook(&AddVectoredExceptionHandler, &AddVectoredExceptionHandlerHook, (LPVOID*)&AddVecExHandOrg));
+	MH_Check(MH_EnableHook(&GetModuleHandleExW));
+	MH_Check(MH_EnableHook(&FlsAlloc));
 	MH_Check(MH_EnableHook(&AddVectoredExceptionHandler));
 }
 void AotLoader::FreeFls() {
-	// Release all FLS created by .NET
+	auto predicate = [this](pair<DWORD, PFLS_CALLBACK_FUNCTION> fls) {
+		HMODULE flsModule;
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)fls.second, &flsModule);
+		if (flsModule == Module) {
+			if (FlsFree(fls.first)) {
+				debug("FlsFree success: {}", fls.first);
+			}
+			else {
+				debug("FlsFree failed: {}", fls.first);
+				error("Error code: {}", GetLastError());
+			}
+			return true;
+		}
+		return false;
+	};
 	LOCK(FlsMutex);
-	while (FlsCount--) {
-		debug("Freeing Fls {0} : {1}", FlsIndecies[FlsCount], FlsFree(FlsIndecies[FlsCount]) ? "Success" : "Fail");
-	}
-	FlsCount = 0;
+	erase_if(RegisterFls, predicate);
+}
+void AotLoader::FreeVeh() {
+	auto predicate = [this](pair<PVOID, PVECTORED_EXCEPTION_HANDLER> veh) {
+		HMODULE vehModule;
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)veh.second, &vehModule);
+		if (vehModule == Module) {
+			if (RemoveVectoredExceptionHandler(veh.first)) {
+				debug("Removed veh: {}, handle: {}", (uint64_t)veh.second, (uint64_t)veh.first);
+			}
+			else {
+				error("Failed to remove veh: {}, handle: {}", (uint64_t)veh.second, (uint64_t)veh.first);
+				error("Error code: {}", GetLastError());
+			}
+			return true;
+		}
+		return false;
+	};
+	LOCK(VehMutex);
+	erase_if(RegisteredVeh, predicate);
 }
 
 #pragma endregion
@@ -94,20 +122,10 @@ void AotLoader::Unload() {
 	// Terminate all threads that orginated from this module
 	ListProcessThreads(GetCurrentProcessId(), NULL, ModulePath.c_str());
 
+	FreeFls();
+	FreeVeh();
 
-	// Search for handlers to unregister
-	vector<pair<PVOID, PVECTORED_EXCEPTION_HANDLER>> toUnregister;
-	{
-		LOCK(VehMutex);
-		for (const auto& handler : VectoredExceptionHandlers) {
-			HMODULE module;
-			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)handler.second, &module);
-			if (module == Module) {
-				toUnregister.push_back(pair<PVOID, PVECTORED_EXCEPTION_HANDLER>(handler.first, handler.second));
-			}
-		}
-	}
-
+	// Actual unload (FreeLibrary)
 	int retries = MAX_UNLOAD_RETRIES;
 	auto path = ModulePath.c_str();
 	while ((Module = GetModuleHandleW(path)) && retries--) {
@@ -122,22 +140,6 @@ void AotLoader::Unload() {
 		stringstream s;
 		s << "Module not unloaded after " << MAX_UNLOAD_RETRIES << " retries";
 		throw runtime_error(s.str());
-	}
-
-	// Remove vectored exception handlers
-	for (const auto& hand : toUnregister) {
-		bool fSuccess = RemoveVectoredExceptionHandler(hand.first);
-		if (fSuccess) {
-			debug("Removed exception handler: {}, handle: {}", (uint64_t)hand.second, (uint64_t)hand.first);
-		}
-		else {
-			error("Failed to remove exception handler: {}, handle: {}", (uint64_t)hand.second, (uint64_t)hand.first);
-			error("Error code: {}", GetLastError());
-		}
-		{
-			LOCK(VehMutex);
-			VectoredExceptionHandlers.erase(hand.first);
-		}
 	}
 
 	info("Unloaded module {0}", WTS(ModulePath));
@@ -157,24 +159,24 @@ BOOL GetModuleHandleExWHook(DWORD   dwFlags, LPCWSTR  lpModuleName, HMODULE* phM
 
 DWORD FlsAllocHook(PFLS_CALLBACK_FUNCTION lpCallback) {
 
-	// TODO: find assembly by the callback address and store it in the corresponding loader
-	return FlsAllocOrg(lpCallback);
+	auto index = FlsAllocOrg(lpCallback);
+	if (index != FLS_OUT_OF_INDEXES) {
 
-	LOCK(FlsMutex);
-	auto index = FlsIndecies[FlsCount++] = FlsAllocOrg(lpCallback);
-	debug("FLS created: {0}", index);
+		debug("FLS created: {0}", index);
+		LOCK(FlsMutex);
+		RegisterFls[index] = lpCallback;
+	}
+
 	return index;
 }
 
 PVOID AddVectoredExceptionHandlerHook(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler)
 {
-	HMODULE module;
-	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)Handler, &module);
 	auto hHandler = AddVecExHandOrg(First, Handler);
-	debug("Exception handler registered: {}, module: {}, handle: {}", (uint64_t)Handler, (uint64_t)module, (uint64_t)hHandler);
+	debug("VEH registered: {}, handle: {}", (uint64_t)Handler, (uint64_t)hHandler);
 	{
 		LOCK(VehMutex);
-		VectoredExceptionHandlers[hHandler] = Handler;
+		RegisteredVeh[hHandler] = Handler;
 	}
 	return hHandler;
 }
@@ -185,22 +187,26 @@ LPVOID WINAPI GetThreadStartAddress(HANDLE hThread)
 	HANDLE hDupHandle;
 	LPVOID dwStartAddress;
 
-	pNtQIT NtQueryInformationThread = (pNtQIT)GetProcAddress(GetModuleHandle(L"ntdll.dll"), "NtQueryInformationThread");
+	auto hmNtdll = GetModuleHandle(L"ntdll.dll");
+	if (!hmNtdll)
+		return NULL;
+
+	pNtQIT NtQueryInformationThread = (pNtQIT)GetProcAddress(hmNtdll, "NtQueryInformationThread");
 
 	if (NtQueryInformationThread == NULL)
-		return 0;
+		return NULL;
 
 	HANDLE hCurrentProcess = GetCurrentProcess();
 	if (!DuplicateHandle(hCurrentProcess, hThread, hCurrentProcess, &hDupHandle, THREAD_QUERY_INFORMATION, FALSE, 0)) {
 		SetLastError(ERROR_ACCESS_DENIED);
 
-		return 0;
+		return NULL;
 	}
 
 	ntStatus = NtQueryInformationThread(hDupHandle, ThreadQuerySetWin32StartAddress, &dwStartAddress, sizeof(LPVOID), NULL);
 	CloseHandle(hDupHandle);
 	if (ntStatus != STATUS_SUCCESS)
-		return 0;
+		return NULL;
 
 	return dwStartAddress;
 

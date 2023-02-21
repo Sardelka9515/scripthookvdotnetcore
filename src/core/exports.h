@@ -89,7 +89,6 @@ DllExport bool UnloadAllModules() {
 			}
 		}
 		Modules.clear();
-		AotLoader::FreeFls();
 	}
 	catch (exception ex) {
 		error("Error during module unload: {}", ex.what());
@@ -203,6 +202,15 @@ DllExport void LogErrorW(LPCWSTR msg) {
 }
 
 #pragma endregion
+
+// Internal function, called when the game loads a save
+static void PtrMapProcessReload() {
+	LOCK(PtrMapMutex);
+	erase_if(PtrMap, [](pair<string, uint64_t> ptrPair) {
+		return ptrPair.first.rfind("SHVDN.", 0) == 0;
+		});
+}
+
 
 DllExport uint64_t GetPtr(LPCSTR key) {
 	LOCK(PtrMapMutex);

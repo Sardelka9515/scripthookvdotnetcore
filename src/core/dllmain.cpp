@@ -122,7 +122,9 @@ static void Init() {
 	Initialized = true;
 	return;
 }
+PVOID ScriptFiber;
 void ScriptMain() {
+	ScriptFiber = GetCurrentFiber();
 	Init();
 	while (true) {
 
@@ -179,9 +181,9 @@ DWORD Background(LPVOID lParam) {
 		warn("Can't find pattern for legal notice");
 	}
 
-	auto scrThreadCollection = Pattern::Scan("48 8B C8 EB 03 48 8B CB 48 8B 05");
 
 #ifdef DEBUG
+	Sleep(10000); // Wait for the game window to open otherwise the console will be closed for some reason
 	AllocConsole();
 	SetConsoleTitle(L"GTAV debug console");
 	FILE* s;
@@ -190,18 +192,17 @@ DWORD Background(LPVOID lParam) {
 	freopen_s(&s, "CONOUT$", "w", stderr);
 #endif // DEBUG
 
-
-
-	auto callback_sink = std::make_shared<sinks::callback_sink_mt>([](const details::log_msg& msg) {
+	// Dispatch log message to handlers registered through AddLogHandler()
+	auto logCallBack = [](const details::log_msg& msg) {
 		LOCK(LogHandlersMutex);
-	auto time = (uint64_t)msg.time.time_since_epoch().count();
-	auto level = (uint32_t)msg.level;
-	auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
-	for (auto lh : LogHandlers) {
-		lh(time, level, payload);
-	}
-		});
-
+		auto time = (uint64_t)msg.time.time_since_epoch().count();
+		auto level = (uint32_t)msg.level;
+		auto payload = string(msg.payload.begin(), msg.payload.end()).c_str();
+		for (auto lh : LogHandlers) {
+			lh(time, level, payload);
+		}
+	};
+	auto callback_sink = std::make_shared<sinks::callback_sink_mt>(logCallBack);
 	auto file_sink = std::make_shared<sinks::basic_file_sink_mt>("ScriptHookVDotNetCore.log", true);
 #ifdef DEBUG
 	auto console_sink = std::make_shared<sinks::stdout_color_sink_mt>(color_mode::automatic);

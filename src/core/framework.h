@@ -83,6 +83,14 @@ static void MH_Check(MH_STATUS code) {
 	}
 }
 
+template< typename ContainerT, typename PredicateT >
+static void erase_if(ContainerT& items, const PredicateT& predicate) {
+	for (auto it = items.begin(); it != items.end(); ) {
+		if (predicate(*it)) it = items.erase(it);
+		else ++it;
+	}
+}
+
 #define PWTS(lpcwstr) WTS(wstring(lpcwstr)).c_str()
 #define PSTW(lpcstr) STW(string(lpcstr)).c_str()
 
