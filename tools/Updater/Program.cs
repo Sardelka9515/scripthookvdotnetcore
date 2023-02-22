@@ -22,8 +22,22 @@ namespace Updater
 
         static unsafe void Main(string[] args)
         {
+            Directory.SetCurrentDirectory(@"..\..\");
+            Console.WriteLine($"Working directory is {Directory.GetCurrentDirectory()}");
+            Console.WriteLine("Reading upstream source");
+            var scriptingApiDir = GetFullPath(Combine("shvdn", "source", "scripting_v3\\"));
+            HashSet<string> dirsToCreate = new();
             void Add(string src)
             {
+                if (src.StartsWith(scriptingApiDir))
+                {
+                    var dir = Directory.GetParent(src).FullName.Substring(scriptingApiDir.Length);
+                    if (!dirsToCreate.Contains(dir))
+                    {
+                        dirsToCreate.Add(dir);
+                        Console.WriteLine($"Added dir {dir}");
+                    }
+                }
                 var t = File.ReadAllText(src);
                 var u = Updaters.Where(x => x.TargetFile == GetFileName(src) || x.TargetFile == null);
                 if (u.Any())
@@ -39,11 +53,8 @@ namespace Updater
                 }
                 SrcUpstream.Add(src, t);
             }
-            Directory.SetCurrentDirectory(@"..\..\");
-            Console.WriteLine($"Working directory is {Directory.GetCurrentDirectory()}");
-            Console.WriteLine("Reading upstream source");
             Add(Combine("shvdn", "source", "core", "NativeMemory.cs"));
-            foreach (var dir in Directory.GetDirectories(Combine("shvdn", "source", "scripting_v3"), "GTA*", SearchOption.TopDirectoryOnly))
+            foreach (var dir in Directory.GetDirectories(scriptingApiDir, "GTA*", SearchOption.TopDirectoryOnly))
             {
                 foreach (var sc in Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories))
                 {
@@ -60,15 +71,21 @@ namespace Updater
             {
                 try
                 {
-
                     Directory.Delete(dest, true);
                 }
                 catch (Exception) { }
             }
             Directory.CreateDirectory(dest);
+            foreach (var d in dirsToCreate)
+            {
+                Directory.CreateDirectory(Combine(dest, d));
+            }
             foreach (var s in SrcUpstream)
             {
-                File.WriteAllText(Combine(dest, GetFileName(s.Key)), s.Value);
+                var fileDest = GetFileName(s.Key);
+                if (s.Key.StartsWith(scriptingApiDir))
+                    fileDest = s.Key.Substring(scriptingApiDir.Length);
+                File.WriteAllText(Combine(dest, fileDest), s.Value);
             }
         }
     }
