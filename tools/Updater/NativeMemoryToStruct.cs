@@ -63,13 +63,13 @@ namespace Updater
             {"SHVDN.NativeMemory.", "" },
             { "NativeMemory.", ""},
             {" PtrToStringUTF8("," Marshaller.PtrToStringUTF8(" },
-            { "ReadOnlyCollection","HeapArray"},
-            { "Array.AsReadOnly","Marshaller.ToHeapArray"},
+            { "ReadOnlyCollection","UnmanagedArray"},
+            { "Array.AsReadOnly","Marshaller.ToUnmanagedArray"},
             { "unmanaged[Stdcall]","unmanaged[SuppressGCTransition]"}
             };
         static Dictionary<string, string> CaFixes = new()
         {
-            { "ReadOnlyCollection","HeapArray"},
+            { "ReadOnlyCollection","UnmanagedArray"},
             { "unmanaged[Stdcall]","unmanaged[SuppressGCTransition]"}
         };
         List<MethodDeclarationSyntax> Externals = new();

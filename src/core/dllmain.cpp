@@ -236,7 +236,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		break;
 	}
 	case DLL_PROCESS_DETACH:
-		// Not supported currently, game will crash once we unloaded another script
+		// Not supported currently
 		info("Shutting down");
 		Logger->flush();
 		presentCallbackUnregister(OnPresent);

@@ -75,7 +75,7 @@ namespace SHVDN
             address = FindPattern("\x40\x53\x48\x83\xEC\x20\x83\x61\x0C\x00\x44\x89\x41\x08\x49\x63\xC0", "xxxxxxxxxxxxxxxxx");
             InitMessageMemoryFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, ulong, int, ulong> )(new IntPtr(address));
             address = FindPattern("\x41\x83\xFA\xFF\x74\x4A\x48\x85\xD2\x74\x19", "xxxxxxxxxxx") - 0xE;
-            SendMessageToPedFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> )(new IntPtr(address));
+            SendNmMessageToPedFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> )(new IntPtr(address));
             address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8B\xF8", "xxxx?xxxxxxxxxxxxxxx");
             SetNmParameterInt = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, int, byte> )(new IntPtr(address));
             address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8A\xF8", "xxxx?xxxxxxxxxxxxxxx");
@@ -391,6 +391,14 @@ namespace SHVDN
                 VehicleLodMultiplierOffset = *(int*)(address + 18);
             }
 
+            address = FindPattern("\x48\x85\xC0\x74\x32\x8A\x88\x00\x00\x00\x00\xF6\xC1\x00\x75\x27", "xxxxxxx????xx?xx");
+            if (address != null)
+            {
+                HasMutedSirensOffset = *(int*)(address + 7);
+                HasMutedSirensBit = *(byte*)(address + 13); // the bit is changed between b372 and b2802
+                CanUseSirenOffset = *(int*)(address + 23);
+            }
+
             address = FindPattern("\x83\xB8\x00\x00\x00\x00\x0A\x77\x12\x80\xA0\x00\x00\x00\x00\xFD", "xx????xxxxx????x");
             if (address != null)
             {
@@ -612,6 +620,12 @@ namespace SHVDN
                 VisualFieldCenterAngleOffset = SeeingRangeOffset + 0x1C;
             }
 
+            address = FindPattern("\x48\x8B\x87\x00\x00\x00\x00\x48\x85\xC0\x0F\x84\x8B\x00\x00\x00", "xxx????xxxxxxxxx");
+            if (address != null)
+            {
+                objParentEntityAddressDetachedFromOffset = *(int*)(address + 3);
+            }
+
             address = FindPattern("\x48\x8D\x1D\x00\x00\x00\x00\x4C\x8B\x0B\x4D\x85\xC9\x74\x67", "xxx????xxxxxxxx");
             if (address != null)
             {
@@ -746,16 +760,16 @@ namespace SHVDN
                 }
             }
 
-            var vehicleResult = new HeapArray<int>[0x20];
+            var vehicleResult = new UnmanagedArray<int>[0x20];
             for (int i = 0; i < 0x20; i++)
-                vehicleResult[i] = Marshaller.ToHeapArray(vehicleHashesGroupedByClass[i].ToArray());
-            VehicleModels = Marshaller.ToHeapArray(vehicleResult);
-            vehicleResult = new HeapArray<int>[0x10];
+                vehicleResult[i] = Marshaller.ToUnmanagedArray(vehicleHashesGroupedByClass[i].ToArray());
+            VehicleModels = Marshaller.ToUnmanagedArray(vehicleResult);
+            vehicleResult = new UnmanagedArray<int>[0x10];
             for (int i = 0; i < 0x10; i++)
-                vehicleResult[i] = Marshaller.ToHeapArray(vehicleHashesGroupedByType[i].ToArray());
-            VehicleModelsGroupedByType = Marshaller.ToHeapArray(vehicleResult);
-            WeaponModels = Marshaller.ToHeapArray(weaponObjectHashes.ToArray());
-            PedModels = Marshaller.ToHeapArray(pedHashes.ToArray());
+                vehicleResult[i] = Marshaller.ToUnmanagedArray(vehicleHashesGroupedByType[i].ToArray());
+            VehicleModelsGroupedByType = Marshaller.ToUnmanagedArray(vehicleResult);
+            WeaponModels = Marshaller.ToUnmanagedArray(weaponObjectHashes.ToArray());
+            PedModels = Marshaller.ToUnmanagedArray(pedHashes.ToArray());
 #region -- Enable All DLC Vehicles --
             // no need to patch the global variable in v1.0.573.1 or older builds
             if (gameVersion <= 15)
@@ -939,6 +953,12 @@ namespace SHVDN
 
         public int VehicleLodMultiplierOffset { get; }
 
+        public int CanUseSirenOffset { get; }
+
+        public int HasMutedSirensOffset { get; }
+
+        public int HasMutedSirensBit { get; }
+
         public int VehicleDropsMoneyWhenBlownUpOffset { get; }
 
         public int HeliBladesSpeedOffset { get; }
@@ -953,6 +973,7 @@ namespace SHVDN
 
         public int FirstVehicleFlagsOffset { get; }
 
+        internal int objParentEntityAddressDetachedFromOffset;
         internal delegate* unmanaged[SuppressGCTransition]<IntPtr, void> FixVehicleWheelFunc;
         internal delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc;
         internal delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc;
@@ -1037,13 +1058,13 @@ namespace SHVDN
         internal ulong* modelInfoArrayPtr;
         internal ulong* cStreamingAddr;
         internal ulong* pedPersonalitiesArrayAddr;
-        public HeapArray<int> WeaponModels { get; }
+        public UnmanagedArray<int> WeaponModels { get; }
 
-        public HeapArray<HeapArray<int>> VehicleModels { get; }
+        public UnmanagedArray<UnmanagedArray<int>> VehicleModels { get; }
 
-        public HeapArray<HeapArray<int>> VehicleModelsGroupedByType { get; }
+        public UnmanagedArray<UnmanagedArray<int>> VehicleModelsGroupedByType { get; }
 
-        public HeapArray<int> PedModels { get; }
+        public UnmanagedArray<int> PedModels { get; }
 
         internal delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong> GetHandlingDataByHash;
         internal delegate* unmanaged[SuppressGCTransition]<int, ulong> GetHandlingDataByIndex;
@@ -1101,7 +1122,7 @@ namespace SHVDN
         internal delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, IntPtr, byte> SetNmParameterString;
         internal delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, float, float, byte> SetNmParameterVector;
         internal delegate* unmanaged[SuppressGCTransition]<ulong, ulong, int, ulong> InitMessageMemoryFunc;
-        internal delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> SendMessageToPedFunc;
+        internal delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> SendNmMessageToPedFunc;
         internal delegate* unmanaged[SuppressGCTransition]<ulong, CTask*> GetActiveTaskFunc;
         internal int fragInstNMGtaOffset;
         internal int cTaskNMScriptControlTypeIndex;
@@ -1112,7 +1133,7 @@ namespace SHVDN
 
     public static unsafe partial class NativeMemory
     {
-        public const string StructSignature = "SHVDN.NativeMemory.b6a9ecf8893581450a350989a7716c147bff5527aad49d7122d67be192570a20";
+        public const string StructSignature = "SHVDN.NativeMemory.ec9f8ce4f9341a8aaa7a3baf5a85dba7321eb109a8351b1d44c66f81ccbb8d8b";
         private static readonly Mutex _nativeMemoryMutex = new Mutex(false, StructSignature);
         static NativeMemory()
         {
@@ -1670,6 +1691,40 @@ namespace SHVDN
             return lastVehicleAddress != IntPtr.Zero ? GetEntityHandleFromAddress(lastVehicleAddress) : 0;
         }
 
+        public static bool HasMutedSirens(int vehicleHandle)
+        {
+            var address = GetEntityAddress(vehicleHandle);
+            if (address == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            return (*(byte*)(address + HasMutedSirensOffset) & HasMutedSirensBit) != 0;
+        }
+
+        static IntPtr GetParentEntityOfPropDetachedFrom(int objHandle)
+        {
+            var entityAddress = GetEntityAddress(objHandle);
+            if (objParentEntityAddressDetachedFromOffset == 0 || entityAddress == IntPtr.Zero)
+            {
+                return IntPtr.Zero;
+            }
+
+            return new IntPtr(*(long*)(entityAddress + objParentEntityAddressDetachedFromOffset));
+        }
+
+        public static int GetParentEntityHandleOfPropDetachedFrom(int objHandle)
+        {
+            var parentEntityAddr = GetParentEntityOfPropDetachedFrom(objHandle);
+            if (parentEntityAddr == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            return GetEntityHandleFromAddress(parentEntityAddr);
+        }
+
+        public static bool HasPropBeenDetachedFromParentEntity(int objHandle) => GetParentEntityOfPropDetachedFrom(objHandle) != IntPtr.Zero;
         public static void FixVehicleWheel(IntPtr wheelAddress) => FixVehicleWheelFunc(wheelAddress);
         public static IntPtr GetVehicleWheelAddressByIndexOfWheelArray(IntPtr vehicleAddress, int index)
         {
@@ -3748,20 +3803,59 @@ namespace SHVDN
         }
 
         static bool IsPedInjured(byte* pedAddress) => *(float*)(pedAddress + 0x280) < *(float*)(pedAddress + InjuryHealthThresholdOffset);
-        internal class EuphoriaMessageTask : IScriptTask
+        static private void SetNMParameters(ulong messageMemory, Dictionary<string, (int value, Type type)> boolIntFloatParameters, Dictionary<string, object> stringVector3ArrayParameters)
+        {
+            if (boolIntFloatParameters != null)
+            {
+                foreach (var arg in boolIntFloatParameters)
+                {
+                    IntPtr name = ScriptDomain.CurrentDomain.PinString(arg.Key);
+                    (var argValue, var argType) = arg.Value;
+                    if (argType == typeof(float))
+                    {
+                        var argValueConverted = *(float*)(&argValue);
+                        NativeMemory.SetNmParameterFloat(messageMemory, name, argValueConverted);
+                    }
+                    else if (argType == typeof(bool))
+                    {
+                        var argValueConverted = argValue != 0 ? true : false;
+                        NativeMemory.SetNmParameterBool(messageMemory, name, argValueConverted);
+                    }
+                    else if (argType == typeof(int))
+                    {
+                        NativeMemory.SetNmParameterInt(messageMemory, name, argValue);
+                    }
+                }
+            }
+
+            if ((stringVector3ArrayParameters != null))
+            {
+                foreach (var arg in stringVector3ArrayParameters)
+                {
+                    IntPtr name = ScriptDomain.CurrentDomain.PinString(arg.Key);
+                    var argValue = arg.Value;
+                    if (argValue is float[] vector3ArgValue)
+                        NativeMemory.SetNmParameterVector(messageMemory, name, vector3ArgValue[0], vector3ArgValue[1], vector3ArgValue[2]);
+                    else if (argValue is string stringArgValue)
+                        NativeMemory.SetNmParameterString(messageMemory, name, ScriptDomain.CurrentDomain.PinString(stringArgValue));
+                }
+            }
+        }
+
+        internal class NmMessageTask : IScriptTask
         {
 #region Fields
             int targetHandle;
-            string message;
-            Dictionary<string, (int value, Type type)> _boolIntFloatArguments;
-            Dictionary<string, object> _stringVector3ArrayArguments;
+            string messageName;
+            Dictionary<string, (int value, Type type)> boolIntFloatParameters;
+            Dictionary<string, object> stringVector3ArrayParameters;
 #endregion
-            internal EuphoriaMessageTask(int target, string message, Dictionary<string, (int, Type)> boolIntFloatArguments, Dictionary<string, object> stringVector3ArrayArguments)
+            internal NmMessageTask(int target, string messageName, Dictionary<string, (int value, Type type)> boolIntFloatParameters, Dictionary<string, object> stringVector3ArrayParameters)
             {
                 targetHandle = target;
-                this.message = message;
-                _boolIntFloatArguments = boolIntFloatArguments;
-                _stringVector3ArrayArguments = stringVector3ArrayArguments;
+                this.messageName = messageName;
+                this.boolIntFloatParameters = boolIntFloatParameters;
+                this.stringVector3ArrayParameters = stringVector3ArrayParameters;
             }
 
             public void Run()
@@ -3769,60 +3863,23 @@ namespace SHVDN
                 byte* _PedAddress = (byte*)NativeMemory.GetEntityAddress(targetHandle).ToPointer();
                 if (_PedAddress == null)
                     return;
+                if (!IsTaskNMScriptControlOrEventSwitch2NMActive(new IntPtr(_PedAddress)))
+                    return;
                 ulong messageMemory = (ulong)AllocCoTaskMem(0x1218).ToInt64();
                 if (messageMemory == 0)
                     return;
                 InitMessageMemoryFunc(messageMemory, messageMemory + 0x18, 0x40);
-                if (_boolIntFloatArguments != null)
-                {
-                    foreach (var arg in _boolIntFloatArguments)
-                    {
-                        IntPtr name = ScriptDomain.CurrentDomain.PinString(arg.Key);
-                        (var argValue, var argType) = arg.Value;
-                        if (argType == typeof(float))
-                        {
-                            var argValueConverted = *(float*)(&argValue);
-                            NativeMemory.SetNmParameterFloat(messageMemory, name, argValueConverted);
-                        }
-                        else if (argType == typeof(bool))
-                        {
-                            var argValueConverted = argValue != 0 ? true : false;
-                            NativeMemory.SetNmParameterBool(messageMemory, name, argValueConverted);
-                        }
-                        else if (argType == typeof(int))
-                        {
-                            NativeMemory.SetNmParameterInt(messageMemory, name, argValue);
-                        }
-                    }
-                }
-
-                if (_stringVector3ArrayArguments != null)
-                {
-                    foreach (var arg in _stringVector3ArrayArguments)
-                    {
-                        IntPtr name = ScriptDomain.CurrentDomain.PinString(arg.Key);
-                        var argValue = arg.Value;
-                        if (argValue is float[] vector3ArgValue)
-                            NativeMemory.SetNmParameterVector(messageMemory, name, vector3ArgValue[0], vector3ArgValue[1], vector3ArgValue[2]);
-                        else if (argValue is string stringArgValue)
-                            NativeMemory.SetNmParameterString(messageMemory, name, ScriptDomain.CurrentDomain.PinString(stringArgValue));
-                    }
-                }
-
-                if (IsTaskNMScriptControlOrEventSwitch2NMActive(new IntPtr(_PedAddress)))
-                {
-                    ulong fragInstNMGtaAddress = *(ulong*)(_PedAddress + fragInstNMGtaOffset);
-                    IntPtr messageStringPtr = ScriptDomain.CurrentDomain.PinString(message);
-                    SendMessageToPedFunc((ulong)fragInstNMGtaAddress, messageStringPtr, messageMemory);
-                }
-
+                SetNMParameters(messageMemory, boolIntFloatParameters, stringVector3ArrayParameters);
+                ulong fragInstNMGtaAddress = *(ulong*)(_PedAddress + fragInstNMGtaOffset);
+                IntPtr messageStringPtr = ScriptDomain.CurrentDomain.PinString(messageName);
+                SendNmMessageToPedFunc((ulong)fragInstNMGtaAddress, messageStringPtr, messageMemory);
                 FreeCoTaskMem(new IntPtr((long)messageMemory));
             }
         }
 
-        public static void SendEuphoriaMessage(int targetHandle, string message, Dictionary<string, (int, Type)> boolIntFloatArguments, Dictionary<string, object> stringVector3ArrayArguments)
+        public static void SendNmMessage(int targetHandle, string messageName, Dictionary<string, (int value, Type type)> boolIntFloatParameters, Dictionary<string, object> stringVector3ArrayParameters)
         {
-            var task = new EuphoriaMessageTask(targetHandle, message, boolIntFloatArguments, stringVector3ArrayArguments);
+            var task = new NmMessageTask(targetHandle, messageName, boolIntFloatParameters, stringVector3ArrayParameters);
             ScriptDomain.CurrentDomain.ExecuteTask(task);
         }
 
@@ -3884,6 +3941,9 @@ namespace SHVDN
         public static int NeedsToBeHotwiredOffset => _pNativeMemory->NeedsToBeHotwiredOffset;
         public static int AlarmTimeOffset => _pNativeMemory->AlarmTimeOffset;
         public static int VehicleLodMultiplierOffset => _pNativeMemory->VehicleLodMultiplierOffset;
+        public static int CanUseSirenOffset => _pNativeMemory->CanUseSirenOffset;
+        public static int HasMutedSirensOffset => _pNativeMemory->HasMutedSirensOffset;
+        public static int HasMutedSirensBit => _pNativeMemory->HasMutedSirensBit;
         public static int VehicleDropsMoneyWhenBlownUpOffset => _pNativeMemory->VehicleDropsMoneyWhenBlownUpOffset;
         public static int HeliBladesSpeedOffset => _pNativeMemory->HeliBladesSpeedOffset;
         public static int HeliMainRotorHealthOffset => _pNativeMemory->HeliMainRotorHealthOffset;
@@ -3891,6 +3951,7 @@ namespace SHVDN
         public static int HeliTailBoomHealthOffset => _pNativeMemory->HeliTailBoomHealthOffset;
         public static int HandlingDataOffset => _pNativeMemory->HandlingDataOffset;
         public static int FirstVehicleFlagsOffset => _pNativeMemory->FirstVehicleFlagsOffset;
+        static int objParentEntityAddressDetachedFromOffset => _pNativeMemory->objParentEntityAddressDetachedFromOffset;
         static delegate* unmanaged[SuppressGCTransition]<IntPtr, void> FixVehicleWheelFunc => _pNativeMemory->FixVehicleWheelFunc;
         static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc => _pNativeMemory->PunctureVehicleTireNewFunc;
         static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc => _pNativeMemory->PunctureVehicleTireOldFunc;
@@ -3942,10 +4003,10 @@ namespace SHVDN
         static ulong* modelInfoArrayPtr => _pNativeMemory->modelInfoArrayPtr;
         static ulong* cStreamingAddr => _pNativeMemory->cStreamingAddr;
         static ulong* pedPersonalitiesArrayAddr => _pNativeMemory->pedPersonalitiesArrayAddr;
-        public static HeapArray<int> WeaponModels => _pNativeMemory->WeaponModels;
-        public static HeapArray<HeapArray<int>> VehicleModels => _pNativeMemory->VehicleModels;
-        public static HeapArray<HeapArray<int>> VehicleModelsGroupedByType => _pNativeMemory->VehicleModelsGroupedByType;
-        public static HeapArray<int> PedModels => _pNativeMemory->PedModels;
+        public static UnmanagedArray<int> WeaponModels => _pNativeMemory->WeaponModels;
+        public static UnmanagedArray<UnmanagedArray<int>> VehicleModels => _pNativeMemory->VehicleModels;
+        public static UnmanagedArray<UnmanagedArray<int>> VehicleModelsGroupedByType => _pNativeMemory->VehicleModelsGroupedByType;
+        public static UnmanagedArray<int> PedModels => _pNativeMemory->PedModels;
         static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong> GetHandlingDataByHash => _pNativeMemory->GetHandlingDataByHash;
         static delegate* unmanaged[SuppressGCTransition]<int, ulong> GetHandlingDataByIndex => _pNativeMemory->GetHandlingDataByIndex;
         static ulong* PedPoolAddress => _pNativeMemory->PedPoolAddress;
@@ -3998,7 +4059,7 @@ namespace SHVDN
         static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, IntPtr, byte> SetNmParameterString => _pNativeMemory->SetNmParameterString;
         static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, float, float, byte> SetNmParameterVector => _pNativeMemory->SetNmParameterVector;
         static delegate* unmanaged[SuppressGCTransition]<ulong, ulong, int, ulong> InitMessageMemoryFunc => _pNativeMemory->InitMessageMemoryFunc;
-        static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> SendMessageToPedFunc => _pNativeMemory->SendMessageToPedFunc;
+        static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> SendNmMessageToPedFunc => _pNativeMemory->SendNmMessageToPedFunc;
         static delegate* unmanaged[SuppressGCTransition]<ulong, CTask*> GetActiveTaskFunc => _pNativeMemory->GetActiveTaskFunc;
         static int fragInstNMGtaOffset => _pNativeMemory->fragInstNMGtaOffset;
         static int cTaskNMScriptControlTypeIndex => _pNativeMemory->cTaskNMScriptControlTypeIndex;

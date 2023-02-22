@@ -41,20 +41,21 @@ public static unsafe class Marshaller
     }
 
     /// <summary>
-    /// Initialize a new <see cref="HeapArray{TARR}"/> instance from specified array, elements will be copied
+    /// Initialize a new <see cref="UnmanagedArray{TARR}"/> instance from specified array, elements will be copied
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="arr"></param>
     /// <param name="canWrite"></param>
     /// <returns></returns>
-    public static HeapArray<T> ToHeapArray<T>(T[] arr, bool canWrite = false)
+    public static UnmanagedArray<T> ToUnmanagedArray<T>(T[] arr, bool canWrite = false) where T : unmanaged
     {
         var len = arr.Length;
-        var ha = new HeapArray<T>(len, canWrite);
-#pragma warning disable CS8500 // This takes the address of a managed type
-        Buffer.MemoryCopy(&arr, ha.Address, len, len);
-#pragma warning restore CS8500
-        return ha;
+        var result = new UnmanagedArray<T>(len, canWrite);
+        fixed( T* pArr = arr)
+        {
+            Buffer.MemoryCopy(pArr, result.Address, len, len);
+        }
+        return result;
     }
     public static string PtrToStringUTF8(IntPtr ptr, int len)
     {
