@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Updater
@@ -60,6 +61,7 @@ namespace Updater
         public static Dictionary<string, string> Fixes = new()
         {
             { "Enum.GetValues(typeof(VehicleModType))","Enum.GetValues<VehicleModType>()"}  ,
+            { ".ExecuteTask(task)",".ExecuteTask(ref task)"}  ,
             { "Enum.GetValues(typeof(VehicleDoorIndex))","Enum.GetValues<VehicleDoorIndex>()"}  ,
             { "Enum.GetValues(typeof(PedPropAnchorPosition))","Enum.GetValues<PedPropAnchorPosition>()"}  ,
             { "Enum.GetValues(typeof(PedComponentType))","Enum.GetValues<PedComponentType>()"}  ,
@@ -68,7 +70,7 @@ namespace Updater
         };
         public string Update(ReadOnlySpan<char> src)
         {
-            var newSource = src.ToString();
+            var newSource = src.ToString().Replace("\r\n","\n");
             foreach (var item in Remove)
             {
                 newSource = newSource.Replace(item, "");
@@ -78,7 +80,19 @@ namespace Updater
             {
                 newSource = newSource.Replace(item.Key, item.Value);
             }
-            return newSource;
+
+            var lines = newSource.Split('\n');
+            var sb = new StringBuilder();
+            foreach (var line in lines)
+            {
+                var newLine = line;
+                if (newLine.Contains(" : IScriptTask"))
+                {
+                    newLine = newLine.Replace("class", "struct");
+                }
+                sb.AppendLine(newLine);
+            }
+            return sb.ToString().Substring(0,sb.Length-2);
         }
     }
 }

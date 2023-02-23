@@ -25,6 +25,7 @@ namespace GTA
 			MinimumSupportedGameVersion = (GameVersion)info.GetValue("MinimumSupportedGameVersion", typeof(GameVersion));
 		}
 
+		[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
 		public override void GetObjectData(SerializationInfo info, StreamingContext context)
 		{
 			info.AddValue("MinimumSupportedVersion", MinimumSupportedGameVersion, typeof(GameVersion));

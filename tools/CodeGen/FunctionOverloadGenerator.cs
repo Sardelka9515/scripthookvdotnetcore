@@ -54,7 +54,7 @@ class FunctionOverloadGenerator : Generator
         var pArgs = argCount > 0 ? $"&arg0" : "null";
         var execTask = $@"
         var task = new NativeCallTask((ulong)hash, {pArgs}, {argCount});
-        Core.DispatchTask(task);
+        Core.ExecuteTask(ref task);
 ";
         var call = ret ? "return ConvertFromNative<T>(task.Result);" : "";
         var thread = $"{execTask}{call}";
@@ -68,14 +68,7 @@ class FunctionOverloadGenerator : Generator
         var callDirect = ret ? "return ConvertFromNative<T>(NativeCall());" : "NativeCall();";
         var noThread = $"NativeInit((ulong)hash);\n{push}{callDirect}";
         sb.AppendLine($@"{{
-        if (Core.IsMainThread())
-        {{
-            {noThread}
-        }}
-        else
-        {{
-            {thread}
-        }}
+        {thread}
 }}");
     }
 }

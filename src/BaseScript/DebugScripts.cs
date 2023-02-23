@@ -1,5 +1,6 @@
 ﻿using GTA.UI;
 using GTA;
+using static GTA.Native.NativeInvoker;
 
 namespace SHVDN
 {
@@ -48,6 +49,20 @@ namespace SHVDN
             base.OnKeyDown(e);
 
             if (e.KeyCode == TestKey) _t = !_t;
+        }
+    }
+
+    public class DebugScript3 : Script
+    {
+        bool _t = false;
+        const Keys TestKey = Keys.O;
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            if (e.KeyCode == TestKey) {
+                START_ENTITY_FIRE(Game.Player.Character);
+            }
         }
     }
 }

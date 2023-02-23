@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "AotLoader.h"
 #include "INIReader.h"
+#include <winternl.h>
 #pragma once
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
 typedef VOID(WINAPI* LogHandler)(uint64_t time,uint32_t level,LPCSTR msg);
@@ -260,4 +261,11 @@ DllExport void ReloadCoreConfig() {
 	Config.SkipLegalScreen = reader.GetBoolean("", "SkipLegalScreen", Config.SkipLegalScreen);
 }
 
+DllExport void SetTls(LPVOID tls) {
+	__writegsqword(0x58, (DWORD64)tls);
+}
+
+DllExport LPVOID GetTls() {
+	return (LPVOID)__readgsqword(0x58);
+}
 

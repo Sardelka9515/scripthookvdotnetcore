@@ -7,6 +7,8 @@ global using DWORD = System.Int32;
 global using DWORD64 = System.Int64;
 global using HANDLE = System.IntPtr;
 global using LPVOID = System.IntPtr;
+global using PVOID = System.IntPtr;
+global using BYTE = System.Byte;
 global using HINSTANCE = System.IntPtr;
 global using HMODULE = System.IntPtr;
 global using static SHVDN.Globals;

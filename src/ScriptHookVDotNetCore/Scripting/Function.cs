@@ -10,7 +10,7 @@ public interface INativeValue
     ulong NativeValue { get; set; }
 }
 
-public unsafe class NativeCallTask : IScriptTask
+public unsafe struct NativeCallTask : IScriptTask
 {
     public NativeCallTask(ulong hash, InputArgument* ptrArgs, int argCount)
     {
@@ -185,7 +185,7 @@ public static unsafe partial class Function
         fixed (InputArgument* pArgs = args)
         {
             var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
-            Core.ExecuteTask(task);
+            Core.ExecuteTask(ref task);
         }
     }
 
@@ -195,7 +195,7 @@ public static unsafe partial class Function
         fixed (InputArgument* pArgs = args)
         {
             var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
-            Core.ExecuteTask(task);
+            Core.ExecuteTask(ref task);
             return ConvertFromNative<T>(task.Result);
         }
     }

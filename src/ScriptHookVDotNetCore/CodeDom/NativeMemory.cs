@@ -1572,7 +1572,7 @@ namespace SHVDN
             GetQuaternionFromMatrixFunc(returnRotationArray, (ulong)matrixAddress.ToInt64());
         }
 
-        internal class SetEntityAngularVelocityTask : IScriptTask
+        internal struct SetEntityAngularVelocityTask : IScriptTask
         {
 #region Fields
             IntPtr entityAddress;
@@ -1611,7 +1611,7 @@ namespace SHVDN
             var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)SetAngularVelocityVFuncOfEntityOffset);
             var setEntityAngularVelocityDelegate = (delegate* unmanaged[SuppressGCTransition]<IntPtr, float*, void> )(vFuncAddr);
             var task = new SetEntityAngularVelocityTask(entityAddress, setEntityAngularVelocityDelegate, x, y, z);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 0x10)]
@@ -1758,16 +1758,16 @@ namespace SHVDN
         public static void PunctureTire(IntPtr wheelAddress, float damage, IntPtr vehicleAddress)
         {
             var task = new VehicleWheelPunctureTask(wheelAddress, vehicleAddress, false, damage);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
         }
 
         public static void BurstTireOnRim(IntPtr wheelAddress, IntPtr vehicleAddress)
         {
             var task = new VehicleWheelPunctureTask(wheelAddress, vehicleAddress, true);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
         }
 
-        internal class VehicleWheelPunctureTask : IScriptTask
+        internal struct VehicleWheelPunctureTask : IScriptTask
         {
 #region Fields
             IntPtr wheelAddress;
@@ -2285,7 +2285,7 @@ namespace SHVDN
             }
         }
 
-        internal class EntityPoolTask : IScriptTask
+        internal struct EntityPoolTask : IScriptTask
         {
 #region Fields
             internal Type poolType;
@@ -2480,7 +2480,7 @@ namespace SHVDN
             }
         }
 
-        internal class GetEntityHandleTask : IScriptTask
+        internal struct GetEntityHandleTask : IScriptTask
         {
 #region Fields
             internal ulong entityAddress;
@@ -2552,7 +2552,7 @@ namespace SHVDN
             var task = new EntityPoolTask(EntityPoolTask.Type.Ped);
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2564,7 +2564,7 @@ namespace SHVDN
             task.doPosCheck = true;
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2573,7 +2573,7 @@ namespace SHVDN
             var task = new EntityPoolTask(EntityPoolTask.Type.Object);
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2585,14 +2585,14 @@ namespace SHVDN
             task.doPosCheck = true;
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
         public static int[] GetEntityHandles()
         {
             var task = new EntityPoolTask(EntityPoolTask.Type.Ped | EntityPoolTask.Type.Object | EntityPoolTask.Type.Vehicle);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2602,7 +2602,7 @@ namespace SHVDN
             task.position = position;
             task.radiusSquared = radius * radius;
             task.doPosCheck = true;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2611,7 +2611,7 @@ namespace SHVDN
             var task = new EntityPoolTask(EntityPoolTask.Type.Vehicle);
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2623,14 +2623,14 @@ namespace SHVDN
             task.doPosCheck = true;
             task.modelHashes = modelHashes;
             task.doModelCheck = modelHashes != null && modelHashes.Length > 0;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
         public static int[] GetPickupObjectHandles()
         {
             var task = new EntityPoolTask(EntityPoolTask.Type.PickupObject);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2640,14 +2640,14 @@ namespace SHVDN
             task.position = position;
             task.radiusSquared = radius * radius;
             task.doPosCheck = true;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
         public static int[] GetProjectileHandles()
         {
             var task = new EntityPoolTask(EntityPoolTask.Type.Projectile);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2657,7 +2657,7 @@ namespace SHVDN
             task.position = position;
             task.radiusSquared = radius * radius;
             task.doPosCheck = true;
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.handles;
         }
 
@@ -2739,7 +2739,7 @@ namespace SHVDN
         public static int GetEntityHandleFromAddress(IntPtr address)
         {
             var task = new GetEntityHandleTask(address);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.returnEntityHandle;
         }
 
@@ -2937,7 +2937,7 @@ namespace SHVDN
             internal CGameScriptResource* prev;
         }
 
-        internal class GetAllCScriptResourceHandlesTask : IScriptTask
+        internal struct GetAllCScriptResourceHandlesTask : IScriptTask
         {
 #region Fields
             internal CScriptResourceTypeNameIndex typeNameIndex;
@@ -2971,7 +2971,7 @@ namespace SHVDN
             }
         }
 
-        internal class GetCScriptResourceAddressTask : IScriptTask
+        internal struct GetCScriptResourceAddressTask : IScriptTask
         {
 #region Fields
             internal int targetHandle;
@@ -3006,14 +3006,14 @@ namespace SHVDN
         public static int[] GetCheckpointHandles()
         {
             var task = new GetAllCScriptResourceHandlesTask(CScriptResourceTypeNameIndex.Checkpoint);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.returnHandles;
         }
 
         public static IntPtr GetCheckpointAddress(int handle)
         {
             var task = new GetCScriptResourceAddressTask(handle, CheckpointPoolAddress, 0x60);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.returnAddress;
         }
 
@@ -3087,10 +3087,10 @@ namespace SHVDN
         public static void ExplodeProjectile(IntPtr projectileAddress)
         {
             var task = new ExplodeProjectileTask(projectileAddress);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
         }
 
-        internal class ExplodeProjectileTask : IScriptTask
+        internal struct ExplodeProjectileTask : IScriptTask
         {
 #region Fields
             internal IntPtr projectileAddress;
@@ -3641,7 +3641,7 @@ namespace SHVDN
             }
         }
 
-        internal class DetachFragmentPartByIndexTask : IScriptTask
+        internal struct DetachFragmentPartByIndexTask : IScriptTask
         {
 #region Fields
             internal FragInst* fragInst;
@@ -3682,7 +3682,7 @@ namespace SHVDN
             if (fragmentGroupIndex >= fragmentGroupCount)
                 return false;
             var task = new DetachFragmentPartByIndexTask(fragInst, fragmentGroupIndex);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
             return task.wasNewFragInstCreated;
         }
 
@@ -3842,7 +3842,7 @@ namespace SHVDN
             }
         }
 
-        internal class NmMessageTask : IScriptTask
+        internal struct NmMessageTask : IScriptTask
         {
 #region Fields
             int targetHandle;
@@ -3880,7 +3880,7 @@ namespace SHVDN
         public static void SendNmMessage(int targetHandle, string messageName, Dictionary<string, (int value, Type type)> boolIntFloatParameters, Dictionary<string, object> stringVector3ArrayParameters)
         {
             var task = new NmMessageTask(targetHandle, messageName, boolIntFloatParameters, stringVector3ArrayParameters);
-            ScriptDomain.CurrentDomain.ExecuteTask(task);
+            ScriptDomain.CurrentDomain.ExecuteTask(ref task);
         }
 
 #region Bridges

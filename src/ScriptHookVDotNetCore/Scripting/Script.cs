@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Xml.Linq;
 using GTA.UI;
@@ -8,11 +9,12 @@ namespace GTA;
 public unsafe abstract class Script
 {
     private bool _aborted = false;
-    private Thread _thread;
+    internal Thread ScriptThread;
     internal SemaphoreSlim WaitEvent = null;
     internal SemaphoreSlim ContinueEvent = null;
     internal ulong Continue = 0;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
+    internal LPVOID ScriptTlsOrg;
     public Type Name { get; private set; }
 
     /// <summary>
@@ -53,7 +55,7 @@ public unsafe abstract class Script
     /// <summary>
     /// Gets whether a dedicated thread is hosting the execution of this script.
     /// </summary>
-    public bool IsUsingThread => _thread != null;
+    public bool IsUsingThread => ScriptThread != null;
 
     public Script()
     {
@@ -87,14 +89,14 @@ public unsafe abstract class Script
                 WaitEvent = new(0);
                 ContinueEvent = new(0);
 
-                _thread = new Thread(new ThreadStart(MainLoop));
-                _thread.Start();
+                ScriptThread = new Thread(new ThreadStart(MainLoop));
+                ScriptThread.Start();
             }
             else
             {
                 OnStart();
             }
-            Logger.Info($"Started script {Name}, thread:{(_thread == null ? "null" : _thread.ManagedThreadId)}.");
+            Logger.Info($"Started script {Name}, thread:{(ScriptThread == null ? "null" : ScriptThread.ManagedThreadId)}.");
         }
         catch (Exception ex)
         {
@@ -164,6 +166,13 @@ public unsafe abstract class Script
         }
     }
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void ResetTls()
+    {
+        Core.SetTls(ScriptTlsOrg);
+    }
+
     /// <summary>
     /// Override this method only if you want to manually control the script execution flow, you're responsible for the yielding and exception handling yourself.
     /// </summary>
@@ -171,9 +180,10 @@ public unsafe abstract class Script
     {
         try
         {
+            ScriptTlsOrg = Core.GetTls();
             ContinueEvent.Wait();
             OnStart();
-            Yield();
+            Yield(this);
 
             while (!_aborted)
             {
@@ -199,7 +209,7 @@ public unsafe abstract class Script
     internal void HandleException(Exception ex)
     {
         Logger.Error($"Script {Name} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
-        if (Core.ExecutingScript == this || Core.IsMainThread())
+        if (Core.GameTls == Core.GetTls())
         {
             Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{Name}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
         }
@@ -300,10 +310,10 @@ public unsafe abstract class Script
             _aborted = true;
             if (IsUsingThread)
             {
-                if (_thread.IsAlive == true)
+                if (ScriptThread.IsAlive == true)
                 {
                     ContinueEvent.Release();
-                    if (!_thread.Join(5000))
+                    if (!ScriptThread.Join(5000))
                     {
                         Logger.Error($"Failed to join script thread: {Name}, instability is expected after module unload");
                     }

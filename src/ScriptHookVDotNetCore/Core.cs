@@ -3,11 +3,11 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using GTA;
 
 namespace SHVDN;
-
 #region API bridge
 
 public class ScriptDomain
@@ -17,7 +17,7 @@ public class ScriptDomain
     public void PauseKeyEvents(bool pause) => Core.PauseKeyEvents(pause);
     public IntPtr PinString(ReadOnlySpan<char> str) => Marshaller.PinString(str);
 
-    public void ExecuteTask(IScriptTask task) => Core.ExecuteTask(task);
+    public void ExecuteTask<T>(ref T task) where T : IScriptTask => Core.ExecuteTask(ref task);
 }
 public static class NativeFunc
 {
@@ -43,6 +43,8 @@ public static unsafe class Core
     public static readonly delegate* unmanaged<HMODULE*, int, int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
     public static readonly delegate* unmanaged<string, ulong> GetPtr = (delegate* unmanaged<string, ulong>)Import("GetPtr");
     public static readonly delegate* unmanaged<string, ulong, void> SetPtr = (delegate* unmanaged<string, ulong, void>)Import("SetPtr");
+    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID> GetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID>)Import("GetTls");
+    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID, void> SetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID, void>)Import("SetTls");
 
     private static bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
@@ -52,6 +54,7 @@ public static unsafe class Core
     private static DWORD _mainThread;
 
     private static ConcurrentQueue<IScriptTask> _taskQueue = new();
+    internal static LPVOID GameTls;
 
     /// <summary>
     /// List all scripts in this module
@@ -133,6 +136,7 @@ public static unsafe class Core
     public static void DoTick(LPVOID currentFiber)
     {
         _mainThread = GetCurrentThreadId();
+        GameTls = GetTls();
         lock (_scripts)
         {
             // Execute running scripts
@@ -210,6 +214,7 @@ public static unsafe class Core
     public static void OnInit(HMODULE currentModule)
     {
         _mainThread = GetCurrentThreadId();
+        GameTls = GetTls();
         CurrentModule = currentModule;
         if (AsiVersion < ScriptingApiVersion)
         {
@@ -252,34 +257,23 @@ public static unsafe class Core
     /// </summary>
     /// <param name="task"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public static void ExecuteTask(IScriptTask task)
+    public static void ExecuteTask<T>(ref T task) where T : IScriptTask
     {
         if (IsMainThread())
         {
             task.Run();
+            return;
         }
-        else
-        {
-            DispatchTask(task);
-        }
-    }
 
-    /// <summary>
-    /// Dispatch a task to main thread and wait for the execution to finish no matter what
-    /// </summary>
-    /// <param name="task"></param>
-    /// <exception cref="InvalidOperationException"></exception>
-    internal static void DispatchTask(IScriptTask task)
-    {
         var script = ExecutingScript;
 
         if (script?.IsUsingThread != true)
             throw new InvalidOperationException("No script is currently executing or script is not using dedicated thread");
 
         script.ThrowIfAborted();
-        _taskQueue.Enqueue(task);
-
-        SignalAndWait(script.WaitEvent, script.ContinueEvent);
+        SetTls(GameTls);
+        task.Run();
+        script.ResetTls();
     }
 
     static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)
@@ -292,4 +286,5 @@ public static unsafe class Core
         toSignal.Release();
         return toWaitOn.Wait(timeout);
     }
+
 }
