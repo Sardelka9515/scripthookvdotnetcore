@@ -49,14 +49,15 @@ public static unsafe class Marshaller
     /// <returns></returns>
     public static UnmanagedArray<T> ToUnmanagedArray<T>(T[] arr, bool canWrite = false) where T : unmanaged
     {
-        var len = arr.Length;
-        var result = new UnmanagedArray<T>(len, canWrite);
-        fixed( T* pArr = arr)
+        var cbToCopy = arr.Length * sizeof(T);
+        var result = new UnmanagedArray<T>(arr.Length, canWrite);
+        fixed (T* pArr = arr)
         {
-            Buffer.MemoryCopy(pArr, result.Address, len, len);
+            Buffer.MemoryCopy(pArr, result.Address, cbToCopy, cbToCopy);
         }
         return result;
     }
+
     public static string PtrToStringUTF8(IntPtr ptr, int len)
     {
         if (len < 0)
@@ -280,5 +281,13 @@ public static unsafe class Marshaller
     internal static void OnUnload()
     {
         CleanupStrings();
+    }
+
+    internal static void ZeroStruct<T>(ref T st) where T : unmanaged
+    {
+        fixed (void* pThis = &st)
+        {
+            ZeroMemory((IntPtr)pThis, sizeof(T));
+        }
     }
 }

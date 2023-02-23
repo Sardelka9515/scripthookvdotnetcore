@@ -42,4 +42,8 @@ public static unsafe partial class PInvoke
     
     [LibraryImport("kernel32.dll")]
     public static partial IntPtr GetConsoleWindow();
+
+
+    [LibraryImport("Kernel32.dll", EntryPoint = "RtlZeroMemory", SetLastError = false)]
+    public static partial void ZeroMemory(IntPtr dest, IntPtr size);
 }
