@@ -266,14 +266,17 @@ public static unsafe class Core
         // Important, without this it'll freeze while allocating a large amount of memory
         if (!GC.TryStartNoGCRegion(128 * 1024 * 1024, true))
             throw new OutOfMemoryException("Failed to start NoGCRegion, possibly caused by insufficent memory");
-        
+
         SetTls(GameTls);
         try
         {
             task.Run();
         }
-        finally { SetTls(org); }
-        GC.EndNoGCRegion();
+        finally
+        {
+            SetTls(org);
+            GC.EndNoGCRegion();
+        }
     }
 
     static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)
