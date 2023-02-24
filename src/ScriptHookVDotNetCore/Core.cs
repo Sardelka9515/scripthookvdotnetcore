@@ -155,11 +155,7 @@ public static unsafe class Core
                 {
                     if (script.IsUsingThread)
                     {
-                        bool finishedInTime = true;
-
-                        // Resume script thread and execute any incoming tasks from it
-                        while ((finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000)) && _taskQueue.TryDequeue(out var task))
-                            task.Run();
+                        bool finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000);
 
                         if (!finishedInTime)
                         {
@@ -265,15 +261,19 @@ public static unsafe class Core
             return;
         }
 
-        var script = ExecutingScript;
+        var org = GetTls();
 
-        if (script?.IsUsingThread != true)
-            throw new InvalidOperationException("No script is currently executing or script is not using dedicated thread");
-
-        script.ThrowIfAborted();
+        // Important, without this it'll freeze while allocating a large amount of memory
+        if (!GC.TryStartNoGCRegion(128 * 1024 * 1024, true))
+            throw new OutOfMemoryException("Failed to start NoGCRegion, possibly caused by insufficent memory");
+        
         SetTls(GameTls);
-        task.Run();
-        script.ResetTls();
+        try
+        {
+            task.Run();
+        }
+        finally { SetTls(org); }
+        GC.EndNoGCRegion();
     }
 
     static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)

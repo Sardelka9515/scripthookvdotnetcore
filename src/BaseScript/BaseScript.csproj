@@ -14,8 +14,8 @@
 		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(SolutionDir)bin\obj&quot;  -p:PublishAOT=true -r win-x64 " />
 	</Target>
 	<ItemGroup>
-	  <Compile Remove="DebugScripts.cs" />
 	  <Compile Remove="EntryPoint.cs" />
+      <Compile Condition="'$(Configuration)' == 'Release'" Remove="DebugScripts.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ScriptHookVDotNetCore.Generator\ScriptHookVDotNetCore.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

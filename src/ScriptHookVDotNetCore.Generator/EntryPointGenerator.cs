@@ -148,8 +148,8 @@ public static unsafe partial class EntryPoint
         const string Globals = $@"
 global using System;
 global using System.IO;
-global using DWORD = System.Int32;
-global using DWORD64 = System.Int64;
+global using DWORD = System.UInt32;
+global using DWORD64 = System.UInt64;
 global using HANDLE = System.IntPtr;
 global using LPVOID = System.IntPtr;
 global using HINSTANCE = System.IntPtr;

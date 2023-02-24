@@ -3,8 +3,9 @@ global using SHVDN;
 global using GTA.Native;
 global using static SHVDN.PInvoke;
 global using static SHVDN.ScriptHookV;
-global using DWORD = System.Int32;
-global using DWORD64 = System.Int64;
+global using BOOL = System.UInt32;
+global using DWORD = System.UInt32;
+global using DWORD64 = System.UInt64;
 global using HANDLE = System.IntPtr;
 global using LPVOID = System.IntPtr;
 global using PVOID = System.IntPtr;
@@ -43,4 +44,12 @@ public class Globals
     public const uint L_ERR = 4;
     public const uint L_CRI = 5;
     public const uint L_OFF = 6;
+
+    public const BOOL TRUE = 1;
+    public const BOOL FALSE = 0;
+
+    public const DWORD WAIT_ABANDONED=0x00000080;
+    public const DWORD WAIT_OBJECT_0 = 0x00000000;
+    public const DWORD WAIT_TIMEOUT = 0x00000102;
+    public const DWORD WAIT_FAILED = 0xFFFFFFFF;
 }

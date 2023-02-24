@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Xml.Linq;
 using GTA.UI;
@@ -9,12 +10,15 @@ namespace GTA;
 public unsafe abstract class Script
 {
     private bool _aborted = false;
-    internal Thread ScriptThread;
+
+    /// <summary>
+    /// Unmanaged thread id of the script thread
+    /// </summary>
+    internal uint ThreadId;
     internal SemaphoreSlim WaitEvent = null;
     internal SemaphoreSlim ContinueEvent = null;
     internal ulong Continue = 0;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
-    internal LPVOID ScriptTlsOrg;
     public Type Name { get; private set; }
 
     /// <summary>
@@ -55,12 +59,12 @@ public unsafe abstract class Script
     /// <summary>
     /// Gets whether a dedicated thread is hosting the execution of this script.
     /// </summary>
-    public bool IsUsingThread => ScriptThread != null;
+    public bool IsUsingThread => ThreadId != default;
 
     public Script()
     {
         Name = GetType();
-        _ = NativeMemory.ArmorOffset; // Initialize NativeMemory
+        _ = SHVDN.NativeMemory.ArmorOffset; // Initialize NativeMemory
     }
 
     internal void DoTick()
@@ -88,15 +92,13 @@ public unsafe abstract class Script
             {
                 WaitEvent = new(0);
                 ContinueEvent = new(0);
-
-                ScriptThread = new Thread(new ThreadStart(MainLoop));
-                ScriptThread.Start();
+                CreateThread(default, 0, Marshal.GetFunctionPointerForDelegate(MainLoop), null, 0, out ThreadId);
             }
             else
             {
                 OnStart();
             }
-            Logger.Info($"Started script {Name}, thread:{(ScriptThread == null ? "null" : ScriptThread.ManagedThreadId)}.");
+            Logger.Info($"Started script {Name}, thread:{ThreadId}.");
         }
         catch (Exception ex)
         {
@@ -166,21 +168,13 @@ public unsafe abstract class Script
         }
     }
 
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void ResetTls()
-    {
-        Core.SetTls(ScriptTlsOrg);
-    }
-
     /// <summary>
     /// Override this method only if you want to manually control the script execution flow, you're responsible for the yielding and exception handling yourself.
     /// </summary>
-    protected virtual void MainLoop()
+    protected virtual int MainLoop(IntPtr lparam)
     {
         try
         {
-            ScriptTlsOrg = Core.GetTls();
             ContinueEvent.Wait();
             OnStart();
             Yield(this);
@@ -200,6 +194,7 @@ public unsafe abstract class Script
         {
             HandleException(ex);
         }
+        return 0;
     }
 
     /// <summary>
@@ -310,17 +305,23 @@ public unsafe abstract class Script
             _aborted = true;
             if (IsUsingThread)
             {
-                if (ScriptThread.IsAlive == true)
+                var hThread = OpenThread(0x00100000, FALSE, ThreadId);
+                if (hThread != default)
                 {
                     ContinueEvent.Release();
-                    if (!ScriptThread.Join(5000))
+                    if (WaitForSingleObject(hThread, 5000) != WAIT_OBJECT_0)
                     {
-                        Logger.Error($"Failed to join script thread: {Name}, instability is expected after module unload");
+                        Logger.Error($"Failed to join script thread: {Name}, crash expected after module unload");
                     }
                     else
                     {
                         Logger.Debug($"Thread stopped: {Name}");
                     }
+                    CloseHandle(hThread);
+                }
+                else
+                {
+                    Logger.Error("Failed to open script thread");
                 }
             }
         }

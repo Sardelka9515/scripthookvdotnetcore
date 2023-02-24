@@ -39,11 +39,26 @@ public static unsafe partial class PInvoke
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [PreserveSig]
     public static partial uint GetModuleFileNameW(HMODULE hModule, char* buf, uint nSize);
-    
+
     [LibraryImport("kernel32.dll")]
-    public static partial IntPtr GetConsoleWindow();
+    public static partial HANDLE GetConsoleWindow();
 
 
-    [LibraryImport("Kernel32.dll", EntryPoint = "RtlZeroMemory", SetLastError = false)]
-    public static partial void ZeroMemory(IntPtr dest, IntPtr size);
+    [LibraryImport("kernel32.dll", EntryPoint = "RtlZeroMemory", SetLastError = false)]
+    public static partial void ZeroMemory(HANDLE dest, HANDLE size);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial uint CreateThread(LPVOID lpThreadAttributes,
+        DWORD dwStackSize, HANDLE lpStartAddress,
+        DWORD* lpParameter, DWORD dwCreationFlags, out DWORD lpThreadId);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial DWORD WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial HANDLE OpenThread(DWORD dwDesiredAccess, DWORD bInheritHandle, DWORD dwThreadId);
+
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial DWORD CloseHandle(HANDLE hObject);
 }
