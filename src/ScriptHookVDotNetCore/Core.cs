@@ -264,7 +264,7 @@ public static unsafe class Core
         var org = GetTls();
 
         // Important, without this it'll freeze while allocating a large amount of memory
-        if (!GC.TryStartNoGCRegion(128 * 1024 * 1024, true))
+        if (!GC.TryStartNoGCRegion(128 * 1024 * 1024, false))
             throw new OutOfMemoryException("Failed to start NoGCRegion, possibly caused by insufficent memory");
 
         SetTls(GameTls);
