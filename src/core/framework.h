@@ -1,6 +1,6 @@
 #pragma once
 
-#define DllExport extern "C" __declspec( dllexport )
+#define DllExport extern "C" __declspec( dllexport ) inline
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 // Windows Header Files
 #include <windows.h>
@@ -30,6 +30,11 @@
 using namespace std;
 using namespace spdlog;
 namespace fs = std::filesystem;
+
+typedef VOID(WINAPI* ModuleEntry)(HMODULE);
+
+typedef VOID(WINAPI* VoidFunc)(VOID);
+typedef VOID(WINAPI* TickEntry)(PVOID currentFiber);
 
 #pragma pack(push, 1)
 struct Job {

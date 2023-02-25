@@ -84,12 +84,14 @@
     <ClInclude Include="Pattern.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Scripts.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AotLoader.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="INIReader.cpp" />
     <ClCompile Include="Pattern.cpp" />
+    <ClCompile Include="Scripts.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -98,9 +100,12 @@
     <ResourceCompile Include="core.rc" />
   </ItemGroup>
   <ItemGroup>
-	<Content Include="ScriptHookVDotNetCore.ini">
-	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="ScriptHookVDotNetCore.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

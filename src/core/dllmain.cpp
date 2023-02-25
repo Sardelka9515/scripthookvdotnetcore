@@ -3,6 +3,7 @@
 #include "resource.h"
 #include "Pattern.h"
 #include "natives.h"
+#include "Scripts.h"
 
 static bool Initialized = false;
 
@@ -116,8 +117,7 @@ static void Init() {
 		info("Symlink detected, base script will not be overwritten");
 	}
 
-#if DEBUG
-#else
+#ifndef DEBUG
 	ScheduleLoad(BASE_SCRIPT_NAME);
 #endif
 	Initialized = true;
@@ -149,7 +149,10 @@ void ScriptMain() {
 			error(format("Failed to execute queued job: {}", ex.what()));
 		}
 
-		// Tick
+		// Tick fibers
+		Script::TickAll();
+
+		// Tick modules
 		{
 			LOCK(ModulesMutex);
 			for (auto pM : Modules) {
@@ -159,8 +162,8 @@ void ScriptMain() {
 			}
 		}
 		scriptWait(0);
-	}
-}
+			}
+		}
 DWORD Background(LPVOID lParam) {
 
 	// Parse and expose config struct

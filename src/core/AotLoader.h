@@ -1,9 +1,5 @@
 #include "pch.h"
 #pragma once
-typedef VOID(WINAPI* ModuleEntry)(HMODULE);
-
-typedef VOID(WINAPI* VoidFunc)(VOID);
-typedef VOID(WINAPI* TickEntry)(PVOID currentFiber);
 using namespace std;
 
 

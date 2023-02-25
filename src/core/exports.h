@@ -2,24 +2,23 @@
 #include "AotLoader.h"
 #include "INIReader.h"
 #include <winternl.h>
+#include "Scripts.h"
 #pragma once
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
-typedef VOID(WINAPI* LogHandler)(uint64_t time,uint32_t level,LPCSTR msg);
+typedef VOID(WINAPI* LogHandler)(uint64_t time, uint32_t level, LPCSTR msg);
 
-vector<AotLoader*> Modules = {};
-mutex ModulesMutex;
-HMODULE CurrentModule;
-queue<Job> JobQueue;
-mutex JobMutex;
-map<string, uint64_t> PtrMap;
-mutex PtrMapMutex;
-vector<LogHandler> LogHandlers = {};
-mutex LogHandlersMutex;
+inline vector<AotLoader*> Modules = {};
+inline mutex ModulesMutex;
+inline HMODULE CurrentModule;
+inline queue<Job> JobQueue;
+inline mutex JobMutex;
+inline map<string, uint64_t> PtrMap;
+inline mutex PtrMapMutex;
+inline vector<LogHandler> LogHandlers = {};
+inline mutex LogHandlersMutex;
 #pragma region Internal
 
-
-
-HMODULE LoadModuleInternal(LPCWSTR path) {
+static inline HMODULE LoadModuleInternal(LPCWSTR path) {
 	try {
 		auto sPath = wstring(path);
 		auto sName = sPath.substr(sPath.find_last_of(L"/\\") + 1);
@@ -36,16 +35,27 @@ HMODULE LoadModuleInternal(LPCWSTR path) {
 		return NULL;
 	}
 }
+static inline void UnloadModuleInternal(AotLoader* loader) {
 
-bool UnloadModuleInternal(LPCWSTR path) {
+	// Unregister associated scripts
+	auto script = Script::First;
+	do {
+		if (script->Module == loader->Module)
+			Script::Unregister(script);
+		script = script->Next;
+	} while (script);
+
+	// terminate all threads, free FLS and unload the module
+	loader->Unload();
+	delete loader;
+}
+static inline bool UnloadModuleInternal(LPCWSTR path) {
 	wstring ws(path);
 	string sPath(ws.begin(), ws.end());
 	for (int i = 0; i < Modules.size(); i++) {
 		if (Modules[i]->ModulePath.compare(path) == 0) {
 			try {
-				// terminate all threads, free FLS and unload the module
-				Modules[i]->Unload();
-				delete Modules[i];
+				UnloadModuleInternal(Modules[i]);
 				Modules.erase(next(Modules.begin(), i));
 				return true;
 			}
@@ -58,7 +68,17 @@ bool UnloadModuleInternal(LPCWSTR path) {
 	error("No module with such name was found");
 	return false;
 }
-
+template<typename _func>
+static inline bool TryInvoke(_func work, const char* msg) {
+	try {
+		work();
+		return true;
+	}
+	catch (exception ex) {
+		error(string(msg) + string(" failed: ") + ex.what());
+		return false;
+	}
+}
 #pragma endregion
 
 
@@ -72,7 +92,6 @@ DllExport bool UnloadModuleW(LPCWSTR path) {
 	LOCK(ModulesMutex);
 	return UnloadModuleInternal(path);
 }
-
 DllExport bool UnloadAllModules() {
 	LOCK(ModulesMutex);
 	bool bResult = true;
@@ -80,9 +99,7 @@ DllExport bool UnloadAllModules() {
 
 		for (int i = 0; i < Modules.size(); i++) {
 			try {
-				// terminate all threads, free FLS and unload the module
-				Modules[i]->Unload();
-				delete Modules[i];
+				UnloadModuleInternal(Modules[i]);
 			}
 			catch (exception ex) {
 				string sPath(Modules[i]->ModulePath.begin(), Modules[i]->ModulePath.end());
@@ -98,38 +115,32 @@ DllExport bool UnloadAllModules() {
 	}
 	return bResult;
 }
-
 DllExport void ScheduleTask(Job job) {
 	LOCK(JobMutex);
 	JobQueue.push(job);
 }
-
 DllExport void ScheduleLoad(LPCWSTR path) {
 	Job j = {};
 	j.Type = J_LOAD;
 	j.Parameter = (LPVOID)new wstring(path);
 	ScheduleTask(j);
 }
-
 DllExport void ScheduleUnload(LPCWSTR path) {
 	Job j = {};
 	j.Type = J_UNLOAD;
 	j.Parameter = (LPVOID)new wstring(path);
 	ScheduleTask(j);
 }
-
 DllExport void ScheduleUnloadAll() {
 	Job j = {};
 	j.Type = J_UNLOAD_ALL;
 	ScheduleTask(j);
 }
-
 DllExport void ScheduleReload() {
 	Job j = {};
 	j.Type = J_RELOAD;
 	ScheduleTask(j);
 }
-
 // Obsolete
 DllExport void ScheduleCallback(VoidFunc callback) {
 	Job j = {};
@@ -234,7 +245,6 @@ DllExport void RemovePtr(LPCSTR key) {
 		PtrMap.erase(i);
 	}
 }
-
 DllExport void AddLogHandler(LogHandler lh) {
 	try {
 		LOCK(LogHandlersMutex);
@@ -244,7 +254,6 @@ DllExport void AddLogHandler(LogHandler lh) {
 		error(ex.what());
 	}
 }
-
 DllExport void RemoveLogHandler(LogHandler lh) {
 	try {
 		LOCK(LogHandlersMutex);
@@ -254,18 +263,26 @@ DllExport void RemoveLogHandler(LogHandler lh) {
 		error(ex.what());
 	}
 }
-
 DllExport void ReloadCoreConfig() {
 	INIReader reader(CONFIG_PATH);
-	Config.AllocDebugConsole = reader.GetBoolean("","AllocDebugConsole", Config.AllocDebugConsole);
+	Config.AllocDebugConsole = reader.GetBoolean("", "AllocDebugConsole", Config.AllocDebugConsole);
 	Config.SkipLegalScreen = reader.GetBoolean("", "SkipLegalScreen", Config.SkipLegalScreen);
 }
-
 DllExport void SetTls(LPVOID tls) {
 	__writegsqword(0x58, (DWORD64)tls);
 }
-
 DllExport LPVOID GetTls() {
 	return (LPVOID)__readgsqword(0x58);
 }
-
+DllExport Script* ScriptRegister(VoidFunc scriptEntry, HMODULE module) {
+	return Script::Register(scriptEntry, module);
+}
+DllExport Script* GetCurrentScript() {
+	return Script::GetCurrent();
+}
+DllExport void ScriptUnregister(Script* script) {
+	Script::Unregister(script);
+}
+DllExport void ScriptWait(DWORD64 milliSeconds) {
+	Script::Wait(milliSeconds);
+}
