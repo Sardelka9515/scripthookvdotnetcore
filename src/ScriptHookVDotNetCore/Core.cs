@@ -53,7 +53,7 @@ public static unsafe class Core
     private static List<Script> _scripts = new();
     private static DWORD _mainThread;
 
-    private static ConcurrentQueue<IScriptTask> _taskQueue = new();
+    private static IScriptTask _toExecute;
     internal static LPVOID GameTls;
 
     /// <summary>
@@ -148,18 +148,25 @@ public static unsafe class Core
                 if (script.Continue > GetTickCount64())
                     continue;
 
-                _taskQueue.Clear();
+                _toExecute = null;
                 ExecutingScript = script;
 
                 try
                 {
                     if (script.IsUsingThread)
                     {
-                        bool finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000);
+                        bool finishedInTime;
+                    nextTask:
+                        finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000);
 
                         if (!finishedInTime)
                         {
                             throw new TimeoutException("Script execution has timed out after 5 seconds.");
+                        }
+                        if (_toExecute != null)
+                        {
+                            _toExecute.Run();
+                            goto nextTask;
                         }
                     }
                     else
@@ -261,22 +268,14 @@ public static unsafe class Core
             return;
         }
 
-        var org = GetTls();
+        var script = ExecutingScript;
+        if (script?.IsUsingThread != true)
+            throw new InvalidOperationException("No script is currently executing");
 
-        // Important, without this it'll freeze while allocating a large amount of memory
-        if (!GC.TryStartNoGCRegion(128 * 1024 * 1024, false))
-            throw new OutOfMemoryException("Failed to start NoGCRegion, possibly caused by insufficent memory");
-
-        SetTls(GameTls);
-        try
-        {
-            task.Run();
-        }
-        finally
-        {
-            SetTls(org);
-            GC.EndNoGCRegion();
-        }
+        _toExecute = task;
+        SignalAndWait(script.WaitEvent, script.ContinueEvent);
+        task = (T)_toExecute;
+        _toExecute = null;
     }
 
     static void SignalAndWait(SemaphoreSlim toSignal, SemaphoreSlim toWaitOn)

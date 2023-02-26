@@ -27,7 +27,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirStrike", "examples\AirSt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater", "tools\Updater\Updater.csproj", "{52CCEA32-BF18-4DC2-88B0-0D40735C78DD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "tools\Test\Test.csproj", "{239AAC78-3963-414B-9053-AD729F3DEC18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "tools\Test\Test.csproj", "{239AAC78-3963-414B-9053-AD729F3DEC18}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

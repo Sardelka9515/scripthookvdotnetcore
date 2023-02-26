@@ -7,7 +7,7 @@ namespace SHVDN
     public class DebugScript : Script
     {
         bool _t = false;
-        const Keys TestKey = Keys.T;
+        bool _y = false;
         protected override void OnTick()
         {
             base.OnTick();
@@ -16,12 +16,17 @@ namespace SHVDN
             {
                 new TextElement($"{World.GetAllEntities().Length}", new(300, 300), 1).Draw();
             }
+            if (_y)
+            {
+                Logger.Debug($"{World.GetAllEntities().Length}");
+            }
         }
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
 
-            if (e.KeyCode == TestKey) _t = !_t;
+            if (e.KeyCode == Keys.T) _t = !_t;
+            if (e.KeyCode == Keys.Y) _y = !_y;
         }
     }
 

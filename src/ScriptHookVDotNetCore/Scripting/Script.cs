@@ -6,7 +6,10 @@ using System.Xml.Linq;
 using GTA.UI;
 
 namespace GTA;
-
+class NullTask : IScriptTask
+{
+    public void Run() { }
+}
 public unsafe abstract class Script
 {
     private bool _aborted = false;
@@ -141,8 +144,8 @@ public unsafe abstract class Script
             throw new InvalidOperationException("Cannot yield execution when not running in script thread");
 
         script.ThrowIfAborted();
-        script.WaitEvent.Release();
-        script.ContinueEvent.Wait();
+        NullTask yieldTask = null;
+        Core.ExecuteTask(ref yieldTask);
     }
 
     /// <summary>

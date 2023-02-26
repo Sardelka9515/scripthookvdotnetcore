@@ -61,4 +61,11 @@ public static unsafe partial class PInvoke
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     public static partial DWORD CloseHandle(HANDLE hObject);
+
+    [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    public static partial HANDLE CreateEventW(IntPtr lpEventAttributes, [MarshalAs(UnmanagedType.Bool)] bool bManualReset, [MarshalAs(UnmanagedType.Bool)] bool bInitialState, string name);
+
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial BOOL SetEvent(HANDLE hObject);
 }

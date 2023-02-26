@@ -48,8 +48,10 @@ public class Globals
     public const BOOL TRUE = 1;
     public const BOOL FALSE = 0;
 
-    public const DWORD WAIT_ABANDONED=0x00000080;
+    public const DWORD WAIT_ABANDONED = 0x00000080;
     public const DWORD WAIT_OBJECT_0 = 0x00000000;
     public const DWORD WAIT_TIMEOUT = 0x00000102;
     public const DWORD WAIT_FAILED = 0xFFFFFFFF;
+
+    public const DWORD INFINITE = 0xFFFFFFFF;
 }
