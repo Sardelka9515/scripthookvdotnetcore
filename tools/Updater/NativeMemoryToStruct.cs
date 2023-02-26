@@ -283,6 +283,7 @@ namespace Updater
 //
 
 using System;
+using System.Security;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;

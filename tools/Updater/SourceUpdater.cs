@@ -85,10 +85,13 @@ namespace Updater
             var sb = new StringBuilder();
             foreach (var line in lines)
             {
+                if (line.Contains("[SecurityPermission("))
+                    continue;
                 var newLine = line;
                 if (newLine.Contains(" : IScriptTask"))
                 {
                     newLine = newLine.Replace("class", "struct");
+                    newLine = newLine.Replace(" sealed ", " ");
                 }
                 sb.AppendLine(newLine);
             }
