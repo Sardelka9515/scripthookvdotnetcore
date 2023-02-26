@@ -95,7 +95,6 @@ public static unsafe partial class EntryPoint
         catch (Exception ex)
         {
             MessageBoxA(default, ex.ToString(), ""Module initialization error"", MB_OK);
-            throw; // Crash the process
         }
     }";
         const string UnloadCode = @"/// <summary>
