@@ -78,9 +78,11 @@
   <ItemGroup>
     <ClInclude Include="AotLoader.h" />
     <ClInclude Include="callback_sink.h" />
+    <ClInclude Include="coreclr_delegates.h" />
     <ClInclude Include="exports.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="INIReader.h" />
+    <ClInclude Include="nativehost.h" />
     <ClInclude Include="Pattern.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
@@ -90,6 +92,7 @@
     <ClCompile Include="AotLoader.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="INIReader.cpp" />
+    <ClCompile Include="nativehost.cpp" />
     <ClCompile Include="Pattern.cpp" />
     <ClCompile Include="Scripts.cpp" />
     <ClCompile Include="pch.cpp">

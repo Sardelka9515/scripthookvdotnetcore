@@ -8,6 +8,10 @@
     <ClCompile Include="INIReader.cpp">
       <Filter>ext</Filter>
     </ClCompile>
+    <ClCompile Include="Scripts.cpp" />
+    <ClCompile Include="nativehost.cpp">
+      <Filter>hosting</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AotLoader.h" />
@@ -23,6 +27,12 @@
       <Filter>ext</Filter>
     </ClInclude>
     <ClInclude Include="Scripts.h" />
+    <ClInclude Include="coreclr_delegates.h">
+      <Filter>hosting</Filter>
+    </ClInclude>
+    <ClInclude Include="nativehost.h">
+      <Filter>hosting</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="core.rc" />
@@ -30,6 +40,9 @@
   <ItemGroup>
     <Filter Include="ext">
       <UniqueIdentifier>{30bc5a54-efec-441f-9c25-89e6adc13440}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="hosting">
+      <UniqueIdentifier>{22155999-4adf-45ee-900a-b6a5493089f1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
