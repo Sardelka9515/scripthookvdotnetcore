@@ -39,11 +39,13 @@ static inline void UnloadModuleInternal(AotLoader* loader) {
 
 	// Unregister associated scripts
 	auto script = Script::First;
-	do {
-		if (script->Module == loader->Module)
-			Script::Unregister(script);
-		script = script->Next;
-	} while (script);
+	if (script) {
+		do {
+			if (script->Module == loader->Module)
+				Script::Unregister(script);
+			script = script->Next;
+		} while (script);
+	}
 
 	// terminate all threads, free FLS and unload the module
 	loader->Unload();
