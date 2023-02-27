@@ -15,7 +15,7 @@
 	</Target>
 	<ItemGroup>
 	  <Compile Remove="EntryPoint.cs" />
-      <Compile Condition="'$(Configuration)' == 'Release'" Remove="DebugScripts.cs" />
+	  <Compile Remove="DebugScripts.cs" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ScriptHookVDotNetCore.Generator\ScriptHookVDotNetCore.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
