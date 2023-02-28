@@ -24,6 +24,9 @@ namespace SHVDN
     /// </summary>
     internal static unsafe partial class Console
     {
+        const string INFO_PREFIX = "[~b~INFO~w~] ";
+        const string ERROR_PREFIX = "[~r~ERROR~w~] ";
+        const string WARNING_PREFIX = "[~o~WARNING~w~] ";
         static int _cursorPos = 0;
         static int _commandPos = -1;
         static int _currentPage = 1;
@@ -80,8 +83,11 @@ namespace SHVDN
         /// <summary>
         /// Register the specified method as a console command.
         /// </summary>
-        /// <param name="command">The command attribute of the method.</param>
-        /// <param name="methodInfo">The method information.</param>
+        /// <param name="func"></param>
+        /// <param name="name"></param>
+        /// <param name="param"></param>
+        /// <param name="help"></param>
+        /// <param name="assembly"></param>
         public static void RegisterCommand(delegate* unmanaged<int, char**, IntPtr> func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
         {
             var command = new Command((IntPtr)func, name, param, help, assembly);
@@ -103,7 +109,6 @@ namespace SHVDN
         /// <summary>
         /// Unregister all methods with a <see cref="Command"/> attribute that were previously registered.
         /// </summary>
-        /// <param name="type">The type to search for console command methods.</param>
         public static void UnregisterCommand(string name)
         {
             lock (_commands)
@@ -169,19 +174,19 @@ namespace SHVDN
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintInfo(string msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
+        public static void PrintInfo(string msg, params object[] args) => Print(INFO_PREFIX, msg, args);
         /// <summary>
         /// Writes an error message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintError(string msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
+        public static void PrintError(string msg, params object[] args) => Print(ERROR_PREFIX, msg, args);
         /// <summary>
         /// Writes a warning message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintWarning(string msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
+        public static void PrintWarning(string msg, params object[] args) => Print(WARNING_PREFIX, msg, args);
         public static void Print(string prefix, string msg, params object[] args)
         {
             if (args.Length > 0)
@@ -830,6 +835,21 @@ namespace SHVDN
         {
             _input = new(command);
             Execute();
+        }
+
+        static Console()
+        {
+            // Setup function pointer and store it in core
+            IntPtr funcPtr;
+            *(delegate* unmanaged<delegate* unmanaged<int, char**, IntPtr>, char*, char*, char*, char*, void>*)&funcPtr = &RegisterConsoleCommand;
+            Core.SetPtr("SHVDN.Console.RegisterConsoleCommand", (ulong)funcPtr);
+            *(delegate* unmanaged<char*, char*, void>*)&funcPtr = &PrintConsoleMessage;
+            Core.SetPtr("SHVDN.Console.PrintConsoleMessage", (ulong)funcPtr);
+            *(delegate* unmanaged<char*, void>*)&funcPtr = &ExecuteConsoleCommand;
+            Core.SetPtr("SHVDN.Console.ExecuteConsoleCommand", (ulong)funcPtr);
+
+            // Set up function bridge
+            NativeLibrary.Load("ScriptHookVDotNetCore.BaseScript.dll");
         }
 
         #endregion

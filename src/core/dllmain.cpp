@@ -4,6 +4,7 @@
 #include "Pattern.h"
 #include "natives.h"
 #include "Scripts.h"
+#include "nativehost.h"
 
 static bool Initialized = false;
 
@@ -21,8 +22,6 @@ LPVOID DoJob(Job* pj) {
 	}
 	case J_UNLOAD_ALL:
 		return (LPVOID)UnloadAllModules();
-	case J_RELOAD:
-		return (LPVOID)(UnloadAllModules() && LoadModuleW(BASE_SCRIPT_NAME));
 	case J_CALLBACK:
 		return ((CallBackFunc)pj->Parameter)(pj->ParameterEx);
 	}
@@ -31,6 +30,7 @@ LPVOID DoJob(Job* pj) {
 shared_ptr<spdlog::logger> Logger;
 LPVOID PtrBaseScript;
 SIZE_T BaseScriptSize;
+VoidFunc ManagedTick;
 
 static void OnPresent(void* swapChain) {
 	LOCK(ModulesMutex);
@@ -47,35 +47,31 @@ static void OnPresent(void* swapChain) {
 	}
 }
 
-static void KeyboardMessage(unsigned long keycode, bool keydown, bool ctrl, bool shift, bool alt) {
-	if (!keydown) {
-		if (keycode == UNLOAD_KEY) {
-			ScheduleUnloadAll();
-		}
-		if (keycode == RELOAD_KEY) {
-			ScheduleReload();
-		}
-	}
-}
-
 static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, BOOL isWithAlt, BOOL wasDownBefore, BOOL isUpNow)
 {
-	KeyboardMessage(
-		key,
-		!isUpNow,
-		(GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
-		(GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
-		isWithAlt != FALSE);
+	{
+		LOCK(ModulesMutex);
+		for (const auto pScript : Modules) {
+			if (pScript->KeyboardFunc) {
+				try {
+					pScript->KeyboardFunc(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
+				}
+				catch (exception ex) {
+					auto scriptName = pScript->ModulePath.substr(pScript->ModulePath.find_last_of(L"/\\") + 1);
+					error("KeyboardHandler[{0}]: {1}", WTS(scriptName), ex.what());
+				}
+			}
+		}
+	}
 
-	LOCK(ModulesMutex);
-	for (const auto pScript : Modules) {
-		if (pScript->KeyboardFunc) {
+	{
+		LOCK(KeyboardHandlersMutex);
+		for (auto handler : KeyboardHandlers) {
 			try {
-				pScript->KeyboardFunc(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
+				handler(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
 			}
 			catch (exception ex) {
-				auto scriptName = pScript->ModulePath.substr(pScript->ModulePath.find_last_of(L"/\\") + 1);
-				error("KeyboardHandler[{0}]: {1}", WTS(scriptName), ex.what());
+				error("KeyboardHandler error: {}", ex.what());
 			}
 		}
 	}
@@ -117,9 +113,11 @@ static void Init() {
 		info("Symlink detected, base script will not be overwritten");
 	}
 
-#ifndef DEBUG
-	ScheduleLoad(BASE_SCRIPT_NAME);
-#endif
+	info("Starting CoreCLR");
+	RuntimeConfig CoreClrConfig = { 0 };
+	CoreCLRInit(&CoreClrConfig);
+	assert(ManagedTick = (VoidFunc)CoreClrConfig.TickPtr);
+	info("CoreCLR startup complete");
 	Initialized = true;
 	return;
 }
@@ -152,6 +150,9 @@ void ScriptMain() {
 		// Tick fibers
 		Script::TickAll();
 
+		// Tick CoreCLR
+		ManagedTick();
+
 		// Tick modules
 		{
 			LOCK(ModulesMutex);
@@ -162,8 +163,8 @@ void ScriptMain() {
 			}
 		}
 		scriptWait(0);
-			}
-		}
+	}
+}
 DWORD Background(LPVOID lParam) {
 
 	// Parse and expose config struct
@@ -219,6 +220,7 @@ DWORD Background(LPVOID lParam) {
 	set_default_logger(Logger);
 	flush_every(chrono::seconds(3));
 	info("Logging system initilized");
+
 	return 0;
 }
 

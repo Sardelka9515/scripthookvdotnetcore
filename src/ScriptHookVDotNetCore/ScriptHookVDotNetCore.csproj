@@ -2,8 +2,7 @@
 
 	<PropertyGroup>
 		<NoWarn>CS1591;CA2211</NoWarn>
-		<OutDir>$(SolutionDir)bin\obj</OutDir>
-		<OutputPath>$(SolutionDir)bin\obj</OutputPath>
+		<OutDir>$(SolutionDir)bin</OutDir>
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -13,7 +12,7 @@
 		<Title>ScriptHookVDotNetCore</Title>
 		<RepositoryUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</RepositoryUrl>
 		<Copyright>Copyright © 2022 Sardelka9515</Copyright>
-		<Description>ScriptHookV for .NET Core using NativeAOT technology</Description>
+		<Description>ScriptHookV for .NET Core</Description>
 		<Authors>Sardelka</Authors>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
@@ -23,8 +22,18 @@
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
+	
 	<ItemGroup>
 		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
 		<None Include="$(SolutionDir)bin\obj\ScriptHookVDotNetCore.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Include="Core.Imports.cs" />
 	</ItemGroup>
+	<ItemGroup Condition="'$(PublishAot)' == 'true'">
+		<Compile Remove="PluginLoader/**/*.cs" />
+		<Compile Remove="Core.CLR.cs" />
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(PublishAot)' == 'true'">
+		<DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
+	</PropertyGroup>
 </Project>

@@ -16,6 +16,8 @@ inline map<string, uint64_t> PtrMap;
 inline mutex PtrMapMutex;
 inline vector<LogHandler> LogHandlers = {};
 inline mutex LogHandlersMutex;
+inline mutex KeyboardHandlersMutex;
+inline vector<KeyboardHandler> KeyboardHandlers;
 #pragma region Internal
 
 static inline HMODULE LoadModuleInternal(LPCWSTR path) {
@@ -136,11 +138,6 @@ DllExport void ScheduleUnload(LPCWSTR path) {
 DllExport void ScheduleUnloadAll() {
 	Job j = {};
 	j.Type = J_UNLOAD_ALL;
-	ScheduleTask(j);
-}
-DllExport void ScheduleReload() {
-	Job j = {};
-	j.Type = J_RELOAD;
 	ScheduleTask(j);
 }
 // Obsolete
@@ -287,4 +284,19 @@ DllExport void ScriptUnregister(Script* script) {
 }
 DllExport void ScriptWait(DWORD64 milliSeconds) {
 	Script::Wait(milliSeconds);
+}
+DllExport void KeyboardHandlerRegister(KeyboardHandler handler) {
+	auto work = [handler]()
+	{LOCK(KeyboardHandlersMutex); KeyboardHandlers.push_back(handler); };
+	TryInvoke(work, "KeyboardHandlerRegister");
+}
+
+DllExport void KeyboardHandlerUnregister(KeyboardHandler handler) {
+	auto work = [handler]()
+	{
+		LOCK(KeyboardHandlersMutex);
+		KeyboardHandlers.erase(remove_if(KeyboardHandlers.begin(), KeyboardHandlers.end(),
+			[handler](KeyboardHandler check) {return check == handler; }));
+	};
+	TryInvoke(work, "KeyboardHandlerRegister");
 }

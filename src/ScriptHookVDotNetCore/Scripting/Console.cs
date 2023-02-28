@@ -17,10 +17,8 @@ namespace GTA
         private static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
         private static HashSet<Type> _registeredTypes = new();
         private static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
-        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Import("ExecuteConsoleCommand");
-        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Import("RegisterConsoleCommand");
-        public static readonly delegate* unmanaged<char*, char*, void> PrintConsoleMessage = (delegate* unmanaged<char*, char*, void>)Import("PrintConsoleMessage");
-        public static IntPtr Import(string name) => NativeLibrary.GetExport(BaseScript, name);
+        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Core.GetPtr("SHVDN.Console.ExecuteConsoleCommand");
+        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Core.GetPtr("SHVDN.Console.RegisterConsoleCommand");
 
         /// <summary>
         /// Search and register all static method marked with <see cref="ConsoleCommand"/> attribute in this type
@@ -82,44 +80,41 @@ namespace GTA
                 }
             }
         }
-
-        public static void Print(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, params object[] args)
+        public static void Print(uint level, ReadOnlySpan<char> msg, params object[] args)
         {
             if (args != null && args.Length > 0)
             {
                 msg = string.Format(msg.ToString(), args);
             }
-            fixed (char* pp = prefix, pm = msg)
-            {
-                PrintConsoleMessage(pp, pm);
-            }
 
-            if (GetConsoleWindow() != default)
+            // Will be forwarded to in-game console through registered log handlers
+            switch (level)
             {
-                System.Console.WriteLine($"{prefix} {msg}");
+                case L_INF: Logger.Info(msg); break;
+                case L_ERR: Logger.Error(msg); break;
+                case L_WRN: Logger.Warn(msg); break;
             }
         }
-
         /// <summary>
         /// Writes an info message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintInfo(ReadOnlySpan<char> msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
+        public static void PrintInfo(ReadOnlySpan<char> msg, params object[] args) => Print(L_INF, msg, args);
 
         /// <summary>
         /// Writes an error message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintError(ReadOnlySpan<char> msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
+        public static void PrintError(ReadOnlySpan<char> msg, params object[] args) => Print(L_ERR, msg, args);
 
         /// <summary>
         /// Writes a warning message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
+        public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print(L_WRN, msg, args);
 
         static void RegisterCommand(ConsoleCommand command)
         {

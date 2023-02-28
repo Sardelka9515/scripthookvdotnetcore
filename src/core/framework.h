@@ -37,6 +37,13 @@ typedef VOID(WINAPI* VoidFunc)(VOID);
 typedef VOID(WINAPI* TickEntry)(PVOID currentFiber);
 
 #pragma pack(push, 1)
+
+struct RuntimeConfig
+{
+	LPVOID TickPtr;
+	LPVOID Reserved[31];
+};
+
 struct Job {
 	uint16_t Type;
 	LPVOID Parameter;
@@ -65,7 +72,6 @@ static ConfigStruct Config = ConfigStruct();
 #define J_UNLOAD 0
 #define J_LOAD 1
 #define J_UNLOAD_ALL 2
-#define J_RELOAD 3
 #define J_CALLBACK 10
 
 #define MAX_UNLOAD_RETRIES Config.MaxUnloadRetries

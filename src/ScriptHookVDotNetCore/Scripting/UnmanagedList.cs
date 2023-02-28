@@ -14,7 +14,9 @@ namespace SHVDN
         const int AllocBlockSize = 32;
         private UnmanagedArray<T> _buffer;
         public int Count { get; private set; }
-        private int _pad;
+#pragma warning disable CS0169
+        private readonly int _pad;
+#pragma warning restore CS0169
         public UnmanagedList(int capacity = DefaultCapacity)
         {
             _buffer = new UnmanagedArray<T>(capacity);

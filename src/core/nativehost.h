@@ -1,4 +1,4 @@
 
 #include "pch.h"
 #pragma once
-int StartNetHost();
+int CoreCLRInit(RuntimeConfig* config);

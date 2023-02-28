@@ -6,24 +6,11 @@ using System.Linq;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace SHVDN;
-
-struct ConfigStruct
-{
-    public ushort UnloadKey;
-    public ushort ReloadKey;
-    public ushort MaxUnloadRetries;
-    public ushort ConsoleKey;
-}
+namespace GTA;
 
 [ScriptAttributes(NoScriptThread = true)]
 internal unsafe class BaseScript : Script
 {
-
-    static readonly ConfigStruct* _pConfig = (ConfigStruct*)Core.GetPtr("Config");
-    static delegate* unmanaged<void> ReloadCoreConfig = (delegate* unmanaged<void>)Core.Import("ReloadCoreConfig");
-    static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> AddLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("AddLogHandler");
-    static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> RemoveLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Core.Import("RemoveLogHandler");
 
     public BaseScript()
     {
@@ -31,7 +18,7 @@ internal unsafe class BaseScript : Script
         {
             if (e.IsUnloading)
             {
-                RemoveLogHandler(&PrintLogMessage);
+                Core.RemoveLogHandler(&PrintLogMessage);
             }
         };
     }
@@ -39,7 +26,7 @@ internal unsafe class BaseScript : Script
     protected override void OnStart()
     {
         base.OnStart();
-        AddLogHandler(&PrintLogMessage);
+        Core.AddLogHandler(&PrintLogMessage);
         try
         {
             ReloadConfig();
@@ -48,10 +35,11 @@ internal unsafe class BaseScript : Script
         {
             Logger.Error("Error loading configuration file: \n" + ex);
         }
-        Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {Core.AsiVersion} by Sardelka. ---");
-        Console.PrintInfo($"~c~ --- Base script version: {typeof(BaseScript).Assembly.GetName().Version}. Using API {Core.ScriptingApiVersion} ---");
-        Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
-        Load();
+        SHVDN.Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {Core.AsiVersion} by Sardelka. ---");
+        SHVDN.Console.PrintInfo($"~c~ --- Base script version: {typeof(BaseScript).Assembly.GetName().Version}. Using API {Core.ScriptingApiVersion} ---");
+        SHVDN.Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
+        LoadModule();
+        Core.ReloadAll();
     }
 
     [UnmanagedCallersOnly]
@@ -61,11 +49,11 @@ internal unsafe class BaseScript : Script
         switch (level)
         {
             case L_INF:
-                Console.PrintInfo(msg); break;
+                SHVDN.Console.PrintInfo(msg); break;
             case L_WRN:
-                Console.PrintWarning(msg); break;
+                SHVDN.Console.PrintWarning(msg); break;
             case L_ERR:
-                Console.PrintError(msg); break;
+                SHVDN.Console.PrintError(msg); break;
             default: break;
         }
     }
@@ -73,24 +61,35 @@ internal unsafe class BaseScript : Script
     protected override void OnTick()
     {
         base.OnTick();
-        Console.DoTick();
+        SHVDN.Console.DoTick();
 
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        Console.DoKeyEvent(e.KeyData, true);
+        SHVDN.Console.DoKeyEvent(e.KeyData, true);
     }
 
     protected override void OnKeyUp(KeyEventArgs e)
     {
         base.OnKeyUp(e);
-        if ((ushort)e.KeyCode == _pConfig->ConsoleKey)
+        var key = (ushort)e.KeyCode;
+        if (key == Core.Config->ConsoleKey)
+            SHVDN.Console.IsOpen = !SHVDN.Console.IsOpen;
+
+        else if (key == Core.Config->UnloadKey)
         {
-            Console.IsOpen = !Console.IsOpen;
+            UnloadModule();
+            Core.UnloadAll();
         }
-        Console.DoKeyEvent(e.KeyData, false);
+        else if (key == Core.Config->ReloadKey)
+        {
+            LoadModule();
+            Core.ReloadAll();
+        }
+
+        SHVDN.Console.DoKeyEvent(e.KeyData, false);
     }
 
     #region Commands
@@ -98,13 +97,13 @@ internal unsafe class BaseScript : Script
     [ConsoleCommand("Print all avalible commands")]
     public static void Help()
     {
-        Console.PrintHelpText();
+        SHVDN.Console.PrintHelpText();
     }
 
     [ConsoleCommand("Clear console output")]
     public static void Clear()
     {
-        Console.Clear();
+        SHVDN.Console.Clear();
     }
 
     [ConsoleCommand("List all loaded modules")]
@@ -112,12 +111,12 @@ internal unsafe class BaseScript : Script
     {
         HMODULE* modus = stackalloc HMODULE[256];
         var cModu = Core.ListModules(modus, 256);
-        Console.PrintInfo("List of loaded modules:");
+        SHVDN.Console.PrintInfo("List of loaded modules:");
         char* path = stackalloc char[256];
         for (int i = 0; i < cModu; i++)
         {
             var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
-            Console.PrintInfo($"    {String.Format("0x{0:X}", modus[i])} : {(fSucess ? Path.GetFileName(new string(path)) : "error")}");
+            SHVDN.Console.PrintInfo($"    {String.Format("0x{0:X}", modus[i])} : {(fSucess ? Path.GetFileName(new string(path)) : "error")}");
         }
     }
 
@@ -132,22 +131,22 @@ internal unsafe class BaseScript : Script
             "projectile" => World.ProjectileCount,
             _ => throw new ArgumentException($"Type not found: {type}"),
         };
-        Console.PrintInfo(count.ToString());
+        SHVDN.Console.PrintInfo(count.ToString());
     }
 
     [ConsoleCommand("Request a module to be loaded, or all modules in CoreScripts folder if ~b~path~s~ is null")]
-    public static void Load(string path = null)
+    public static void LoadModule(string path = null)
     {
         if (path == null)
         {
-            Unload();
+            UnloadModule();
             Directory.CreateDirectory("CoreScripts");
-            foreach (var script in Directory.GetFiles("CoreScripts", "*.dll"))
+            foreach (var script in Directory.GetFiles("CoreScripts", "*.dll").Where(x => !Core.IsManagedAssembly(x)))
             {
                 fixed (char* ptr = script)
                 {
                     Core.ScheduleLoad(ptr);
-                    Console.PrintInfo($"Module {Path.GetFileName(script)} scheduled for loading");
+                    SHVDN.Console.PrintInfo($"Module {Path.GetFileName(script)} scheduled for loading");
                 }
             }
         }
@@ -161,13 +160,13 @@ internal unsafe class BaseScript : Script
             fixed (char* p = path)
             {
                 Core.ScheduleLoad(p);
-                Console.PrintInfo($"Module {path} scheduled for loading");
+                SHVDN.Console.PrintInfo($"Module {path} scheduled for loading");
             }
         }
     }
 
     [ConsoleCommand("Request a module to be unloaded, or all modules if ~b~filename~s~ is null")]
-    public static void Unload(string filename = null)
+    public static void UnloadModule(string filename = null)
     {
         HMODULE* modus = stackalloc HMODULE[256];
         var cModu = Core.ListModules(modus, 256);
@@ -182,7 +181,7 @@ internal unsafe class BaseScript : Script
                 if (fSucess && name.ToLower() != BASE_SCRIPT_NAME.ToLower())
                 {
                     Core.ScheduleUnload(path);
-                    Console.PrintInfo($"Module {name} scheduled for unloading");
+                    SHVDN.Console.PrintInfo($"Module {name} scheduled for unloading");
                 }
             }
         }
@@ -194,13 +193,12 @@ internal unsafe class BaseScript : Script
                 if (fSucess && Path.GetFileName(new string(path)).ToLower() == filename.ToLower())
                 {
                     Core.ScheduleUnload(path);
-                    Console.PrintInfo($"Module {filename} scheduled for unloading");
+                    SHVDN.Console.PrintInfo($"Module {filename} scheduled for unloading");
                     return;
                 }
             }
             throw new FileNotFoundException($"Specified module was not found: " + filename);
         }
-
     }
 
     [ConsoleCommand("Reload the ini configuration file")]
@@ -221,23 +219,23 @@ ConsoleKey=F6";
             switch (key)
             {
                 case nameof(ConfigStruct.UnloadKey):
-                    _pConfig->UnloadKey = (ushort)Enum.Parse<Keys>(value);
+                    Core.Config->UnloadKey = (ushort)Enum.Parse<Keys>(value);
                     break;
                 case nameof(ConfigStruct.ReloadKey):
-                    _pConfig->ReloadKey = (ushort)Enum.Parse<Keys>(value);
+                    Core.Config->ReloadKey = (ushort)Enum.Parse<Keys>(value);
                     break;
                 case nameof(ConfigStruct.MaxUnloadRetries):
-                    _pConfig->MaxUnloadRetries = ushort.Parse(value);
+                    Core.Config->MaxUnloadRetries = ushort.Parse(value);
                     break;
                 case nameof(ConfigStruct.ConsoleKey):
-                    _pConfig->ConsoleKey = (ushort)Enum.Parse<Keys>(value);
+                    Core.Config->ConsoleKey = (ushort)Enum.Parse<Keys>(value);
                     break;
                 default:
                     // Logger.Error($"Unrecognized key: {key}");
                     break;
             }
         }
-        ReloadCoreConfig();
+        Core.ReloadCoreConfig();
     }
     #endregion
 

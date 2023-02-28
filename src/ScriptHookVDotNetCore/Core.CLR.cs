@@ -1,0 +1,360 @@
+﻿using GTA;
+using GTA.UI;
+using McMaster.NETCore.Plugins;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+
+namespace SHVDN
+{
+    unsafe struct RuntimeConfig
+    {
+        public IntPtr TickPtr;
+        fixed ulong Reserved[31];
+    }
+
+    /// <summary>
+    /// The CoreCLR plugin loader implementations
+    /// </summary>
+    public static unsafe partial class Core
+    {
+        #region Main assembly only
+
+        static readonly Dictionary<string, Loader> _loaders = new(StringComparer.OrdinalIgnoreCase);
+
+        // Function that gets called by the c++ native host during startup from main thread
+        static int CLREntryPoint(IntPtr pConfig, int cbArg)
+        {
+            var config = (RuntimeConfig*)pConfig;
+            Debug.Assert(cbArg == sizeof(RuntimeConfig));
+            // Set tick handler
+            *(delegate* unmanaged<void>*)(&config->TickPtr) = &CoreCLRDoTick;
+
+            // Register keyboard handler
+            IntPtr kbHandler;
+            *(delegate* unmanaged<DWORD, ushort, BYTE, BOOL, BOOL, BOOL, BOOL, void>*)(&kbHandler) = &KeyboardHandler;
+            KeyboardHandlerRegister(kbHandler);
+
+
+            // Set up main TLS and ThreadId
+            OnInit(default);
+
+            // Load base script
+            RegisterScript(new BaseScript());
+
+            return 0;
+        }
+
+        [UnmanagedCallersOnly]
+        static void KeyboardHandler(DWORD key, ushort repeats, BYTE scanCode, BOOL isExtended, BOOL isWithAlt, BOOL wasDownBefore, BOOL isUpNow)
+        {
+            try
+            {
+                var control = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+                var shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                var alt = isWithAlt != 0;
+                var down = isUpNow == 0;
+                DoKeyEvent(key, down, control, shift, alt);
+                foreach (var l in _loaders)
+                {
+                    l.Value.DoKeyEvent(key, down, control, shift, alt);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Keyboard event error: " + ex.ToString());
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        static void CoreCLRDoTick()
+        {
+            DoTick(default);
+            foreach (var loader in _loaders)
+            {
+                loader.Value.DoTick(default);
+            }
+        }
+        internal static void UnloadAll()
+        {
+            foreach (var loader in _loaders)
+            {
+                try
+                {
+                    Logger.Info($"Unloading scripts in {loader.Key}");
+                    loader.Value.Dispose();
+                    _loaders.Remove(loader.Key);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to unload scripts in directory {loader.Key}");
+                    Logger.Error(ex.ToString());
+                }
+            }
+
+        }
+        internal static void ReloadAll()
+        {
+            static bool canLoadFromThisDir(string dir)
+            {
+                dir = Path.GetFullPath(dir);
+                return !_loaders.ContainsKey(dir) && Directory.GetFiles(dir).Any(IsManagedAssembly);
+            }
+
+            UnloadAll();
+
+            List<string> toLoad = new();
+            var scriptsRoot = Path.GetFullPath("CoreScripts");
+            if (canLoadFromThisDir(scriptsRoot))
+                toLoad.Add(scriptsRoot);
+
+            foreach (var dir in Directory.GetDirectories(scriptsRoot))
+            {
+                if (canLoadFromThisDir(dir))
+                    toLoad.Add(dir);
+            }
+
+            foreach (var l in toLoad)
+            {
+                try
+                {
+                    Logger.Debug($"Loading scripts from {l}");
+                    var loader = new Loader(l);
+                    _loaders.Add(l, loader);
+                    fixed (char* pDir = l)
+                    {
+                        loader.DoInit((IntPtr)pDir);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Failed to load scripts from directory: {l}");
+                    Logger.Error(ex.ToString());
+                }
+            }
+            Debug.Assert(CurrentDirectory == null);
+        }
+
+        /// <summary>
+        /// Helper method to determine whether a file is a managed assembly
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static bool IsManagedAssembly(string fileName)
+        {
+            try
+            {
+
+                using Stream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                using BinaryReader binaryReader = new(fileStream);
+                if (fileStream.Length < 64)
+                {
+                    return false;
+                }
+
+                //PE Header starts @ 0x3C (60). Its a 4 byte header.
+                fileStream.Position = 0x3C;
+                uint peHeaderPointer = binaryReader.ReadUInt32();
+                if (peHeaderPointer == 0)
+                {
+                    peHeaderPointer = 0x80;
+                }
+
+                // Ensure there is at least enough room for the following structures:
+                //     24 byte PE Signature & Header
+                //     28 byte Standard Fields         (24 bytes for PE32+)
+                //     68 byte NT Fields               (88 bytes for PE32+)
+                // >= 128 byte Data Dictionary Table
+                if (peHeaderPointer > fileStream.Length - 256)
+                {
+                    return false;
+                }
+
+                // Check the PE signature.  Should equal 'PE\0\0'.
+                fileStream.Position = peHeaderPointer;
+                uint peHeaderSignature = binaryReader.ReadUInt32();
+                if (peHeaderSignature != 0x00004550)
+                {
+                    return false;
+                }
+
+                // skip over the PEHeader fields
+                fileStream.Position += 20;
+
+                const ushort PE32 = 0x10b;
+                const ushort PE32Plus = 0x20b;
+
+                // Read PE magic number from Standard Fields to determine format.
+                var peFormat = binaryReader.ReadUInt16();
+                if (peFormat != PE32 && peFormat != PE32Plus)
+                {
+                    return false;
+                }
+
+                // Read the 15th Data Dictionary RVA field which contains the CLI header RVA.
+                // When this is non-zero then the file contains CLI data otherwise not.
+                ushort dataDictionaryStart = (ushort)(peHeaderPointer + (peFormat == PE32 ? 232 : 248));
+                fileStream.Position = dataDictionaryStart;
+
+                uint cliHeaderRva = binaryReader.ReadUInt32();
+                if (cliHeaderRva == 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        class Loader : PluginLoader
+        {
+            public delegate void KeyEventDelegate(DWORD key, bool down, bool ctrl, bool shift, bool alt);
+            public Assembly ApiAssembly { get; }
+            public Action<IntPtr> DoInit { get; }
+            public Action<IntPtr> DoUnload { get; }
+            public Action<IntPtr> DoTick { get; }
+            public KeyEventDelegate DoKeyEvent { get; }
+            public Loader(string folder) : base(GetConfig(folder))
+            {
+                var flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+                ApiAssembly = LoadDefaultAssembly();
+                var coreType = ApiAssembly.GetType(typeof(Core).FullName);
+
+                var initMethod = getMethod(nameof(Core.OnInit));
+                Debug.Assert(initMethod != null);
+
+                var unloadMethod = getMethod(nameof(Core.OnUnload));
+                Debug.Assert(unloadMethod != null);
+
+                var tickMethod = getMethod(nameof(Core.DoTick));
+                Debug.Assert(tickMethod != null);
+
+                var keyEventMethod = getMethod(nameof(Core.DoKeyEvent));
+                Debug.Assert(keyEventMethod != null);
+
+                // Caching with delegates
+                DoInit = (Action<IntPtr>)Delegate.CreateDelegate(typeof(Action<IntPtr>), initMethod);
+                DoUnload = (Action<IntPtr>)Delegate.CreateDelegate(typeof(Action<IntPtr>), unloadMethod);
+                DoTick = (Action<IntPtr>)Delegate.CreateDelegate(typeof(Action<IntPtr>), tickMethod);
+                DoKeyEvent = (KeyEventDelegate)Delegate.CreateDelegate(typeof(KeyEventDelegate), keyEventMethod);
+
+                List<Assembly> scriptAssemblies = new();
+                foreach (var asmPath in Directory.GetFiles(folder).Where(IsManagedAssembly))
+                {
+                    // Skip loading of api assembly
+                    if (Path.GetFileNameWithoutExtension(asmPath) == typeof(Core).Assembly.GetName().Name)
+                        continue;
+
+                    try
+                    {
+                        Logger.Debug("Loading assembly: " + asmPath);
+                        scriptAssemblies.Add(LoadAssemblyFromPath(asmPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex.ToString());
+                    }
+                }
+
+                setProp(nameof(CurrentDirectory), folder);
+                setProp(nameof(ScriptAssemblies), scriptAssemblies.ToArray());
+
+                void setProp(string name, object value)
+                {
+                    var prop = coreType.GetProperty(name, flags);
+                    Debug.Assert(prop != null, $"Property {name} not found");
+                    prop.SetValue(null, value);
+                }
+                MethodInfo getMethod(string name)
+                    => coreType.GetMethod(name, flags);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!_disposed)
+                {
+                    DoUnload(default);
+                    _disposed = true;
+                }
+
+                // Call base class implementation.
+                base.Dispose(disposing);
+            }
+            static PluginConfig GetConfig(string folderPath)
+            {
+                var files = Directory.GetFiles(folderPath);
+                if (!files.Any(IsManagedAssembly))
+                    throw new FileNotFoundException("No managed assemblies were found in this folder");
+
+                var mainAssemblyPath = Path.Combine(folderPath, typeof(Core).Assembly.GetName().Name + ".dll"); // ScriptHookVDotNetCore.dll
+                mainAssemblyPath = Path.GetFullPath(mainAssemblyPath);
+
+                bool alwaysCopy = false;
+#if DEBUG
+                alwaysCopy = true;
+#endif
+                // Copy the API assembly if there's none
+                if (!File.Exists(mainAssemblyPath) || alwaysCopy)
+                    File.Copy(typeof(Core).Assembly.Location, mainAssemblyPath, true);
+
+                // Don't use shared type to allow different version of API assembly to be loaded at the same time
+                return new(mainAssemblyPath)
+                {
+                    EnableHotReload = false,
+                    IsUnloadable = true,
+                    LoadInMemory = true,
+                    PreferSharedTypes = false
+                };
+            }
+        }
+
+        #endregion
+
+        #region Set up by main assembly
+
+        public static Assembly[] ScriptAssemblies { get; private set; }
+        public static string CurrentDirectory { get; private set; }
+
+        #endregion
+
+        static void FindAndRegisterAllScripts()
+        {
+            Debug.Assert(CurrentDirectory != null);
+            Debug.Assert(ScriptAssemblies != null);
+
+            foreach (var asm in ScriptAssemblies)
+            {
+                Logger.Debug($"Loading scripts in {asm}");
+                try
+                {
+                    foreach (var scriptType in asm.GetTypes().Where(x => x.IsAssignableTo(typeof(Script)) && !x.IsAbstract))
+                    {
+                        try
+                        {
+                            var script = (Script)Activator.CreateInstance(scriptType);
+                            RegisterScript(script);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Failed to register script {scriptType}");
+                            Logger.Error(ex.ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex.ToString());
+                }
+            }
+        }
+    }
+}

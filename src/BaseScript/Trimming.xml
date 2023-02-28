@@ -1,4 +1,0 @@
-﻿<linker>
-	<assembly fullname="ScriptHookVDotNetCore.BaseScript" preserve="all" />
-	<assembly fullname="ScriptHookVDotNetCore" preserve="all" />
-</linker>

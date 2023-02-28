@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System;
 using System.Reflection.Metadata;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace AirStrike
 {

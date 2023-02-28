@@ -3,9 +3,11 @@ using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using GTA;
+using GTA.UI;
 
 namespace SHVDN;
 #region API bridge
@@ -30,25 +32,14 @@ public interface IScriptTask
 }
 
 #endregion
-public static unsafe class Core
-{
-    public static HMODULE CurrentModule { get; private set; }
-    public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
-    public static readonly Version AsiVersion = Version.Parse(FileVersionInfo.GetVersionInfo("ScriptHookVDotNetCore.asi").FileVersion ?? "0.0.0.0");
-    public static readonly Version ScriptingApiVersion = typeof(Core).Assembly.GetName().Version;
-    public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
-    public static readonly delegate* unmanaged<char*, void> ScheduleUnload = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
-    public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
-    public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
-    public static readonly delegate* unmanaged<HMODULE*, int, int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
-    public static readonly delegate* unmanaged<string, ulong> GetPtr = (delegate* unmanaged<string, ulong>)Import("GetPtr");
-    public static readonly delegate* unmanaged<string, ulong, void> SetPtr = (delegate* unmanaged<string, ulong, void>)Import("SetPtr");
-    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID> GetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID>)Import("GetTls");
-    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID, void> SetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID, void>)Import("SetTls");
 
+public static unsafe partial class Core
+{
+#if NATIVEAOT
+    public static HMODULE CurrentModule { get; private set; }
+#endif
     private static bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
-
 
     private static List<Script> _scripts = new();
     private static DWORD _mainThread;
@@ -69,9 +60,6 @@ public static unsafe class Core
     }
 
     public static Script ExecutingScript { get; private set; }
-
-    public static IntPtr Import(string entryPoint)
-        => NativeLibrary.GetExport(CoreModule, entryPoint);
 
     public static void PauseKeyEvents(bool pause)
     {
@@ -115,17 +103,15 @@ public static unsafe class Core
         lock (_scripts)
         {
             var type = script.Name;
-            if ((script.GetAttribute(nameof(ScriptAttributes.SingleInstance)) as bool?) != false
-                && _scripts.Any(x => x.Name == type))
+            var attri = script.Attributes;
+            if (attri.SingleInstance && _scripts.Any(x => x.Name == type))
                 throw new InvalidOperationException($"A script with the same type has already been registered");
 
             if (_scripts.Any(x => ReferenceEquals(x, script)))
                 throw new InvalidOperationException($"Same script object has already been registered");
 
             _scripts.Add(script);
-
-            var noThread = script.GetAttribute(nameof(ScriptAttributes.NoScriptThread));
-            script.Start(noThread == null || !(bool)noThread);
+            script.Start(!attri.NoScriptThread);
         }
     }
 
@@ -159,7 +145,7 @@ public static unsafe class Core
                     nextTask:
                         finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000);
 
-                        if (!finishedInTime)
+                        if (!finishedInTime && !Debugger.IsAttached)
                         {
                             throw new TimeoutException("Script execution has timed out after 5 seconds.");
                         }
@@ -214,15 +200,21 @@ public static unsafe class Core
         }
     }
 
-    public static void OnInit(HMODULE currentModule)
+    public static void OnInit(IntPtr lparam)
     {
         _mainThread = GetCurrentThreadId();
         GameTls = GetTls();
-        CurrentModule = currentModule;
         if (AsiVersion < ScriptingApiVersion)
         {
             MessageBoxA(default, $"Current ScriptHookVDotNetCore version is {AsiVersion}, while {ScriptingApiVersion} or higher is required. Update ScriptHookVDotNetCore if you experience random crashes", "Warning", default);
         }
+#if NATIVEAOT
+
+        CurrentModule = lparam;
+#else
+        if (lparam != default)
+            FindAndRegisterAllScripts();
+#endif
     }
 
     /// <summary>
@@ -230,13 +222,15 @@ public static unsafe class Core
     /// </summary>
     public static void OnUnload(HMODULE currentModule)
     {
+#if NATIVEAOT
         CurrentModule = currentModule;
+#endif
         DisposeScripts();
         _scripts = null;
         KeyboardState = null;
         GTA.Console.OnUnload();
         Marshaller.OnUnload();
-        NativeLibrary.Free(CoreModule);
+        NativeLibrary.Free(AsiModule);
         for (int i = 0; i < 20; i++)
         {
             GC.Collect();
@@ -262,15 +256,15 @@ public static unsafe class Core
     /// <exception cref="InvalidOperationException"></exception>
     public static void ExecuteTask<T>(ref T task) where T : IScriptTask
     {
-        if (IsMainThread())
+        if (GetTls() == GameTls)
         {
-            task.Run();
+            task?.Run();
             return;
         }
 
         var script = ExecutingScript;
-        if (script?.IsUsingThread != true)
-            throw new InvalidOperationException("No script is currently executing");
+        if (script?.ScriptThread != Thread.CurrentThread)
+            throw new InvalidOperationException("Cannot execute task from non-script thread");
 
         _toExecute = task;
         SignalAndWait(script.WaitEvent, script.ContinueEvent);
@@ -289,4 +283,9 @@ public static unsafe class Core
         return toWaitOn.Wait(timeout);
     }
 
+    public static void TryBreakToDebugger()
+    {
+        if (Debugger.IsAttached)
+            Debugger.Break();
+    }
 }
