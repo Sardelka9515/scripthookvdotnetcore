@@ -8,7 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-
 namespace SHVDN
 {
     unsafe struct RuntimeConfig
@@ -26,13 +25,13 @@ namespace SHVDN
 
         static readonly Dictionary<string, Loader> _loaders = new(StringComparer.OrdinalIgnoreCase);
 
-        // Function that gets called by the c++ native host during startup from main thread
-        static int CLREntryPoint(IntPtr pConfig, int cbArg)
+        // Function that gets called from main thread by the c++ native host during startup
+        static int CLR_EntryPoint(IntPtr pConfig, int cbArg)
         {
             var config = (RuntimeConfig*)pConfig;
             Debug.Assert(cbArg == sizeof(RuntimeConfig));
             // Set tick handler
-            *(delegate* unmanaged<void>*)(&config->TickPtr) = &CoreCLRDoTick;
+            *(delegate* unmanaged<void>*)(&config->TickPtr) = &CLR_DoTick;
 
             // Register keyboard handler
             IntPtr kbHandler;
@@ -71,7 +70,7 @@ namespace SHVDN
         }
 
         [UnmanagedCallersOnly]
-        static void CoreCLRDoTick()
+        static void CLR_DoTick()
         {
             DoTick(default);
             foreach (var loader in _loaders)
@@ -79,33 +78,49 @@ namespace SHVDN
                 loader.Value.DoTick(default);
             }
         }
-        internal static void UnloadAll()
+        internal static void CLR_Load(string dir)
         {
-            foreach (var loader in _loaders)
+            dir = Path.GetFullPath(dir);
+            Logger.Debug($"Loading scripts from {dir}");
+            var loader = new Loader(dir);
+            _loaders.Add(dir, loader);
+            loader.DoInit(default);
+        }
+        internal static void CLR_Unload(string dir)
+        {
+            if(_loaders.TryGetValue(dir, out var loader))
+            {
+                Logger.Info($"Unloading scripts in {dir}");
+                loader.Dispose();
+                _loaders.Remove(dir);
+                Logger.Info($"Unloaded scripts in {dir}");
+            }
+        }
+        internal static void CLR_UnloadAll()
+        {
+            foreach (var dir in _loaders.Keys)
             {
                 try
                 {
-                    Logger.Info($"Unloading scripts in {loader.Key}");
-                    loader.Value.Dispose();
-                    _loaders.Remove(loader.Key);
+                    CLR_Unload(dir);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($"Failed to unload scripts in directory {loader.Key}");
+                    Logger.Error($"Failed to unload scripts in directory {dir}");
                     Logger.Error(ex.ToString());
                 }
             }
 
         }
-        internal static void ReloadAll()
+        internal static void CLR_ReloadAll()
         {
             static bool canLoadFromThisDir(string dir)
             {
                 dir = Path.GetFullPath(dir);
-                return !_loaders.ContainsKey(dir) && Directory.GetFiles(dir).Any(IsManagedAssembly);
+                return !_loaders.ContainsKey(dir) && Directory.GetFiles(dir, "*.dll").Any(IsManagedAssembly);
             }
 
-            UnloadAll();
+            CLR_UnloadAll();
 
             List<string> toLoad = new();
             var scriptsRoot = Path.GetFullPath("CoreScripts");
@@ -122,13 +137,7 @@ namespace SHVDN
             {
                 try
                 {
-                    Logger.Debug($"Loading scripts from {l}");
-                    var loader = new Loader(l);
-                    _loaders.Add(l, loader);
-                    fixed (char* pDir = l)
-                    {
-                        loader.DoInit((IntPtr)pDir);
-                    }
+                    CLR_Load(l);
                 }
                 catch (Exception ex)
                 {
@@ -248,7 +257,7 @@ namespace SHVDN
                 DoKeyEvent = (KeyEventDelegate)Delegate.CreateDelegate(typeof(KeyEventDelegate), keyEventMethod);
 
                 List<Assembly> scriptAssemblies = new();
-                foreach (var asmPath in Directory.GetFiles(folder).Where(IsManagedAssembly))
+                foreach (var asmPath in Directory.GetFiles(folder, "*.dll").Where(IsManagedAssembly))
                 {
                     // Skip loading of api assembly
                     if (Path.GetFileNameWithoutExtension(asmPath) == typeof(Core).Assembly.GetName().Name)
@@ -267,7 +276,7 @@ namespace SHVDN
 
                 setProp(nameof(CurrentDirectory), folder);
                 setProp(nameof(ScriptAssemblies), scriptAssemblies.ToArray());
-
+                setProp(nameof(MainAssembly), typeof(Core).Assembly);
                 void setProp(string name, object value)
                 {
                     var prop = coreType.GetProperty(name, flags);
@@ -291,7 +300,7 @@ namespace SHVDN
             }
             static PluginConfig GetConfig(string folderPath)
             {
-                var files = Directory.GetFiles(folderPath);
+                var files = Directory.GetFiles(folderPath, "*.dll");
                 if (!files.Any(IsManagedAssembly))
                     throw new FileNotFoundException("No managed assemblies were found in this folder");
 
@@ -321,8 +330,20 @@ namespace SHVDN
 
         #region Set up by main assembly
 
+        /// <summary>
+        /// All assemblies loaded in to current context
+        /// </summary>
         public static Assembly[] ScriptAssemblies { get; private set; }
+
+        /// <summary>
+        /// The directory used by this load context
+        /// </summary>
         public static string CurrentDirectory { get; private set; }
+
+        /// <summary>
+        /// The main assembly that creates and loads the current <see cref="AssemblyLoadContext"/>
+        /// </summary>
+        public static Assembly MainAssembly { get; private set; }
 
         #endregion
 
@@ -330,6 +351,7 @@ namespace SHVDN
         {
             Debug.Assert(CurrentDirectory != null);
             Debug.Assert(ScriptAssemblies != null);
+            Debug.Assert(MainAssembly != null);
 
             foreach (var asm in ScriptAssemblies)
             {

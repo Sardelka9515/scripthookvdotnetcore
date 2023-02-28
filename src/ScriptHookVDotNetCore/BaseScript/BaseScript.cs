@@ -36,10 +36,9 @@ internal unsafe class BaseScript : Script
             Logger.Error("Error loading configuration file: \n" + ex);
         }
         SHVDN.Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {Core.AsiVersion} by Sardelka. ---");
-        SHVDN.Console.PrintInfo($"~c~ --- Base script version: {typeof(BaseScript).Assembly.GetName().Version}. Using API {Core.ScriptingApiVersion} ---");
         SHVDN.Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
         LoadModule();
-        Core.ReloadAll();
+        Core.CLR_ReloadAll();
     }
 
     [UnmanagedCallersOnly]
@@ -81,12 +80,12 @@ internal unsafe class BaseScript : Script
         else if (key == Core.Config->UnloadKey)
         {
             UnloadModule();
-            Core.UnloadAll();
+            Core.CLR_UnloadAll();
         }
         else if (key == Core.Config->ReloadKey)
         {
             LoadModule();
-            Core.ReloadAll();
+            Core.CLR_ReloadAll();
         }
 
         SHVDN.Console.DoKeyEvent(e.KeyData, false);

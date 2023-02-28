@@ -53,7 +53,7 @@ int CoreCLRInit(RuntimeConfig* config)
 	//
 	const wstring dotnetlib_path = root_path + L"ScriptHookVDotNetCore.dll";
 	const char_t* dotnet_type = L"SHVDN.Core, ScriptHookVDotNetCore";
-	const char_t* dotnet_type_method = L"CLREntryPoint";
+	const char_t* dotnet_type_method = L"CLR_EntryPoint";
 	// <SnippetLoadAndGet>
 	// Function pointer to managed delegate
 	component_entry_point_fn clrEntryFunc = nullptr;

@@ -212,7 +212,7 @@ public static unsafe partial class Core
 
         CurrentModule = lparam;
 #else
-        if (lparam != default)
+        if (MainAssembly != null)
             FindAndRegisterAllScripts();
 #endif
     }
