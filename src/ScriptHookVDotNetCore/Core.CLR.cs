@@ -2,11 +2,13 @@
 using GTA.UI;
 using McMaster.NETCore.Plugins;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace SHVDN
 {
@@ -24,6 +26,8 @@ namespace SHVDN
         #region Main assembly only
 
         static readonly Dictionary<string, Loader> _loaders = new(StringComparer.OrdinalIgnoreCase);
+
+        static readonly ConcurrentQueue<Action> _taskQueue = new();
 
         // Function that gets called from main thread by the c++ native host during startup
         static int CLR_EntryPoint(IntPtr pConfig, int cbArg)
@@ -72,28 +76,52 @@ namespace SHVDN
         [UnmanagedCallersOnly]
         static void CLR_DoTick()
         {
-            DoTick(default);
-            foreach (var loader in _loaders)
+            while (_taskQueue.TryDequeue(out var task))
             {
-                loader.Value.DoTick(default);
+                try
+                {
+                    task();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("Error executing queued task: " + ex.ToString());
+                }
+            }
+
+            DoTick(default);
+            lock (_loaders)
+            {
+                foreach (var loader in _loaders)
+                {
+                    loader.Value.DoTick(default);
+                }
             }
         }
         internal static void CLR_Load(string dir)
         {
-            dir = Path.GetFullPath(dir);
-            Logger.Debug($"Loading scripts from {dir}");
-            var loader = new Loader(dir);
-            _loaders.Add(dir, loader);
-            loader.DoInit(default);
+            lock (_loaders)
+            {
+                if (_loaders.ContainsKey(dir))
+                    throw new ArgumentException("Script directory has already been loaded", nameof(dir));
+
+                dir = Path.GetFullPath(dir);
+                Logger.Debug($"Loading scripts from {dir}");
+                var loader = new Loader(dir);
+                _loaders.Add(dir, loader);
+                loader.DoInit(default);
+            }
         }
         internal static void CLR_Unload(string dir)
         {
-            if(_loaders.TryGetValue(dir, out var loader))
+            lock (_loaders)
             {
-                Logger.Info($"Unloading scripts in {dir}");
-                loader.Dispose();
-                _loaders.Remove(dir);
-                Logger.Info($"Unloaded scripts in {dir}");
+                if (_loaders.TryGetValue(dir, out var loader))
+                {
+                    Logger.Info($"Unloading scripts in {dir}");
+                    loader.Dispose();
+                    _loaders.Remove(dir);
+                    Logger.Info($"Unloaded scripts in {dir}");
+                }
             }
         }
         internal static void CLR_UnloadAll()
@@ -326,6 +354,23 @@ namespace SHVDN
             }
         }
 
+        // These methods can be invoke by reflection API too control script load/unload
+        private static void RequestLoad(string dir)
+        {
+            _taskQueue.Enqueue(() => CLR_Load(dir));
+        }
+        private static void RequestUnload(string dir)
+        {
+            _taskQueue.Enqueue(() => CLR_Unload(dir));
+        }
+        private static string[] ListScriptDirectories()
+        {
+            lock (_loaders)
+            {
+                return _loaders.Keys.ToArray();
+            }
+        }
+
         #endregion
 
         #region Set up by main assembly
@@ -346,6 +391,7 @@ namespace SHVDN
         public static Assembly MainAssembly { get; private set; }
 
         #endregion
+
 
         static void FindAndRegisterAllScripts()
         {
@@ -377,6 +423,23 @@ namespace SHVDN
                     Logger.Error(ex.ToString());
                 }
             }
+        }
+
+        public static class RuntimeController
+        {
+            static readonly Type MainCoreType;
+            static RuntimeController()
+            {
+                if (MainAssembly == null)
+                    throw new InvalidOperationException("Can't use runtime controller in main assembly");
+
+                MainCoreType = MainAssembly.GetType(typeof(Core).FullName);
+            }
+            static object Invoke(string methodName, params object[] args)
+                => MainCoreType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, args);
+            public static void RequestUnload(string dir) => Invoke(nameof(Core.RequestUnload), dir);
+            public static void RequestLoad(string dir) => Invoke(nameof(Core.RequestLoad), dir);
+            public static string[] ListScriptDirectories() => (string[])Invoke(nameof(Core.ListScriptDirectories));
         }
     }
 }
