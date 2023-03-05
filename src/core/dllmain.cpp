@@ -161,6 +161,8 @@ DWORD Background(LPVOID lParam) {
 	GetModuleFileName(CurrentModule, AsiPath, MAX_PATH);
 	assert(GetLastError() != ERROR_INSUFFICIENT_BUFFER);
 	SetEnvironmentVariable(L"SHVDNC_ASI_PATH", AsiPath);
+	auto pathString = wstring(AsiPath);
+	BaseDirectory = pathString.substr(0, pathString.rfind(L"\\"));
 
 	// Parse and expose config struct
 #ifndef DEBUG

@@ -18,18 +18,17 @@ namespace
 {
 	// Globals to hold hostfxr exports
 	hostfxr_initialize_for_runtime_config_fn init_fptr;
+	hostfxr_set_runtime_property_value_fn set_prop_fptr;
 	hostfxr_get_runtime_delegate_fn get_delegate_fptr;
 	hostfxr_close_fn close_fptr;
-
 	// Forward declarations
 	bool load_hostfxr();
 	load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
-wstring dotnet_root;
+
 int CoreCLRInit(HMODULE asiModule)
 {
 
-	wstring root_path = filesystem::current_path().wstring() + L"\\";
 	//
 	// STEP 1: Load HostFxr and get exported hosting functions
 	//
@@ -43,7 +42,7 @@ int CoreCLRInit(HMODULE asiModule)
 	//
 	// STEP 2: Initialize and start the .NET Core runtime
 	//
-	const wstring config_path = root_path + L"ScriptHookVDotNetCore.runtimeconfig.json";
+	const wstring config_path = BaseDirectory + L"\\ScriptHookVDotNetCore.runtimeconfig.json";
 	load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 	load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
 	assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
@@ -51,7 +50,7 @@ int CoreCLRInit(HMODULE asiModule)
 	//
 	// STEP 3: Load managed assembly and get function pointer to a managed method
 	//
-	const wstring dotnetlib_path = root_path + L"ScriptHookVDotNetCore.dll";
+	const wstring dotnetlib_path = BaseDirectory + L"\\ScriptHookVDotNetCore.dll";
 	const char_t* dotnet_type = L"SHVDN.Core, ScriptHookVDotNetCore";
 	const char_t* dotnet_type_method = L"CLR_EntryPoint";
 	// <SnippetLoadAndGet>
@@ -116,10 +115,11 @@ namespace
 		// Load hostfxr and get desired exports
 		void* lib = load_library(buffer);
 		init_fptr = (hostfxr_initialize_for_runtime_config_fn)get_export(lib, "hostfxr_initialize_for_runtime_config");
+		set_prop_fptr = (hostfxr_set_runtime_property_value_fn)get_export(lib, "hostfxr_set_runtime_property_value");
 		get_delegate_fptr = (hostfxr_get_runtime_delegate_fn)get_export(lib, "hostfxr_get_runtime_delegate");
 		close_fptr = (hostfxr_close_fn)get_export(lib, "hostfxr_close");
 
-		return (init_fptr && get_delegate_fptr && close_fptr);
+		return (init_fptr && set_prop_fptr && get_delegate_fptr && close_fptr);
 	}
 	// </SnippetLoadHostFxr>
 
@@ -144,6 +144,10 @@ namespace
 			close_fptr(cxt);
 			return nullptr;
 		}
+
+		// Set AppContext.BaseDirectory
+		rc = set_prop_fptr(cxt, L"APP_CONTEXT_BASE_DIRECTORY", BaseDirectory.c_str());
+		assert(rc == 0 && "set APP_CONTEXT_BASE_DIRECTORY failed");
 
 		// Get the load assembly function pointer
 		rc = get_delegate_fptr(

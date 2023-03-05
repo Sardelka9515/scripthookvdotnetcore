@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutDir>$(SolutionDir)bin\obj</OutDir>
-		<AssemblyName>ScriptHookVDotNetCore.Generator</AssemblyName>
+		<AssemblyName>ScriptHookVDotNetCore.NativeAOT.Generator</AssemblyName>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<LangVersion>preview</LangVersion>
 		<SHVDNC_VERSION Condition="'$(SHVDNC_VERSION)' == ''">1.0.0.0</SHVDNC_VERSION>

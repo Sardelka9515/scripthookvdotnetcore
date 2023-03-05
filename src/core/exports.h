@@ -24,6 +24,7 @@ inline unordered_map<string, LPVOID> PtrMap;
 inline mutex PtrMapMutex;
 inline vector<LogHandler> LogHandlers = {};
 inline mutex LogHandlersMutex;
+inline wstring BaseDirectory;
 #pragma region Internal
 
 static inline HMODULE LoadModuleInternal(LPCWSTR path) {

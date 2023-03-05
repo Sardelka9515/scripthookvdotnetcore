@@ -10,9 +10,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "src\core\core.vcxpr
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore", "src\ScriptHookVDotNetCore\ScriptHookVDotNetCore.csproj", "{F2EFD4EC-8EC0-46AC-8BA4-887B051B52FC}"
-	ProjectSection(ProjectDependencies) = postProject
-		{A0428A04-0AA0-4507-9543-6AF436FFEE60} = {A0428A04-0AA0-4507-9543-6AF436FFEE60}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeGen", "tools\CodeGen\CodeGen.csproj", "{D57E83B1-4FB4-4D2A-9430-C070FF7BEB6D}"
 EndProject
@@ -20,7 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{0CED6C14
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{0D1DFD62-0D48-48C6-AFA6-6183437E93AA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.Generator", "src\ScriptHookVDotNetCore.Generator\ScriptHookVDotNetCore.Generator.csproj", "{A0428A04-0AA0-4507-9543-6AF436FFEE60}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.NativeAOT.Generator", "src\ScriptHookVDotNetCore.Generator\ScriptHookVDotNetCore.NativeAOT.Generator.csproj", "{A0428A04-0AA0-4507-9543-6AF436FFEE60}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AirStrike", "examples\AirStrike\AirStrike.csproj", "{87DB4973-2577-46DC-B0ED-CB594267B244}"
 EndProject
@@ -30,7 +27,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test", "tools\Test\Test.csp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaseScript", "src\BaseScript\BaseScript.vcxproj", "{647A82B6-2271-40C4-82D9-F2363DBFF02E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControllerExample", "examples\ControllerExample\ControllerExample.csproj", "{C2EB3A63-4C07-4D28-A1F1-B9A47D121ED0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ControllerExample", "examples\ControllerExample\ControllerExample.csproj", "{C2EB3A63-4C07-4D28-A1F1-B9A47D121ED0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.NativeAOT", "src\ScriptHookVDotNetCore\ScriptHookVDotNetCore.NativeAOT.csproj", "{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A0428A04-0AA0-4507-9543-6AF436FFEE60} = {A0428A04-0AA0-4507-9543-6AF436FFEE60}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -150,6 +152,18 @@ Global
 		{C2EB3A63-4C07-4D28-A1F1-B9A47D121ED0}.Release|x64.Build.0 = Release|Any CPU
 		{C2EB3A63-4C07-4D28-A1F1-B9A47D121ED0}.Release|x86.ActiveCfg = Release|Any CPU
 		{C2EB3A63-4C07-4D28-A1F1-B9A47D121ED0}.Release|x86.Build.0 = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|x64.Build.0 = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Debug|x86.Build.0 = Debug|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|x64.ActiveCfg = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|x64.Build.0 = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|x86.ActiveCfg = Release|Any CPU
+		{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

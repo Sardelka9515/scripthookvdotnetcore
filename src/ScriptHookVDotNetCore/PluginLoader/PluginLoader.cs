@@ -434,7 +434,7 @@ namespace McMaster.NETCore.Plugins
             // Always include runtimeconfig.json from the host app.
             // in some cases, like `dotnet test`, the entry assembly does not actually match with the
             // runtime config file which is why we search for all files matching this extensions.
-            foreach (var runtimeconfig in Directory.GetFiles(Directory.GetCurrentDirectory(), "*.runtimeconfig.json"))
+            foreach (var runtimeconfig in Directory.GetFiles(AppContext.BaseDirectory, "*.runtimeconfig.json"))
             {
                 builder.TryAddAdditionalProbingPathFromRuntimeConfig(runtimeconfig, includeDevConfig: true, out _);
             }
