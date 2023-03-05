@@ -1,12 +1,10 @@
 # ScriptHookV .NET Core
-ScriptHookV for .NET Core, supports two modes, NativeAOT and CoreCLR (JIT)
+ScriptHookV for .NET 7.0+, supports two modes, NativeAOT and CoreCLR (JIT)
+
+<img src="https://user-images.githubusercontent.com/106232474/222949860-496fe3dc-71c7-4a4a-81e0-a0d7ae35806a.png" alt= “” width="30%"/>
 
 ## Installation
 Download **ScriptHookVDotNetCore.zip** from [release page](https://github.com/Sardelka9515/scripthookvdotnetcore/releases) and extract ScriptHookVDotNetCore.asi to your game root.
-
-A screenshot from the [AirStrike example script](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/examples/AirStrike/Main.cs)
-![image](https://user-images.githubusercontent.com/106232474/208843982-d6ced835-d5ad-4d9e-9dde-f461a1ac2aed.png)
-
 
 ## Features
 - Use latest .NET Core API (.NET 7 or higher)
@@ -55,8 +53,8 @@ vcpkg install inih:x64-windows-static
 - Build the solution with Visual Studio 2022
 
 ## Credits
-[ScriptHoookVDotNet](https://github.com/crosire/scripthookvdotnet) and all of its contributors for the amazing work on the scripting API
-[DotNetCorePlugins](https://github.com/natemcmaster/DotNetCorePlugins), which powers the dynamic assembly loading/unloading
+- [ScriptHoookVDotNet](https://github.com/crosire/scripthookvdotnet) and all of its contributors for the amazing work on the scripting API
+- [DotNetCorePlugins](https://github.com/natemcmaster/DotNetCorePlugins), which powers the dynamic assembly loading/unloading
 
 ## License & disclaimer
 The C++ core and the AOT/CoreCLR-specific runtime are written from scratch, while most parts of the scripting API are from [ScriptHookVDotNet](https://github.com/crosire/scripthookvdotnet). See [LICENSE](https://github.com/Sardelka9515/scripthookvdotnetcore/blob/master/LICENSE)
