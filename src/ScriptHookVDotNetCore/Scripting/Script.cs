@@ -21,7 +21,15 @@ public unsafe abstract class Script
     internal ulong Continue = 0;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
     internal LPVOID ScriptTlsOrg;
+
+    /// <summary>
+    /// Get the error that caused this script to be aborted, or <see langword="null"/> if none
+    /// </summary>
+    public Exception Error { get; private set; }
+
     public readonly ScriptAttributes Attributes;
+
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
     public Type Name { get; private set; }
 
     /// <summary>
@@ -64,10 +72,15 @@ public unsafe abstract class Script
     /// </summary>
     public bool IsUsingThread => ScriptThread != null;
 
+    /// <summary>
+    /// Determine whether this script has been aborted due to an unhandled exception or manual termination
+    /// </summary>
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
+    public bool IsAborted => _aborted;
+
     public Script()
     {
         Name = GetType();
-        _ = NativeMemory.ArmorOffset; // Initialize NativeMemory
         Attributes = GetType().GetCustomAttribute<ScriptAttributes>() ?? new();
     }
 
@@ -208,6 +221,7 @@ public unsafe abstract class Script
     /// <param name="ex"></param>
     internal void HandleException(Exception ex)
     {
+        Error = ex;
         Logger.Error($"Script {Name} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
         if (Core.GameTls == Core.GetTls())
         {
@@ -304,7 +318,11 @@ public unsafe abstract class Script
             if (ScriptThread?.IsAlive == true)
             {
                 ContinueEvent.Release();
-                if (!ScriptThread.Join(5000))
+
+                if (this == Core.ExecutingScript)
+                    WaitEvent.Release();
+
+                if (ScriptThread != Thread.CurrentThread && !ScriptThread.Join(5000))
                 {
                     Logger.Error($"Failed to join script thread: {Name}, instability is expected after module unload");
                 }

@@ -30,7 +30,6 @@ LPVOID DoJob(Job* pj) {
 shared_ptr<spdlog::logger> Logger;
 LPVOID PtrBaseScript;
 SIZE_T BaseScriptSize;
-VoidFunc ManagedTick;
 
 static void OnPresent(void* swapChain) {
 	LOCK(ModulesMutex);
@@ -63,18 +62,12 @@ static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, 
 			}
 		}
 	}
-
-	{
-		LOCK(KeyboardHandlersMutex);
-		for (auto handler : KeyboardHandlers) {
-			try {
-				handler(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
-			}
-			catch (exception ex) {
-				error("KeyboardHandler error: {}", ex.what());
-			}
-		}
-	}
+	CoreCLR_DoKeyboard(
+		key,
+		!isUpNow,
+		(GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
+		(GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
+		isWithAlt != FALSE);
 }
 
 static void Init() {
@@ -112,19 +105,15 @@ static void Init() {
 	else {
 		info("Symlink detected, base script will not be overwritten");
 	}
-
-	info("Starting CoreCLR");
-	RuntimeConfig CoreClrConfig = { 0 };
-	CoreCLRInit(&CoreClrConfig);
-	assert(ManagedTick = (VoidFunc)CoreClrConfig.TickPtr);
-	info("CoreCLR startup complete");
 	Initialized = true;
 	return;
 }
-PVOID ScriptFiber;
+bool Reloaded;
 void ScriptMain() {
-	ScriptFiber = GetCurrentFiber();
 	Init();
+reload:
+	Reloaded = false;
+	CoreCLR_DoInit();
 	while (true) {
 
 		// execute scheduled jobs
@@ -151,7 +140,7 @@ void ScriptMain() {
 		Script::TickAll();
 
 		// Tick CoreCLR
-		ManagedTick();
+		CoreCLR_DoTick();
 
 		// Tick modules
 		{
@@ -162,16 +151,22 @@ void ScriptMain() {
 				}
 			}
 		}
+		if (Reloaded)
+			goto reload;
 		scriptWait(0);
 	}
 }
 DWORD Background(LPVOID lParam) {
 
+	GetModuleFileName(CurrentModule, AsiPath, MAX_PATH);
+	assert(GetLastError() != ERROR_INSUFFICIENT_BUFFER);
+	SetEnvironmentVariable(L"SHVDNC_ASI_PATH", AsiPath);
+
 	// Parse and expose config struct
 #ifndef DEBUG
 	ReloadCoreConfig();
 #endif // !DEBUG
-	SetPtr("Config", (uint64_t)&Config);
+	SetPtr(KEY_CONFIGPTR, &Config);
 
 	// Memory stuff
 	if (Config.SkipLegalScreen) {
@@ -220,6 +215,13 @@ DWORD Background(LPVOID lParam) {
 	set_default_logger(Logger);
 	flush_every(chrono::seconds(3));
 	info("Logging system initilized");
+
+	// Set up well-know properties
+	SetPtr(KEY_PTRRELOADED, &Reloaded);
+
+	info("Starting CoreCLR");
+	CoreCLRInit(CurrentModule);
+	info("CoreCLR startup complete");
 
 	return 0;
 }

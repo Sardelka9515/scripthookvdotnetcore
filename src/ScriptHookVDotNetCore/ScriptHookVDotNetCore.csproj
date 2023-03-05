@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<NoWarn>CS1591;CA2211</NoWarn>
 		<OutDir>$(SolutionDir)bin</OutDir>
 		<TargetFramework>net7.0</TargetFramework>
@@ -22,6 +23,10 @@
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(PublishAot)' == 'true'">
+		<DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
+	</PropertyGroup>
 	
 	<ItemGroup>
 		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
@@ -29,11 +34,8 @@
 		<None Include="Core.Imports.cs" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(PublishAot)' == 'true'">
-		<Compile Remove="PluginLoader/**/*.cs" />
+		<Compile Remove="PluginLoader/**/*" />
+		<Compile Remove="BaseScript/**/*" />
 		<Compile Remove="Core.CLR.cs" />
 	</ItemGroup>
-
-	<PropertyGroup Condition="'$(PublishAot)' == 'true'">
-		<DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
-	</PropertyGroup>
 </Project>

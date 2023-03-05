@@ -12,11 +12,7 @@ using System.Runtime.Loader;
 
 namespace SHVDN
 {
-    unsafe struct RuntimeConfig
-    {
-        public IntPtr TickPtr;
-        fixed ulong Reserved[31];
-    }
+
 
     /// <summary>
     /// The CoreCLR plugin loader implementations
@@ -28,43 +24,56 @@ namespace SHVDN
         static readonly Dictionary<string, Loader> _loaders = new(StringComparer.OrdinalIgnoreCase);
 
         static readonly ConcurrentQueue<Action> _taskQueue = new();
-
+        static BaseScript _baseScript;
+        
         // Function that gets called from main thread by the c++ native host during startup
-        static int CLR_EntryPoint(IntPtr pConfig, int cbArg)
+        static int CLR_EntryPoint(IntPtr asiModule, int cbArg)
         {
-            var config = (RuntimeConfig*)pConfig;
-            Debug.Assert(cbArg == sizeof(RuntimeConfig));
-            // Set tick handler
-            *(delegate* unmanaged<void>*)(&config->TickPtr) = &CLR_DoTick;
+            Debug.Assert(cbArg == sizeof(HMODULE));
+            DoImport(asiModule);
 
-            // Register keyboard handler
-            IntPtr kbHandler;
-            *(delegate* unmanaged<DWORD, ushort, BYTE, BOOL, BOOL, BOOL, BOOL, void>*)(&kbHandler) = &KeyboardHandler;
-            KeyboardHandlerRegister(kbHandler);
+            IntPtr funcPtr;
+            *(delegate* unmanaged<void>*)(&funcPtr) = &CLR_DoInit;
+            SetPtr(KEY_CORECLR_INITFUNC, funcPtr);
 
+            *(delegate* unmanaged<void>*)(&funcPtr) = &CLR_DoTick;
+            SetPtr(KEY_CORECLR_TICKFUNC, funcPtr);
 
-            // Set up main TLS and ThreadId
-            OnInit(default);
+            *(delegate* unmanaged<DWORD, BOOL, BOOL, BOOL, BOOL, void>*)(&funcPtr) = &CLR_DoKeyboard;
+            SetPtr(KEY_CORECLR_KBHFUNC, funcPtr);
 
-            // Load base script
-            RegisterScript(new BaseScript());
 
             return 0;
         }
 
         [UnmanagedCallersOnly]
-        static void KeyboardHandler(DWORD key, ushort repeats, BYTE scanCode, BOOL isExtended, BOOL isWithAlt, BOOL wasDownBefore, BOOL isUpNow)
+        static void CLR_DoInit()
+        {
+
+            // Set up main TLS and ThreadId
+            OnInit(default);
+
+            // Load base script
+            if (_baseScript == null)
+            {
+                RegisterScript(_baseScript = new());
+                GTA.Console.RegisterCommands(typeof(BaseScript));
+            }
+
+            // Reload NativeAot modules and managed scripts
+            BaseScript.LoadModule();
+            CLR_ReloadAll();
+        }
+
+        [UnmanagedCallersOnly]
+        static void CLR_DoKeyboard(DWORD key, BOOL keydown, BOOL ctrl, BOOL shift, BOOL alt)
         {
             try
             {
-                var control = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
-                var shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
-                var alt = isWithAlt != 0;
-                var down = isUpNow == 0;
-                DoKeyEvent(key, down, control, shift, alt);
+                DoKeyEvent(key, keydown, ctrl, shift, alt);
                 foreach (var l in _loaders)
                 {
-                    l.Value.DoKeyEvent(key, down, control, shift, alt);
+                    l.Value.DoKeyEvent(key, keydown, ctrl, shift, alt);
                 }
             }
             catch (Exception ex)
@@ -108,7 +117,7 @@ namespace SHVDN
                 Logger.Debug($"Loading scripts from {dir}");
                 var loader = new Loader(dir);
                 _loaders.Add(dir, loader);
-                loader.DoInit(default);
+                loader.DoInit(AsiModule);
             }
         }
         internal static void CLR_Unload(string dir)
@@ -181,7 +190,7 @@ namespace SHVDN
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static bool IsManagedAssembly(string fileName)
+        internal static bool IsManagedAssembly(string fileName)
         {
             try
             {
@@ -259,12 +268,18 @@ namespace SHVDN
             public Action<IntPtr> DoUnload { get; }
             public Action<IntPtr> DoTick { get; }
             public KeyEventDelegate DoKeyEvent { get; }
+            public Type CoreType { get; }
+            public object InvokeCore(string methodName, params object[] args)
+            {
+                var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+                return CoreType.GetMethod(methodName, flags).Invoke(null, args);
+            }
             public Loader(string folder) : base(GetConfig(folder))
             {
                 var flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
                 ApiAssembly = LoadDefaultAssembly();
-                var coreType = ApiAssembly.GetType(typeof(Core).FullName);
+                CoreType = ApiAssembly.GetType(typeof(Core).FullName);
 
                 var initMethod = getMethod(nameof(Core.OnInit));
                 Debug.Assert(initMethod != null);
@@ -307,12 +322,12 @@ namespace SHVDN
                 setProp(nameof(MainAssembly), typeof(Core).Assembly);
                 void setProp(string name, object value)
                 {
-                    var prop = coreType.GetProperty(name, flags);
+                    var prop = CoreType.GetProperty(name, flags);
                     Debug.Assert(prop != null, $"Property {name} not found");
                     prop.SetValue(null, value);
                 }
                 MethodInfo getMethod(string name)
-                    => coreType.GetMethod(name, flags);
+                    => CoreType.GetMethod(name, flags);
             }
 
             protected override void Dispose(bool disposing)
@@ -354,15 +369,54 @@ namespace SHVDN
             }
         }
 
-        // These methods can be invoke by reflection API too control script load/unload
+        internal static void PrintAllScripts()
+        {
+            foreach (var loader in _loaders)
+            {
+                try
+                {
+                    var scripts = ((dynamic[])loader.Value.InvokeCore(nameof(ListScripts))).OrderBy(x => x.GetType().Assembly);
+                    if (!scripts.Any())
+                        continue;
+
+                    Console.PrintInfo($"~c~ Scripts in {loader.Key}");
+                    string assemblyName = null;
+                    foreach (var script in scripts)
+                    {
+                        var name = script.GetType().Assembly.GetName().Name;
+                        if (name != assemblyName)
+                        {
+                            Console.PrintInfo($"[{name}]");
+                            assemblyName = name;
+                        }
+                        bool running = !script.IsAborted;
+                        Console.PrintInfo($"    ~h~{script.Name} {(running ? "~g~Running~w~" : "~o~Aborted~w~")}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.PrintError(ex.ToString());
+                }
+            }
+        }
+
+        // These methods can be invoke using reflection API to control script load/unload
+
+        [ReflectionEntry(Place = EntryPlace.MainAssembly)]
         private static void RequestLoad(string dir)
         {
             _taskQueue.Enqueue(() => CLR_Load(dir));
         }
+
+
+        [ReflectionEntry(Place = EntryPlace.MainAssembly)]
         private static void RequestUnload(string dir)
         {
             _taskQueue.Enqueue(() => CLR_Unload(dir));
         }
+
+
+        [ReflectionEntry(Place = EntryPlace.MainAssembly)]
         private static string[] ListScriptDirectories()
         {
             lock (_loaders)
@@ -378,20 +432,22 @@ namespace SHVDN
         /// <summary>
         /// All assemblies loaded in to current context
         /// </summary>
+        [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
         public static Assembly[] ScriptAssemblies { get; private set; }
 
         /// <summary>
         /// The directory used by this load context
         /// </summary>
+        [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
         public static string CurrentDirectory { get; private set; }
 
         /// <summary>
         /// The main assembly that creates and loads the current <see cref="AssemblyLoadContext"/>
         /// </summary>
+        [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
         public static Assembly MainAssembly { get; private set; }
 
         #endregion
-
 
         static void FindAndRegisterAllScripts()
         {
@@ -437,8 +493,11 @@ namespace SHVDN
             }
             static object Invoke(string methodName, params object[] args)
                 => MainCoreType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, args);
+
             public static void RequestUnload(string dir) => Invoke(nameof(Core.RequestUnload), dir);
+
             public static void RequestLoad(string dir) => Invoke(nameof(Core.RequestLoad), dir);
+
             public static string[] ListScriptDirectories() => (string[])Invoke(nameof(Core.ListScriptDirectories));
         }
     }

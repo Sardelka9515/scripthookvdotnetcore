@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pch.h"
-
+#include "exports.h"
 // Provided by the AppHost NuGet package and installed as an SDK pack
 #include "nethost.h"
 
@@ -26,7 +26,7 @@ namespace
 	load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
 wstring dotnet_root;
-int CoreCLRInit(RuntimeConfig* config)
+int CoreCLRInit(HMODULE asiModule)
 {
 
 	wstring root_path = filesystem::current_path().wstring() + L"\\";
@@ -70,12 +70,16 @@ int CoreCLRInit(RuntimeConfig* config)
 	//
 	// STEP 4: Run managed code
 	//
-	clrEntryFunc(config, sizeof(RuntimeConfig));
+	clrEntryFunc(asiModule, sizeof(HMODULE));
+
+	assert(CoreCLR_DoInit = (VoidFunc)GetPtr(KEY_CORECLR_INITFUNC));
+	assert(CoreCLR_DoTick = (VoidFunc)GetPtr(KEY_CORECLR_TICKFUNC));
+	assert(CoreCLR_DoKeyboard = (KeyboardFunc)GetPtr(KEY_CORECLR_KBHFUNC));
 
 	return EXIT_SUCCESS;
 }
 
-/********************************************************************************************
+/******************************************	**************************************************
  * Function used to load and activate .NET Core
  ********************************************************************************************/
 

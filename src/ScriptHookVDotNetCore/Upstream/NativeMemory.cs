@@ -1169,7 +1169,7 @@ namespace SHVDN
                 // Need to manually allocate it on unmanaged heap so it doesn't get popped from the stack (or GC'd?)
                 _pNativeMemory = (NativeMemoryStruct*)AllocHGlobal(sizeof(NativeMemoryStruct));
                 *_pNativeMemory = temp;
-                Core.SetPtr(StructSignature, (ulong)_pNativeMemory);
+                Core.SetPtr(StructSignature,(IntPtr)_pNativeMemory);
                 Logger.Debug($"Initialized NativeMemoryStruct at address {(IntPtr)_pNativeMemory}");
             }
             catch (Exception ex)

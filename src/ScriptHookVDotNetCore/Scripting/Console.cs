@@ -17,8 +17,8 @@ namespace GTA
         private static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
         private static HashSet<Type> _registeredTypes = new();
         private static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
-        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Core.GetPtr("SHVDN.Console.ExecuteConsoleCommand");
-        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Core.GetPtr("SHVDN.Console.RegisterConsoleCommand");
+        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Core.GetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC);
+        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Core.GetPtr(Core.KEY_CORECLR_CONSOLE_REG_FUNC);
 
         /// <summary>
         /// Search and register all static method marked with <see cref="ConsoleCommand"/> attribute in this type

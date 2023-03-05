@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using GTA;
 using GTA.UI;
 
@@ -33,6 +29,32 @@ public interface IScriptTask
 
 #endregion
 
+/// <summary>
+/// Signify that this member will be indirectly invoked
+/// through runtime reflection and should remian backward-compatible
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
+class ReflectionEntryAttribute : Attribute
+{
+    public Version Introduced { get; set; }
+    public EntryPlace Place { get; set; }
+}
+
+enum EntryPlace
+{
+    /// <summary>
+    /// Indicates that this member lives in the main assembly 
+    /// and can be accessed by script assemblies through reflection
+    /// </summary>
+    MainAssembly,
+
+    /// <summary>
+    /// Indicates that this member lives in the api assembly of the loaded context 
+    /// and can be accessed by main assembly through reflection
+    /// </summary>
+    ScriptAssemblies
+}
+
 public static unsafe partial class Core
 {
 #if NATIVEAOT
@@ -51,11 +73,12 @@ public static unsafe partial class Core
     /// List all scripts in this module
     /// </summary>
     /// <returns>A copy of all registered <see cref="Script"/> instances.</returns>
-    public static List<Script> ListScripts()
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
+    public static Script[] ListScripts()
     {
         lock (_scripts)
         {
-            return new List<Script>(_scripts);
+            return _scripts.ToArray();
         }
     }
 
@@ -115,7 +138,6 @@ public static unsafe partial class Core
         }
     }
 
-
     /// <summary>
     /// Don't use
     /// </summary>
@@ -131,7 +153,7 @@ public static unsafe partial class Core
 
                 var script = _scripts[i];
 
-                if (script.Continue > GetTickCount64())
+                if (script.Continue > GetTickCount64() || script.IsAborted)
                     continue;
 
                 _toExecute = null;
@@ -149,11 +171,20 @@ public static unsafe partial class Core
                         {
                             throw new TimeoutException("Script execution has timed out after 5 seconds.");
                         }
-                        if (_toExecute != null)
+                        if (!script.IsAborted)
                         {
-                            _toExecute.Run();
-                            goto nextTask;
+                            if (_toExecute != null)
+                            {
+                                _toExecute.Run();
+                                goto nextTask;
+                            }
                         }
+                        else
+                        {
+                            var error = script.Error;
+                            Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{script.Name}~h~\"!~n~~n~~r~" + error.GetType().Name + "~s~ " + error.StackTrace.Split('\n').FirstOrDefault().Trim());
+                        }
+                        _toExecute = null;
                     }
                     else
                     {
@@ -200,21 +231,31 @@ public static unsafe partial class Core
         }
     }
 
-    public static void OnInit(IntPtr lparam)
+    public static void OnInit(IntPtr lparams)
     {
+#if NATIVEAOT
+        CurrentModule = lparams;
+        DoImport(NativeLibrary.Load(Environment.GetEnvironmentVariable("SHVDNC_ASI_PATH") ?? "ScriptHookVDotNetCore.asi"));
+#else
+        var asiModule = lparams;
+        if (asiModule != default)
+        {
+            DoImport(asiModule);
+        }
+#endif
+
         _mainThread = GetCurrentThreadId();
         GameTls = GetTls();
         if (AsiVersion < ScriptingApiVersion)
         {
             MessageBoxA(default, $"Current ScriptHookVDotNetCore version is {AsiVersion}, while {ScriptingApiVersion} or higher is required. Update ScriptHookVDotNetCore if you experience random crashes", "Warning", default);
         }
-#if NATIVEAOT
-
-        CurrentModule = lparam;
-#else
+#if !NATIVEAOT
         if (MainAssembly != null)
             FindAndRegisterAllScripts();
 #endif
+        // Initialize NativeMemory
+        RuntimeHelpers.RunClassConstructor(typeof(NativeMemory).TypeHandle);
     }
 
     /// <summary>

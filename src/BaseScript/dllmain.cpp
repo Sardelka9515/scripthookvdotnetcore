@@ -6,6 +6,9 @@ typedef LPVOID(WINAPI* CommandHandler)(uint32_t argc, wchar_t** argv);
 typedef void(WINAPI* regcom_func)(CommandHandler handler, wchar_t* name, wchar_t* param, wchar_t* help, wchar_t* assembly);
 typedef void(WINAPI* prcom_func)(wchar_t* prefix, wchar_t* msg);
 typedef void(WINAPI* execcom_func)(wchar_t* command);
+const LPCSTR KEY_CORECLR_CONSOLE_EXEC_FUNC = "SHVDN.CoreCLR.ExecuteConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_REG_FUNC = "SHVDN.CoreCLR.RegisterConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_PRINT_FUNC = "SHVDN.CoreCLR.PrintConsoleMessageFuncAddr";
 
 LPVOID RegisterConsoleCommand_ptr;
 LPVOID PrintConsoleMessage_ptr;
@@ -31,9 +34,9 @@ DWORD Setup(LPVOID lparam) {
 	assert(GetPtr);
 	auto SetPtr = (setptr_func)GetProcAddress(asi, "SetPtr");
 	assert(SetPtr);
-	RegisterConsoleCommand_ptr = (LPVOID)GetPtr("SHVDN.Console.RegisterConsoleCommand");
-	PrintConsoleMessage_ptr = (LPVOID)GetPtr("SHVDN.Console.PrintConsoleMessage");
-	ExecuteConsoleCommand_ptr = (LPVOID)GetPtr("SHVDN.Console.ExecuteConsoleCommand");
+	RegisterConsoleCommand_ptr = (LPVOID)GetPtr(KEY_CORECLR_CONSOLE_REG_FUNC);
+	PrintConsoleMessage_ptr = (LPVOID)GetPtr(KEY_CORECLR_CONSOLE_PRINT_FUNC);
+	ExecuteConsoleCommand_ptr = (LPVOID)GetPtr(KEY_CORECLR_CONSOLE_EXEC_FUNC);
 	assert(RegisterConsoleCommand_ptr && PrintConsoleMessage_ptr && ExecuteConsoleCommand_ptr);
 	return 0;
 }

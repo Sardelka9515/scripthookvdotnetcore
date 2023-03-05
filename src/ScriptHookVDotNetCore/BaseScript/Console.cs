@@ -842,11 +842,11 @@ namespace SHVDN
             // Setup function pointer and store it in core
             IntPtr funcPtr;
             *(delegate* unmanaged<delegate* unmanaged<int, char**, IntPtr>, char*, char*, char*, char*, void>*)&funcPtr = &RegisterConsoleCommand;
-            Core.SetPtr("SHVDN.Console.RegisterConsoleCommand", (ulong)funcPtr);
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_REG_FUNC, funcPtr);
             *(delegate* unmanaged<char*, char*, void>*)&funcPtr = &PrintConsoleMessage;
-            Core.SetPtr("SHVDN.Console.PrintConsoleMessage", (ulong)funcPtr);
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_PRINT_FUNC, funcPtr);
             *(delegate* unmanaged<char*, void>*)&funcPtr = &ExecuteConsoleCommand;
-            Core.SetPtr("SHVDN.Console.ExecuteConsoleCommand", (ulong)funcPtr);
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC, funcPtr);
 
             // Set up function bridge
             NativeLibrary.Load("ScriptHookVDotNetCore.BaseScript.dll");

@@ -6,18 +6,24 @@
 #pragma once
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
 typedef VOID(WINAPI* LogHandler)(uint64_t time, uint32_t level, LPCSTR msg);
-
+const LPCSTR KEY_PTRRELOADED = "SHVDNC.ASI.PtrReloaded";
+const LPCSTR KEY_CORECLR_INITFUNC = "SHVDNC.CoreCLR.InitFuncAddr";
+const LPCSTR KEY_CORECLR_TICKFUNC = "SHVDNC.CoreCLR.TickFuncAddr";
+const LPCSTR KEY_CORECLR_KBHFUNC = "SHVDNC.CoreCLR.KeyboardFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_EXEC_FUNC = "SHVDN.CoreCLR.ExecuteConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_REG_FUNC = "SHVDN.CoreCLR.RegisterConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_PRINT_FUNC = "SHVDN.CoreCLR.PrintConsoleMessageFuncAddr";
+const LPCSTR KEY_CONFIGPTR = "SHVDN.ASI.PtrConfig";
+inline WCHAR AsiPath[MAX_PATH];
 inline vector<AotLoader*> Modules = {};
 inline mutex ModulesMutex;
 inline HMODULE CurrentModule;
 inline queue<Job> JobQueue;
 inline mutex JobMutex;
-inline map<string, uint64_t> PtrMap;
+inline map<string, LPVOID> PtrMap;
 inline mutex PtrMapMutex;
 inline vector<LogHandler> LogHandlers = {};
 inline mutex LogHandlersMutex;
-inline mutex KeyboardHandlersMutex;
-inline vector<KeyboardHandler> KeyboardHandlers;
 #pragma region Internal
 
 static inline HMODULE LoadModuleInternal(LPCWSTR path) {
@@ -218,18 +224,18 @@ DllExport void LogErrorW(LPCWSTR msg) {
 // Internal function, called when the game loads a save
 static void PtrMapProcessReload() {
 	LOCK(PtrMapMutex);
-	erase_if(PtrMap, [](pair<string, uint64_t> ptrPair) {
+	erase_if(PtrMap, [](pair<string, LPVOID> ptrPair) {
 		return ptrPair.first.rfind("SHVDN.", 0) == 0;
 		});
 }
 
 
-DllExport uint64_t GetPtr(LPCSTR key) {
+DllExport LPVOID GetPtr(LPCSTR key) {
 	LOCK(PtrMapMutex);
 	auto i_ptr = PtrMap.find(string(key));
 	return i_ptr == PtrMap.end() ? NULL : i_ptr->second;
 }
-DllExport void SetPtr(LPCSTR key, uint64_t value) {
+DllExport void SetPtr(LPCSTR key, LPVOID value) {
 	LOCK(PtrMapMutex);
 	PtrMap[key] = value;
 }
@@ -284,19 +290,4 @@ DllExport void ScriptUnregister(Script* script) {
 }
 DllExport void ScriptWait(DWORD64 milliSeconds) {
 	Script::Wait(milliSeconds);
-}
-DllExport void KeyboardHandlerRegister(KeyboardHandler handler) {
-	auto work = [handler]()
-	{LOCK(KeyboardHandlersMutex); KeyboardHandlers.push_back(handler); };
-	TryInvoke(work, "KeyboardHandlerRegister");
-}
-
-DllExport void KeyboardHandlerUnregister(KeyboardHandler handler) {
-	auto work = [handler]()
-	{
-		LOCK(KeyboardHandlersMutex);
-		KeyboardHandlers.erase(remove_if(KeyboardHandlers.begin(), KeyboardHandlers.end(),
-			[handler](KeyboardHandler check) {return check == handler; }));
-	};
-	TryInvoke(work, "KeyboardHandlerRegister");
 }

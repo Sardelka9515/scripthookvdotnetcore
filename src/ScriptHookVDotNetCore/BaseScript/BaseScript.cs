@@ -37,8 +37,6 @@ internal unsafe class BaseScript : Script
         }
         SHVDN.Console.PrintInfo($"~c~ --- ScriptHookVDotNetCore {Core.AsiVersion} by Sardelka. ---");
         SHVDN.Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
-        LoadModule();
-        Core.CLR_ReloadAll();
     }
 
     [UnmanagedCallersOnly]
@@ -204,10 +202,13 @@ internal unsafe class BaseScript : Script
     public static void ReloadConfig()
     {
         string Default =
-@"UnloadKey=End
+@"ConsoleKey=F6
+UnloadKey=End
 ReloadKey=Home
 MaxUnloadRetries=256
-ConsoleKey=F6";
+ConsoleKey=F6
+AllocDebugConsole=false
+SkipLegalScreen=true";
         if (!File.Exists(CONFIG_PATH)) File.WriteAllText(CONFIG_PATH, Default);
         var lines = File.ReadAllLines(CONFIG_PATH);
         foreach (var kv in lines.Select(x => x.Split('=', StringSplitOptions.RemoveEmptyEntries)))
@@ -236,6 +237,29 @@ ConsoleKey=F6";
         }
         Core.ReloadCoreConfig();
     }
+
+    [ConsoleCommand("Load all scripts in the managed assmblies inside specified directory")]
+    public static void LoadScripts(string directory = null)
+    {
+        if (directory == null)
+            Core.CLR_ReloadAll();
+        else
+            Core.CLR_Load(directory);
+    }
+
+    [ConsoleCommand("Unload all script assemblies inside the specified directory")]
+    public static void UnloadScripts(string directory = null)
+    {
+        if(directory==null)
+            Core.CLR_UnloadAll();
+        else
+            Core.CLR_Unload(directory);
+    }
+
+    [ConsoleCommand("List all loaded scripts")]
+    public static void ListScripts()
+        => Core.PrintAllScripts();
+
     #endregion
 
 }
