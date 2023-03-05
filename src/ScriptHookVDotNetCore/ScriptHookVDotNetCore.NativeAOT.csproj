@@ -36,4 +36,7 @@
 		<Compile Remove="BaseScript/**/*" />
 		<Compile Remove="Core.CLR.cs" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="ScriptHookVDotNetCore.runtimeconfig.json" />
+	</ItemGroup>
 </Project>
