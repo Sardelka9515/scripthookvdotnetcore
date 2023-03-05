@@ -20,7 +20,7 @@ inline mutex ModulesMutex;
 inline HMODULE CurrentModule;
 inline queue<Job> JobQueue;
 inline mutex JobMutex;
-inline map<string, LPVOID> PtrMap;
+inline unordered_map<string, LPVOID> PtrMap;
 inline mutex PtrMapMutex;
 inline vector<LogHandler> LogHandlers = {};
 inline mutex LogHandlersMutex;
