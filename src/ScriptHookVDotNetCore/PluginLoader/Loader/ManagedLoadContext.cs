@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using McMaster.NETCore.Plugins.LibraryModel;
+using SHVDN.Loader.LibraryModel;
 
-namespace McMaster.NETCore.Plugins.Loader
+namespace SHVDN.Loader.Loader
 {
     /// <summary>
     /// An implementation of <see cref="AssemblyLoadContext" /> which attempts to load managed and native

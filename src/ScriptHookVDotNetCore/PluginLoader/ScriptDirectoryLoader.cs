@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using McMaster.NETCore.Plugins;
+using SHVDN.Loader;
 using System.Reflection;
 using System.Diagnostics;
-namespace SHVDN
+namespace SHVDN.Loader
 {
-
     class ScriptDirectoryLoader : PluginLoader
     {
         public delegate void KeyEventDelegate(DWORD key, bool down, bool ctrl, bool shift, bool alt);

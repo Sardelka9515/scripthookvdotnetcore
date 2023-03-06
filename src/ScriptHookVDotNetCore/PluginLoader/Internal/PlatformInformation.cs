@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace McMaster.NETCore.Plugins
+namespace SHVDN.Loader
 {
     internal class PlatformInformation
     {

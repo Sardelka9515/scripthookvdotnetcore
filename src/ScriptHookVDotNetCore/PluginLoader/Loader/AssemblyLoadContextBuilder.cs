@@ -7,14 +7,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using McMaster.NETCore.Plugins.LibraryModel;
+using SHVDN.Loader.LibraryModel;
 
-namespace McMaster.NETCore.Plugins.Loader
+namespace SHVDN.Loader.Loader
 {
     /// <summary>
     /// A builder for creating an instance of <see cref="AssemblyLoadContext" />.
     /// </summary>
-    public class AssemblyLoadContextBuilder
+    class AssemblyLoadContextBuilder
     {
         private readonly List<string> _additionalProbingPaths = new();
         private readonly List<string> _resourceProbingPaths = new();

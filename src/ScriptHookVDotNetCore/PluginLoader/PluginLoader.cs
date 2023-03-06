@@ -7,10 +7,10 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
-using McMaster.NETCore.Plugins.Internal;
-using McMaster.NETCore.Plugins.Loader;
+using SHVDN.Loader.Internal;
+using SHVDN.Loader.Loader;
 
-namespace McMaster.NETCore.Plugins
+namespace SHVDN.Loader
 {
     /// <summary>
     /// This loader attempts to load binaries for execution (both managed assemblies and native libraries)
@@ -22,7 +22,7 @@ namespace McMaster.NETCore.Plugins
     /// which satisfy the plugin's requirements.
     /// </para>
     /// </summary>
-    public class PluginLoader : IDisposable
+    class PluginLoader : IDisposable
     {
         /// <summary>
         /// Create a plugin loader for an assembly file.

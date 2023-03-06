@@ -6,13 +6,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
-namespace McMaster.NETCore.Plugins.LibraryModel
+namespace SHVDN.Loader.LibraryModel
 {
     /// <summary>
     /// Represents a managed, .NET assembly.
     /// </summary>
     [DebuggerDisplay("{Name} = {AdditionalProbingPath}")]
-    public class ManagedLibrary
+    class ManagedLibrary
     {
         private ManagedLibrary(AssemblyName name, string additionalProbingPath, string appLocalPath)
         {

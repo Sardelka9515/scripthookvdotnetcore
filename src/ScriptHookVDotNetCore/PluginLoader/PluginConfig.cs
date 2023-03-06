@@ -7,12 +7,12 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace McMaster.NETCore.Plugins
+namespace SHVDN.Loader
 {
     /// <summary>
     /// Represents the configuration for a .NET Core plugin.
     /// </summary>
-    public class PluginConfig
+    class PluginConfig
     {
         /// <summary>
         /// Initializes a new instance of <see cref="PluginConfig" />

@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace McMaster.NETCore.Plugins.Internal
+namespace SHVDN.Loader.Internal
 {
     internal class Debouncer : IDisposable
     {

@@ -5,14 +5,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-namespace McMaster.NETCore.Plugins.LibraryModel
+namespace SHVDN.Loader.LibraryModel
 {
     /// <summary>
     /// Represents an unmanaged library, such as `libsqlite3`, which may need to be loaded
     /// for P/Invoke to work.
     /// </summary>
     [DebuggerDisplay("{Name} = {AdditionalProbingPath}")]
-    public class NativeLibrary
+    class NativeLibrary
     {
         private NativeLibrary(string name, string appLocalPath, string additionalProbingPath)
         {

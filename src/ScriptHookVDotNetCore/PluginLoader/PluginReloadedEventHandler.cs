@@ -3,19 +3,19 @@
 
 using System;
 
-namespace McMaster.NETCore.Plugins
+namespace SHVDN.Loader
 {
     /// <summary>
     /// Represents the method that will handle the <see cref="PluginLoader.Reloaded" /> event.
     /// </summary>
     /// <param name="sender">The object sending the event</param>
     /// <param name="eventArgs">Data about the event.</param>
-    public delegate void PluginReloadedEventHandler(object sender, PluginReloadedEventArgs eventArgs);
+    delegate void PluginReloadedEventHandler(object sender, PluginReloadedEventArgs eventArgs);
 
     /// <summary>
     /// Provides data for the <see cref="PluginLoader.Reloaded" /> event.
     /// </summary>
-    public class PluginReloadedEventArgs : EventArgs
+    class PluginReloadedEventArgs : EventArgs
     {
         /// <summary>
         /// Initializes <see cref="PluginReloadedEventArgs" />.

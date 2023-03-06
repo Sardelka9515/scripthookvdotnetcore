@@ -7,12 +7,12 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
-namespace McMaster.NETCore.Plugins.Loader
+namespace SHVDN.Loader.Loader
 {
     /// <summary>
     /// Extensions for creating a load context using settings from a runtimeconfig.json file
     /// </summary>
-    public static class RuntimeConfigExtensions
+    static class RuntimeConfigExtensions
     {
         private const string JsonExt = ".json";
         private static readonly JsonSerializerOptions s_serializerOptions = new()
