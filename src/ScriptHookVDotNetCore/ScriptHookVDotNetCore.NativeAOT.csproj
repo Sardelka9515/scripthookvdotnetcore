@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<RootNamespace>SHVDN</RootNamespace>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<NoWarn>CS1591;CA2211</NoWarn>

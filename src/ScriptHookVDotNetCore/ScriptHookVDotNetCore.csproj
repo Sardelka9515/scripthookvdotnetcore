@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<RootNamespace>SHVDN</RootNamespace>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<NoWarn>CS1591;CA2211</NoWarn>
@@ -10,7 +11,7 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<LangVersion>preview</LangVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<PackageOutputPath>$(SolutionDir)bin\obj</PackageOutputPath >
+		<PackageOutputPath>$(SolutionDir)bin\obj</PackageOutputPath>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<Title>ScriptHookVDotNetCore</Title>
 		<RepositoryUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</RepositoryUrl>
