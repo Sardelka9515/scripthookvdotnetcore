@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using GTA;
+using System.Runtime.CompilerServices;
 
 namespace SHVDN
 {
@@ -78,6 +79,7 @@ namespace SHVDN
             AddLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Import("AddLogHandler");
             RemoveLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Import("RemoveLogHandler");
             Config = (ConfigStruct*)GetPtr(KEY_CONFIGPTR);
+            RuntimeHelpers.RunClassConstructor(typeof(Logger).TypeHandle);
         }
     }
 }

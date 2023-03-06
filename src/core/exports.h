@@ -185,6 +185,10 @@ DllExport int32_t ListModules(HMODULE* buf, int32_t bufSize) {
 
 #pragma region Logger
 
+DllExport void LogTrace(LPCSTR msg) {
+	trace(msg);
+}
+
 DllExport void LogDebug(LPCSTR msg) {
 	debug(msg);
 }
@@ -202,22 +206,34 @@ DllExport void LogError(LPCSTR msg) {
 	error(msg);
 }
 
+DllExport void LogCritical(LPCSTR msg) {
+	critical(msg);
+}
+
+
+DllExport void LogTraceW(LPCWSTR msg) {
+	trace(PWTS(msg));
+}
 
 DllExport void LogDebugW(LPCWSTR msg) {
-	LogDebug(PWTS(msg));
+	debug(PWTS(msg));
 }
 
 
 DllExport void LogInfoW(LPCWSTR msg) {
-	LogInfo(PWTS(msg));
+	info(PWTS(msg));
 }
 
 DllExport void LogWarnW(LPCWSTR msg) {
-	LogWarn(PWTS(msg));
+	warn(PWTS(msg));
 }
 
 DllExport void LogErrorW(LPCWSTR msg) {
-	LogError(PWTS(msg));
+	error(PWTS(msg));
+}
+
+DllExport void LogCriticalW(LPCWSTR msg) {
+	critical(PWTS(msg));
 }
 
 #pragma endregion

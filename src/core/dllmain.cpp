@@ -233,10 +233,12 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	LPVOID lpReserved
 )
 {
-	CurrentModule = hModule;
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH: {
+		// Pin asi module
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)DllMain, &CurrentModule);
+		assert(CurrentModule == hModule);
 		CreateThread(NULL, NULL, &Background, NULL, NULL, NULL);
 
 		presentCallbackRegister(OnPresent);
