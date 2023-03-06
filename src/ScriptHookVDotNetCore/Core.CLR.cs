@@ -12,9 +12,6 @@ using System.Runtime.Loader;
 
 namespace SHVDN
 {
-    /// <summary>
-    /// The CoreCLR plugin loader implementations
-    /// </summary>
     public static unsafe partial class Core
     {
         #region Main assembly only
