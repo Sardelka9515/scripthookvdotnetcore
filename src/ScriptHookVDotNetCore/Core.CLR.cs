@@ -23,7 +23,7 @@ namespace SHVDN
 
         static readonly ConcurrentQueue<Action> _taskQueue = new();
         static BaseScript _baseScript;
-        
+
         // Function that gets called from main thread by the c++ native host during startup
         static int CLR_EntryPoint(IntPtr asiModule, int cbArg)
         {
@@ -183,113 +183,6 @@ namespace SHVDN
             Debug.Assert(CurrentDirectory == null);
         }
 
-        /// <summary>
-        /// Helper method to determine whether a file is a managed assembly
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        internal static bool IsManagedAssembly(string fileName)
-        {
-            try
-            {
-
-                using Stream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-                using BinaryReader binaryReader = new(fileStream);
-                if (fileStream.Length < 64)
-                {
-                    return false;
-                }
-
-                //PE Header starts @ 0x3C (60). Its a 4 byte header.
-                fileStream.Position = 0x3C;
-                uint peHeaderPointer = binaryReader.ReadUInt32();
-                if (peHeaderPointer == 0)
-                {
-                    peHeaderPointer = 0x80;
-                }
-
-                // Ensure there is at least enough room for the following structures:
-                //     24 byte PE Signature & Header
-                //     28 byte Standard Fields         (24 bytes for PE32+)
-                //     68 byte NT Fields               (88 bytes for PE32+)
-                // >= 128 byte Data Dictionary Table
-                if (peHeaderPointer > fileStream.Length - 256)
-                {
-                    return false;
-                }
-
-                // Check the PE signature.  Should equal 'PE\0\0'.
-                fileStream.Position = peHeaderPointer;
-                uint peHeaderSignature = binaryReader.ReadUInt32();
-                if (peHeaderSignature != 0x00004550)
-                {
-                    return false;
-                }
-
-                // skip over the PEHeader fields
-                fileStream.Position += 20;
-
-                const ushort PE32 = 0x10b;
-                const ushort PE32Plus = 0x20b;
-
-                // Read PE magic number from Standard Fields to determine format.
-                var peFormat = binaryReader.ReadUInt16();
-                if (peFormat != PE32 && peFormat != PE32Plus)
-                {
-                    return false;
-                }
-
-                // Read the 15th Data Dictionary RVA field which contains the CLI header RVA.
-                // When this is non-zero then the file contains CLI data otherwise not.
-                ushort dataDictionaryStart = (ushort)(peHeaderPointer + (peFormat == PE32 ? 232 : 248));
-                fileStream.Position = dataDictionaryStart;
-
-                uint cliHeaderRva = binaryReader.ReadUInt32();
-                if (cliHeaderRva == 0)
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-
-        internal static void PrintAllScripts()
-        {
-            foreach (var loader in _loaders)
-            {
-                try
-                {
-                    var scripts = ((dynamic[])loader.Value.InvokeCore(nameof(ListScripts))).OrderBy(x => x.GetType().Assembly);
-                    if (!scripts.Any())
-                        continue;
-
-                    Console.PrintInfo($"~c~ Scripts in {loader.Key}");
-                    string assemblyName = null;
-                    foreach (var script in scripts)
-                    {
-                        var name = script.GetType().Assembly.GetName().Name;
-                        if (name != assemblyName)
-                        {
-                            Console.PrintInfo($"[{name}]");
-                            assemblyName = name;
-                        }
-                        bool running = !script.IsAborted;
-                        Console.PrintInfo($"    ~h~{script.Name} {(running ? "~g~Running~w~" : "~o~Aborted~w~")}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.PrintError(ex.ToString());
-                }
-            }
-        }
-
         // These methods can be invoke using reflection API to control script load/unload
 
         [ReflectionEntry(Place = EntryPlace.MainAssembly)]
@@ -315,6 +208,15 @@ namespace SHVDN
             }
         }
 
+
+        [ReflectionEntry(Place = EntryPlace.MainAssembly)]
+        private static dynamic[] ListScriptObjects(string scriptDir)
+        {
+            if (_loaders.TryGetValue(scriptDir, out var loader))
+                return (dynamic[])loader.InvokeCore(nameof(ListScripts));
+            return null;
+        }
+
         #endregion
 
         #region Set up by main assembly
@@ -336,7 +238,6 @@ namespace SHVDN
         /// </summary>
         [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
         public static Assembly MainAssembly { get; private set; }
-
         #endregion
 
         static void FindAndRegisterAllScripts()
@@ -370,7 +271,6 @@ namespace SHVDN
                 }
             }
         }
-
         public static class RuntimeController
         {
             static readonly Type MainCoreType;
@@ -389,6 +289,15 @@ namespace SHVDN
             public static void RequestLoad(string dir) => Invoke(nameof(Core.RequestLoad), dir);
 
             public static string[] ListScriptDirectories() => (string[])Invoke(nameof(Core.ListScriptDirectories));
+
+            /// <summary>
+            /// List all script objects in the load context of specified directory
+            /// </summary>
+            /// <param name="scriptDir"></param>
+            /// <returns>An array of <see cref="Script"/> objects in <see langword="dynamic"/> form </returns>
+            /// <remarks>As same type in different load context will actually be treated as two different types.
+            /// Attempting to cast the returned values to <see cref="Script"/> will result in an <see cref="InvalidCastException"/></remarks>
+            public static dynamic[] ListScriptObjects(string scriptDir) => (dynamic[])Invoke(nameof(Core.ListScriptObjects),scriptDir);
         }
     }
 }

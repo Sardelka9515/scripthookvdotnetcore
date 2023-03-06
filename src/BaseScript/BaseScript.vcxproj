@@ -24,6 +24,7 @@
     <ProjectGuid>{647a82b6-2271-40c4-82d9-f2363dbff02e}</ProjectGuid>
     <RootNamespace>BaseScript</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+	<ResolveNuGetPackages>false</ResolveNuGetPackages>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
