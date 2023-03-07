@@ -52,8 +52,8 @@ namespace SHVDN
         internal static delegate* unmanaged<LPVOID, void> ScriptUnregister { get; private set; }
         internal static delegate* unmanaged<DWORD64, void> ScriptWait { get; private set; }
         internal static delegate* unmanaged<void> ReloadCoreConfig { get; private set; }
-        internal static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> AddLogHandler { get; private set; }
-        internal static delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void> RemoveLogHandler { get; private set; }
+        internal static delegate* unmanaged<IntPtr, void> AddLogHandler { get; private set; }
+        internal static delegate* unmanaged<IntPtr, void> RemoveLogHandler { get; private set; }
         internal static ConfigStruct* Config { get; private set; }
 
         public static IntPtr Import(string entryPoint)
@@ -76,8 +76,8 @@ namespace SHVDN
             ScriptUnregister = (delegate* unmanaged<LPVOID, void>)Import("ScriptUnregister");
             ScriptWait = (delegate* unmanaged<DWORD64, void>)Import("ScriptWait");
             ReloadCoreConfig = (delegate* unmanaged<void>)Import("ReloadCoreConfig");
-            AddLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Import("AddLogHandler");
-            RemoveLogHandler = (delegate* unmanaged<delegate* unmanaged<ulong, uint, IntPtr, void>, void>)Import("RemoveLogHandler");
+            AddLogHandler = (delegate* unmanaged<IntPtr, void>)Import("AddLogHandler");
+            RemoveLogHandler = (delegate* unmanaged<IntPtr, void>)Import("RemoveLogHandler");
             Config = (ConfigStruct*)GetPtr(KEY_CONFIGPTR);
             RuntimeHelpers.RunClassConstructor(typeof(Logger).TypeHandle);
         }

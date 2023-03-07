@@ -14,14 +14,16 @@ public static unsafe partial class Core
     [ScriptAttributes(NoScriptThread = true)]
     internal unsafe class BaseScript : Script
     {
-
+        delegate void LogHandlerDelegate(ulong tick, uint level, IntPtr ptrAnsiMsg);
+        static readonly LogHandlerDelegate _logHandler = PrintLogMessage;
+        static readonly IntPtr _logHandler_fptr = Marshal.GetFunctionPointerForDelegate(_logHandler);
         public BaseScript()
         {
             Aborted += (e) =>
             {
                 if (e.IsUnloading)
                 {
-                    Core.RemoveLogHandler(&PrintLogMessage);
+                    RemoveLogHandler(_logHandler_fptr);
                 }
             };
         }
@@ -29,7 +31,7 @@ public static unsafe partial class Core
         protected override void OnStart()
         {
             base.OnStart();
-            Core.AddLogHandler(&PrintLogMessage);
+            AddLogHandler(_logHandler_fptr);
             try
             {
                 ReloadConfig();
@@ -42,7 +44,6 @@ public static unsafe partial class Core
             SHVDN.Console.PrintInfo($"~c~ --- Type \"Help\" to list avalible commands ---");
         }
 
-        [UnmanagedCallersOnly]
         static void PrintLogMessage(ulong time, uint level, IntPtr pMsg)
         {
             var msg = Marshal.PtrToStringAnsi(pMsg);
