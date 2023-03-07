@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Xml.Linq;
 using GTA.UI;
@@ -78,8 +79,18 @@ public unsafe abstract class Script
     [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
     public bool IsAborted => _aborted;
 
+    public readonly string FilePath;
+
     public Script()
     {
+#if NATIVEAOT
+        char* buf = stackalloc char[256];
+        GetModuleFileNameW(Core.CurrentModule, buf, 256);
+        Debug.Assert(Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER);
+        FilePath = Marshal.PtrToStringUni((IntPtr)buf);
+#else
+        FilePath = Core.ScriptAssemblies?.FirstOrDefault(x => x.Value == GetType().Assembly).Key;
+#endif
         Name = GetType();
         Attributes = GetType().GetCustomAttribute<ScriptAttributes>() ?? new();
     }

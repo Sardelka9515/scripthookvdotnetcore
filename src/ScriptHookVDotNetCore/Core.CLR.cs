@@ -219,10 +219,10 @@ namespace SHVDN
         #region Set up by main assembly
 
         /// <summary>
-        /// All assemblies loaded in to current context
+        /// All assemblies loaded in to current context, indexed by their path to assembly
         /// </summary>
         [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
-        public static Assembly[] ScriptAssemblies { get; private set; }
+        public static Dictionary<string,Assembly> ScriptAssemblies { get; private set; }
 
         /// <summary>
         /// The directory used by this load context
@@ -243,7 +243,7 @@ namespace SHVDN
             Debug.Assert(ScriptAssemblies != null);
             Debug.Assert(MainAssembly != null);
 
-            foreach (var asm in ScriptAssemblies)
+            foreach (var asm in ScriptAssemblies.Values)
             {
                 Logger.Debug($"Loading scripts in {asm}");
                 try

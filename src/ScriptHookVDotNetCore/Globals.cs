@@ -50,4 +50,6 @@ public class Globals
     public const DWORD WAIT_FAILED = 0xFFFFFFFF;
 
     public const DWORD INFINITE = 0xFFFFFFFF;
+
+    public const DWORD ERROR_INSUFFICIENT_BUFFER = 122;
 }

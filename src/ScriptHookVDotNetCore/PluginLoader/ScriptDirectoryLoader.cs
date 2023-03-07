@@ -47,7 +47,7 @@ namespace SHVDN.Loader
             DoTick = (Action<IntPtr>)Delegate.CreateDelegate(typeof(Action<IntPtr>), tickMethod);
             DoKeyEvent = (KeyEventDelegate)Delegate.CreateDelegate(typeof(KeyEventDelegate), keyEventMethod);
 
-            List<Assembly> scriptAssemblies = new();
+            Dictionary<string, Assembly> scriptAssemblies = new();
             foreach (var asmPath in Directory.GetFiles(folder, "*.dll").Where(Core.IsManagedAssembly))
             {
                 // Skip loading of api assembly
@@ -57,7 +57,7 @@ namespace SHVDN.Loader
                 try
                 {
                     Logger.Debug("Loading assembly: " + asmPath);
-                    scriptAssemblies.Add(LoadAssemblyFromPath(asmPath));
+                    scriptAssemblies.Add(asmPath, LoadAssemblyFromPath(asmPath));
                 }
                 catch (Exception ex)
                 {
@@ -66,7 +66,7 @@ namespace SHVDN.Loader
             }
 
             setProp(nameof(Core.CurrentDirectory), folder);
-            setProp(nameof(Core.ScriptAssemblies), scriptAssemblies.ToArray());
+            setProp(nameof(Core.ScriptAssemblies), scriptAssemblies);
             setProp(nameof(Core.MainAssembly), typeof(Core).Assembly);
             void setProp(string name, object value)
             {
