@@ -292,7 +292,6 @@ namespace SHVDN
                 return; // Only interested in key down events and do not need to handle events when the console is not open
 
             var e = new KeyEventArgs(keys);
-
             if (e.KeyCode == Keys.PageUp)
             {
                 PageUp();
@@ -822,15 +821,11 @@ namespace SHVDN
 
         #region Exports
 
-        [UnmanagedCallersOnly(EntryPoint = "RegisterConsoleCommand")]
         public static void RegisterConsoleCommand(delegate* unmanaged<int, char**, IntPtr> func, char* name, char* param, char* help, char* assembly)
             => RegisterCommand(func, PtrToSpanUni(name), PtrToSpanUni(param), PtrToSpanUni(help), PtrToSpanUni(assembly));
 
-        [UnmanagedCallersOnly(EntryPoint = "PrintConsoleMessage")]
         public static void PrintConsoleMessage(char* preFix, char* msg) => Print(new string(preFix), new string(msg));
 
-
-        [UnmanagedCallersOnly(EntryPoint = "ExecuteConsoleCommand")]
         public static void ExecuteConsoleCommand(char* command)
         {
             _input = new(command);
@@ -840,13 +835,9 @@ namespace SHVDN
         static Console()
         {
             // Setup function pointer and store it in core
-            IntPtr funcPtr;
-            *(delegate* unmanaged<delegate* unmanaged<int, char**, IntPtr>, char*, char*, char*, char*, void>*)&funcPtr = &RegisterConsoleCommand;
-            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_REG_FUNC, funcPtr);
-            *(delegate* unmanaged<char*, char*, void>*)&funcPtr = &PrintConsoleMessage;
-            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_PRINT_FUNC, funcPtr);
-            *(delegate* unmanaged<char*, void>*)&funcPtr = &ExecuteConsoleCommand;
-            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC, funcPtr);
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_REG_FUNC, Marshal.GetFunctionPointerForDelegate(RegisterConsoleCommand));
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_PRINT_FUNC, Marshal.GetFunctionPointerForDelegate(PrintConsoleMessage));
+            Core.SetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC, Marshal.GetFunctionPointerForDelegate(ExecuteConsoleCommand));
 
             // Set up function bridge
             NativeLibrary.Load("ScriptHookVDotNetCore.BaseScript.dll");
