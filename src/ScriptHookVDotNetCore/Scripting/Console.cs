@@ -116,8 +116,18 @@ namespace GTA
         /// <param name="args">The formatting arguments.</param>
         public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print(L_WRN, msg, args);
 
+        delegate void RegisterCommandDelegate(string help, MethodInfo method, object target);
+        static readonly RegisterCommandDelegate _registerCommand
+            = (RegisterCommandDelegate)Core.MainAssembly?
+            .GetType(typeof(SHVDN.Console).FullName)
+            .GetMethod(nameof(SHVDN.Console.RegisterCommandManaged),
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .CreateDelegate(typeof(RegisterCommandDelegate))
+            ?? SHVDN.Console.RegisterCommandManaged;
         static void RegisterCommand(ConsoleCommand command)
         {
+#if NATIVEAOT
+
             var wrapper = (int argc, char** argv) =>
             {
                 try
@@ -146,6 +156,9 @@ namespace GTA
                 RegisterConsoleCommand(Marshal.GetFunctionPointerForDelegate(wrapper), pName, pParm, pHelp, pAssm);
             }
             command._wrapper = wrapper;
+#else
+            _registerCommand(command.Help, command.Method, command.Target);
+#endif
             lock (_registeredCommands)
             {
                 _registeredCommands.Add(command);
@@ -173,6 +186,8 @@ namespace GTA
             _registeredCommands = null;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
     public class ConsoleCommand : Attribute
     {
         public ConsoleCommand(string help) { Help = help; }

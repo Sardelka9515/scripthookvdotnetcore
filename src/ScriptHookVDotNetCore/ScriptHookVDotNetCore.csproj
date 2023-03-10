@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
 		<RootNamespace>SHVDN</RootNamespace>
 		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
@@ -26,14 +27,29 @@
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
-
 	<ItemGroup>
-	  <None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="ScriptHookVDotNetCore.runtimeconfig.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="ScriptHookVDotNetCore.runtimeconfig.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 </Project>

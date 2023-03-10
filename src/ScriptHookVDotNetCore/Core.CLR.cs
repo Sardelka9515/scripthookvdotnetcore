@@ -37,14 +37,13 @@ namespace SHVDN
             *(delegate* unmanaged<DWORD, BOOL, BOOL, BOOL, BOOL, void>*)(&funcPtr) = &CLR_DoKeyboard;
             SetPtr(KEY_CORECLR_KBHFUNC, funcPtr);
 
-
+            LoadDependencies();
             return 0;
         }
 
         [UnmanagedCallersOnly]
         static void CLR_DoInit()
         {
-
             // Set up main TLS and ThreadId
             OnInit(default);
 
@@ -53,6 +52,7 @@ namespace SHVDN
             {
                 RegisterScript(_baseScript = new());
                 GTA.Console.RegisterCommands(typeof(BaseScript));
+                GTA.Console.RegisterCommands(typeof(BaseScript), _baseScript);
             }
 
             // Reload NativeAot modules and managed scripts
@@ -222,7 +222,7 @@ namespace SHVDN
         /// All assemblies loaded in to current context, indexed by their path to assembly
         /// </summary>
         [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
-        public static Dictionary<string,Assembly> ScriptAssemblies { get; private set; }
+        public static Dictionary<string, Assembly> ScriptAssemblies { get; private set; }
 
         /// <summary>
         /// The directory used by this load context
@@ -254,6 +254,8 @@ namespace SHVDN
                         {
                             var script = (Script)Activator.CreateInstance(scriptType);
                             RegisterScript(script);
+                            GTA.Console.RegisterCommands(scriptType);
+                            GTA.Console.RegisterCommands(scriptType, script);
                         }
                         catch (Exception ex)
                         {
@@ -294,7 +296,7 @@ namespace SHVDN
             /// <returns>An array of <see cref="Script"/> objects in <see langword="dynamic"/> form </returns>
             /// <remarks>As same type in different load context will actually be treated as two different types.
             /// Attempting to cast the returned values to <see cref="Script"/> will result in an <see cref="InvalidCastException"/></remarks>
-            public static dynamic[] ListScriptObjects(string scriptDir) => (dynamic[])Invoke(nameof(Core.ListScriptObjects),scriptDir);
+            public static dynamic[] ListScriptObjects(string scriptDir) => (dynamic[])Invoke(nameof(Core.ListScriptObjects), scriptDir);
         }
     }
 }

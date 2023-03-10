@@ -5,11 +5,24 @@ using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace SHVDN;
 
 public static unsafe partial class Core
 {
+    static void LoadDependencies()
+    {
+        LoadToAssemblyToDefaultContext(Properties.Resources.Microsoft_CodeAnalysis);
+        LoadToAssemblyToDefaultContext(Properties.Resources.Microsoft_CodeAnalysis_CSharp);
+    }
+
+    static void LoadToAssemblyToDefaultContext(byte[] rawAssembly)
+    {
+        using var stream = new MemoryStream(rawAssembly);
+        AssemblyLoadContext.Default.LoadFromStream(stream);
+    }
 
     [ScriptAttributes(NoScriptThread = true)]
     internal unsafe class BaseScript : Script
@@ -69,12 +82,8 @@ public static unsafe partial class Core
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            SHVDN.Console.DoKeyEvent(e.KeyData, true);
-        }
+            SHVDN.Console.DoKeyDown(e);
 
-        protected override void OnKeyUp(KeyEventArgs e)
-        {
-            base.OnKeyUp(e);
             var key = (ushort)e.KeyCode;
             if (key == Core.Config->ConsoleKey)
                 SHVDN.Console.IsOpen = !SHVDN.Console.IsOpen;
@@ -89,8 +98,11 @@ public static unsafe partial class Core
                 LoadModule();
                 Core.CLR_ReloadAll();
             }
+        }
 
-            SHVDN.Console.DoKeyEvent(e.KeyData, false);
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
         }
 
         #region Commands
@@ -260,7 +272,7 @@ SkipLegalScreen=true";
                 Core.CLR_Unload(directory);
         }
 
-        [ConsoleCommand("List all loaded scripts (managed only)")]
+        [ConsoleCommand("List all managed scripts")]
         public static void ListScripts()
         {
             foreach (var dir in Core.ListScriptDirectories())

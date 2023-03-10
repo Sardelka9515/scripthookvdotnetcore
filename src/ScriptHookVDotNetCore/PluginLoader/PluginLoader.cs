@@ -214,7 +214,7 @@ namespace SHVDN.Loader
             {
                 throw new InvalidOperationException("Reload cannot be used because IsUnloadable is false");
             }
-            ctxWeakRef = new(_context);
+            ctxWeakRef = new(_context, true);
             _context.Unload();
             _context = null;
         }

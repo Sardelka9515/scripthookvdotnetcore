@@ -135,21 +135,26 @@ reload:
 		catch (exception ex) {
 			error(format("Failed to execute queued job: {}", ex.what()));
 		}
+		try {
 
-		// Tick fibers
-		Script::TickAll();
+			// Tick fibers
+			Script::TickAll();
 
-		// Tick CoreCLR
-		CoreCLR_DoTick();
+			// Tick CoreCLR
+			CoreCLR_DoTick();
 
-		// Tick modules
-		{
-			LOCK(ModulesMutex);
-			for (auto pM : Modules) {
-				if (pM->TickFunc != NULL) {
-					pM->TickFunc(GetCurrentFiber());
+			// Tick modules
+			{
+				LOCK(ModulesMutex);
+				for (auto pM : Modules) {
+					if (pM->TickFunc != NULL) {
+						pM->TickFunc(GetCurrentFiber());
+					}
 				}
 			}
+		}
+		catch (exception ex) {
+			error("Tick error: {}", ex.what());
 		}
 		if (Reloaded)
 			goto reload;

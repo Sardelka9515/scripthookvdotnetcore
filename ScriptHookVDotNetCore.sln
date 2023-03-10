@@ -32,6 +32,7 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptHookVDotNetCore.NativeAOT", "src\ScriptHookVDotNetCore\ScriptHookVDotNetCore.NativeAOT.csproj", "{DF5AFA1B-3FCC-4172-93E8-31D14F9CE866}"
 	ProjectSection(ProjectDependencies) = postProject
 		{A0428A04-0AA0-4507-9543-6AF436FFEE60} = {A0428A04-0AA0-4507-9543-6AF436FFEE60}
+		{F2EFD4EC-8EC0-46AC-8BA4-887B051B52FC} = {F2EFD4EC-8EC0-46AC-8BA4-887B051B52FC}
 	EndProjectSection
 EndProject
 Global

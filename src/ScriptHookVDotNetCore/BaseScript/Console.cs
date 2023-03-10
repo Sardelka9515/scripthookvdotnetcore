@@ -16,6 +16,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using GTA.UI;
+using System.Xml.Linq;
+using System;
 
 namespace SHVDN
 {
@@ -78,43 +80,6 @@ namespace SHVDN
         {
             get => _commandHistory;
             set => _commandHistory = value;
-        }
-
-        /// <summary>
-        /// Register the specified method as a console command.
-        /// </summary>
-        /// <param name="func"></param>
-        /// <param name="name"></param>
-        /// <param name="param"></param>
-        /// <param name="help"></param>
-        /// <param name="assembly"></param>
-        public static void RegisterCommand(delegate* unmanaged<int, char**, IntPtr> func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
-        {
-            var command = new Command((IntPtr)func, name, param, help, assembly);
-            var sName = name.ToString();
-            Logger.Debug("Registering command: " + sName);
-            lock (_commands)
-            {
-                if (_commands.ContainsKey(sName))
-                {
-                    _commands[sName] = command;
-                }
-                else
-                {
-                    _commands.Add(sName, command);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Unregister all methods with a <see cref="Command"/> attribute that were previously registered.
-        /// </summary>
-        public static void UnregisterCommand(string name)
-        {
-            lock (_commands)
-            {
-                if (_commands.ContainsKey(name)) { _commands.Remove(name); }
-            }
         }
         static void AddLine(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, string color)
         {
@@ -215,7 +180,7 @@ namespace SHVDN
                         assm = command.Assembly;
                         help.AppendLine($"[{assm}]");
                     }
-                    help.AppendLine($"    ~h~{command.Name}~h~ ~s~{command.Parameters} => {command.Help}");
+                    help.AppendLine($"    ~h~{command.Name}({command.ParametersStr})~h~ ~s~ => {command.Help}");
                 }
 
                 PrintInfo(help.ToString());
@@ -229,7 +194,7 @@ namespace SHVDN
         {
             if (_commands.TryGetValue(commandName, out var command))
             {
-                PrintInfo($"~h~{command.Name}~h~ ~s~{command.Parameters} => {command.Help}");
+                PrintInfo($"~h~{command.Name}({command.ParametersStr})~h~ ~s~ => {command.Help}");
                 return;
             }
         }
@@ -243,6 +208,36 @@ namespace SHVDN
 		internal static void DoTick()
         {
             DateTime now = DateTime.UtcNow;
+
+            // Execute compiled input line script
+            if (_compilerTask != null && _compilerTask.IsCompleted)
+            {
+                if (_compilerTask.Result != null)
+                {
+                    try
+                    {
+                        ExecuteAndUnload(_compilerTask.Result, out _);
+                    }
+                    catch (TargetInvocationException ex)
+                    {
+                        Logger.Error($"[Exception]: {ex.InnerException}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex.ToString());
+                    }
+                    finally
+                    {
+                        _compilerTask.Result.Dispose();
+                    }
+                }
+
+                ClearInput();
+
+                // Reset compiler task
+                _compilerTask = null;
+            }
+
             // Add lines from concurrent queue to history
             while (_outputQueue.TryDequeue(out var line))
                 _lineHistory.Add(line);
@@ -266,9 +261,9 @@ namespace SHVDN
             // Draw input prefix
             DrawText(0, CONSOLE_HEIGHT, "$>", PrefixColor);
             // Draw input text
-            DrawText(25, CONSOLE_HEIGHT, _input, InputColor);
+            DrawText(25, CONSOLE_HEIGHT, _input, _compilerTask == null ? InputColor : InputColorBusy);
             // Draw page information
-            DrawText(5, CONSOLE_HEIGHT + INPUT_HEIGHT, "Page " + _currentPage + "/" + System.Math.Max(1, ((_lineHistory.Count + (LINES_PER_PAGE - 1)) / LINES_PER_PAGE)), InputColor);
+            DrawText(5, CONSOLE_HEIGHT + INPUT_HEIGHT, "Page " + _currentPage + "/" + Math.Max(1, (_lineHistory.Count + (LINES_PER_PAGE - 1)) / LINES_PER_PAGE), InputColor);
 
             // Draw blinking cursor
             if (now.Millisecond < 500)
@@ -281,17 +276,16 @@ namespace SHVDN
             // Draw console history text
             int historyOffset = _lineHistory.Count - (LINES_PER_PAGE * _currentPage);
             int historyLength = historyOffset + LINES_PER_PAGE;
-            for (int i = System.Math.Max(0, historyOffset); i < historyLength; ++i)
+            for (int i = Math.Max(0, historyOffset); i < historyLength; ++i)
             {
-                DrawText(2, (float)((i - historyOffset) * 14), _lineHistory[i], OutputColor);
+                DrawText(2, (i - historyOffset) * 14f, _lineHistory[i], OutputColor);
             }
         }
-        internal static void DoKeyEvent(Keys keys, bool status)
+        internal static void DoKeyDown(KeyEventArgs e)
         {
-            if (!status || !IsOpen)
-                return; // Only interested in key down events and do not need to handle events when the console is not open
+            if (_compilerTask?.IsCompleted == false || !IsOpen)
+                return;
 
-            var e = new KeyEventArgs(keys);
             if (e.KeyCode == Keys.PageUp)
             {
                 PageUp();
@@ -336,7 +330,7 @@ namespace SHVDN
                     GoDownCommandList();
                     break;
                 case Keys.Enter:
-                    Execute();
+                    BeginCompilation();
                     break;
                 case Keys.Escape:
                     IsOpen = false;
@@ -436,57 +430,29 @@ namespace SHVDN
                     break;
             }
         }
-        static void Execute()
+
+        static Task<MemoryStream> _compilerTask;
+        static void BeginCompilation()
         {
-            if (string.IsNullOrEmpty(_input))
-            {
-                ClearInput();
+            if (string.IsNullOrEmpty(_input) || _compilerTask != null)
                 return;
-            }
 
             _commandPos = -1;
             if (_commandHistory.LastOrDefault() != _input)
                 _commandHistory.Add(_input);
 
-            var command = _input.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
-
-            lock (_commands)
+            _compilerTask = Task.Run(() =>
             {
                 try
                 {
-                    if (_commands.TryGetValue(command, out var cmdObj))
-                    {
-                        var result = default(string);
-                        if (_input.Replace(" ", "").Length > command.Length)
-                        {
-                            var args = _input.Substring(command.Length);
-                            fixed (char* pStr = args)
-                            {
-                                var argv = Parse(pStr, out var argc);
-                                result = Marshal.PtrToStringUni(cmdObj.FuncPtr(argc, argv));
-                                Marshal.FreeHGlobal((IntPtr)argv);
-                            }
-                        }
-                        else
-                        {
-                            result = Marshal.PtrToStringUni(cmdObj.FuncPtr(0, null));
-                        }
-                        if (result != null)
-                        {
-                            PrintInfo(result);
-                        }
-                    }
-                    else
-                    {
-                        throw new KeyNotFoundException("Command not found: " + command);
-                    }
+                    return CompileInput(_input);
                 }
                 catch (Exception ex)
                 {
-                    PrintError(ex.ToString());
+                    PrintError("Failed to compile expression: " + ex);
+                    return null;
                 }
-            }
-            ClearInput();
+            });
         }
         static void PageUp()
         {
@@ -670,155 +636,6 @@ namespace SHVDN
             return len1 - (len2 - len1); // [Margin][A] - [A] = [Margin]
         }
 
-        #region Argument parsing
-
-        public static List<string> GetArguments(int argc, char** argv)
-        {
-            List<string> args = new(argc);
-            while (args.Count < argc)
-            {
-                args.Add(Marshal.PtrToStringUni((IntPtr)argv[args.Count]));
-            }
-            return args;
-        }
-
-        [Flags]
-        enum ParseState
-        {
-            Gap = 0,
-            Read = 1,
-            ReadEscape = 2,
-            InQuotes = 4
-        }
-
-        static char** Parse(char* input, out int argc)
-        {
-            ParseState state = ParseState.Gap;
-            var results = new List<string>();
-            char* currentCommandBuf = stackalloc char[StrLenUni(input)];
-            char thisChar;
-            int inputIndex = 0;
-            int curCmdIndex = 0;
-            while ((thisChar = input[inputIndex]) != 0)
-            {
-                char thisRead = '\0';
-                var previouReading = state.HasFlag(ParseState.Read);
-                switch (thisChar)
-                {
-                    case '\\':
-                        {
-                            if (state.HasFlag(ParseState.ReadEscape))
-                            {
-                                state &= ~ParseState.ReadEscape;
-                                thisRead = thisChar;
-                            }
-                            else
-                            {
-                                state |= ParseState.ReadEscape;
-                                state |= ParseState.Read;
-                            }
-                            break;
-                        }
-                    case '\"':
-                        if (state.HasFlag(ParseState.ReadEscape))
-                        {
-                            thisRead = thisChar;
-                            state &= ~ParseState.ReadEscape;
-                        }
-                        else if (state.HasFlag(ParseState.InQuotes))
-                        {
-                            state &= ~ParseState.InQuotes;
-                        }
-                        else
-                        {
-                            state |= ParseState.InQuotes;
-                            state |= ParseState.Read;
-                        }
-                        break;
-                    case ' ':
-                        if (state.HasFlag(ParseState.ReadEscape))
-                        {
-                            throwEs();
-                        }
-                        else if (state.HasFlag(ParseState.InQuotes))
-                        {
-                            thisRead = thisChar;
-                        }
-                        else
-                        {
-                            state &= ~ParseState.Read;
-                        }
-                        break;
-                    default:
-                        if (state.HasFlag(ParseState.ReadEscape))
-                        {
-                            switch (thisChar)
-                            {
-                                case 'a': thisRead = '\a'; break;
-                                case 'b': thisRead = '\b'; break;
-                                case 'f': thisRead = '\f'; break;
-                                case 'n': thisRead = '\n'; break;
-                                case 'r': thisRead = '\r'; break;
-                                case 't': thisRead = '\t'; break;
-                                case 'v': thisRead = '\v'; break;
-                                default: throwEs(); break;
-                            }
-                        }
-                        else
-                        {
-                            thisRead = thisChar;
-                        }
-                        break;
-                }
-                if (thisRead != '\0')
-                {
-                    state |= ParseState.Read;
-                    currentCommandBuf[curCmdIndex++] = thisRead;
-                }
-                if (previouReading && !state.HasFlag(ParseState.Read))
-                {
-                    currentCommandBuf[curCmdIndex + 1] = '\0';
-                    results.Add(new(currentCommandBuf));
-                    input += inputIndex;
-                    inputIndex = curCmdIndex = 0;
-                }
-                else
-                {
-                    inputIndex++;
-                }
-            }
-            if (state.HasFlag(ParseState.Read))
-            {
-                currentCommandBuf[curCmdIndex] = '\0';
-                results.Add(new(currentCommandBuf));
-            }
-
-            void throwEs()
-            {
-                throw new Exception($"Unrecognized escape sequence: '\\{thisChar}'");
-            }
-            var bufPtrsSize = results.Count * sizeof(IntPtr);
-            var bufArgsSize = results.Sum(x => x.Length + 1) * sizeof(char);
-            char** pStrs = (char**)Marshal.AllocHGlobal(bufPtrsSize + bufArgsSize);
-            char* pCurArg = (char*)(pStrs + results.Count);
-            for (int i = 0; i < results.Count; i++)
-            {
-                var thisArg = results[i];
-                pStrs[i] = pCurArg;
-                var cChars = thisArg.Length + 1;
-                fixed (char* pStr = thisArg)
-                {
-                    var cbThisArg = cChars * sizeof(char);
-                    Buffer.MemoryCopy(pStr, pCurArg, cbThisArg, cbThisArg);
-                }
-                pCurArg += cChars;
-            }
-            argc = results.Count;
-            return pStrs;
-        }
-
-        #endregion
-
         #region Exports
 
         public static void RegisterConsoleCommand(delegate* unmanaged<int, char**, IntPtr> func, char* name, char* param, char* help, char* assembly)
@@ -829,7 +646,7 @@ namespace SHVDN
         public static void ExecuteConsoleCommand(char* command)
         {
             _input = new(command);
-            Execute();
+            BeginCompilation();
         }
 
         static Console()
@@ -845,24 +662,6 @@ namespace SHVDN
 
         #endregion
 
-
-        unsafe class Command
-        {
-            public Command(IntPtr func, ReadOnlySpan<char> name, ReadOnlySpan<char> param, ReadOnlySpan<char> help, ReadOnlySpan<char> assembly)
-            {
-                Name = name.ToString();
-                Parameters = param.ToString();
-                Help = help.ToString();
-                Assembly = assembly.ToString();
-                FuncPtr = (delegate* unmanaged<int, char**, IntPtr>)func;
-            }
-            public delegate* unmanaged<int, char**, IntPtr> FuncPtr; // argc,argv,result
-            public string Help { get; }
-
-            internal string Name { get; }
-            internal string Parameters { get; }
-            internal string Assembly { get; }
-        }
     }
 
 }
