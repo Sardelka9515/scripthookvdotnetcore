@@ -14,7 +14,6 @@ namespace GTA
     /// </summary>
     public static unsafe class Console
     {
-        private static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
         private static HashSet<Type> _registeredTypes = new();
         private static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
         public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Core.GetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC);
@@ -116,7 +115,10 @@ namespace GTA
         /// <param name="args">The formatting arguments.</param>
         public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print(L_WRN, msg, args);
 
+#if !NATIVEAOT
         delegate void RegisterCommandDelegate(string help, MethodInfo method, object target);
+        delegate void UnregisterCommandDelegate(string name);
+
         static readonly RegisterCommandDelegate _registerCommand
             = (RegisterCommandDelegate)Core.MainAssembly?
             .GetType(typeof(SHVDN.Console).FullName)
@@ -124,6 +126,16 @@ namespace GTA
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .CreateDelegate(typeof(RegisterCommandDelegate))
             ?? SHVDN.Console.RegisterCommandManaged;
+
+        static readonly UnregisterCommandDelegate _unregisterCommand
+            = (UnregisterCommandDelegate)Core.MainAssembly?
+            .GetType(typeof(SHVDN.Console).FullName)
+            .GetMethod(nameof(SHVDN.Console.UnregisterCommand),
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .CreateDelegate(typeof(UnregisterCommandDelegate))
+            ?? SHVDN.Console.UnregisterCommand;
+#endif
+
         static void RegisterCommand(ConsoleCommand command)
         {
 #if NATIVEAOT
@@ -179,9 +191,17 @@ namespace GTA
         {
             try
             {
-                NativeLibrary.Free(BaseScript);
+#if !NATIVEAOT
+                foreach (var cmd in _registeredCommands)
+                {
+                    _unregisterCommand(cmd.Name);
+                }
+#endif
+                _registeredTypes.Clear();
+                _registeredCommands.Clear();
             }
-            catch { }
+            catch (Exception ex) { Logger.Error(ex.Message); }
+
             _registeredTypes = null;
             _registeredCommands = null;
         }

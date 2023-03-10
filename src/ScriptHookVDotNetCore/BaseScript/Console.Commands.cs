@@ -212,8 +212,10 @@ namespace SHVDN
             Logger.Debug("Registering command: " + name);
             lock (_commands)
             {
-                if (_commands.ContainsKey(name))
+                if (_commands.TryGetValue(name, out var existing))
                 {
+                    Logger.Warn($"Command \"{name}\" has already been registered from assembly \"{existing.Assembly}\"" +
+                        $", replacing with the one from \"{command.Assembly}\"");
                     _commands[name] = command;
                 }
                 else
@@ -226,11 +228,13 @@ namespace SHVDN
         /// <summary>
         /// Unregister all methods with a <see cref="Command"/> attribute that were previously registered.
         /// </summary>
+        [ReflectionEntry(Place = EntryPlace.MainAssembly)]
         public static void UnregisterCommand(string name)
         {
             lock (_commands)
             {
-                if (_commands.ContainsKey(name)) { _commands.Remove(name); }
+                if (!_commands.Remove(name))
+                    Logger.Warn($"Attempted to unregister a non-existent command: \"{name}\"");
             }
         }
         internal unsafe partial class Command
