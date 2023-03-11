@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 using GTA;
+using GTA.UI;
 
 namespace SHVDN;
 #region API bridge
@@ -30,25 +28,40 @@ public interface IScriptTask
 }
 
 #endregion
-public static unsafe class Core
-{
-    public static HMODULE CurrentModule { get; private set; }
-    public static readonly HMODULE CoreModule = NativeLibrary.Load("ScriptHookVDotNetCore.asi");
-    public static readonly Version AsiVersion = Version.Parse(FileVersionInfo.GetVersionInfo("ScriptHookVDotNetCore.asi").FileVersion ?? "0.0.0.0");
-    public static readonly Version ScriptingApiVersion = typeof(Core).Assembly.GetName().Version;
-    public static readonly delegate* unmanaged<char*, void> ScheduleLoad = (delegate* unmanaged<char*, void>)Import("ScheduleLoad");
-    public static readonly delegate* unmanaged<char*, void> ScheduleUnload = (delegate* unmanaged<char*, void>)Import("ScheduleUnload");
-    public static readonly delegate* unmanaged<void> ScheduleUnoadAll = (delegate* unmanaged<void>)Import("ScheduleUnloadAll");
-    public static readonly delegate* unmanaged<void> ScheduleReload = (delegate* unmanaged<void>)Import("ScheduleReload");
-    public static readonly delegate* unmanaged<HMODULE*, int, int> ListModules = (delegate* unmanaged<HMODULE*, int, int>)Import("ListModules");
-    public static readonly delegate* unmanaged<string, ulong> GetPtr = (delegate* unmanaged<string, ulong>)Import("GetPtr");
-    public static readonly delegate* unmanaged<string, ulong, void> SetPtr = (delegate* unmanaged<string, ulong, void>)Import("SetPtr");
-    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID> GetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID>)Import("GetTls");
-    internal static readonly delegate* unmanaged[SuppressGCTransition]<LPVOID, void> SetTls = (delegate* unmanaged[SuppressGCTransition]<LPVOID, void>)Import("SetTls");
 
+/// <summary>
+/// Signify that this member will be indirectly invoked
+/// through runtime reflection and should remian backward-compatible
+/// </summary>
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false)]
+class ReflectionEntryAttribute : Attribute
+{
+    public Version Introduced { get; set; }
+    public EntryPlace Place { get; set; }
+}
+
+enum EntryPlace
+{
+    /// <summary>
+    /// Indicates that this member lives in the main assembly 
+    /// and can be accessed by script assemblies through reflection
+    /// </summary>
+    MainAssembly,
+
+    /// <summary>
+    /// Indicates that this member lives in the api assembly of the loaded context 
+    /// and can be accessed by main assembly through reflection
+    /// </summary>
+    ScriptAssemblies
+}
+
+public static unsafe partial class Core
+{
+#if NATIVEAOT
+    public static HMODULE CurrentModule { get; private set; }
+#endif
     private static bool[] KeyboardState = new bool[256];
     private static bool _recordKeyboardEvents = true;
-
 
     private static List<Script> _scripts = new();
     private static DWORD _mainThread;
@@ -60,18 +73,16 @@ public static unsafe class Core
     /// List all scripts in this module
     /// </summary>
     /// <returns>A copy of all registered <see cref="Script"/> instances.</returns>
-    public static List<Script> ListScripts()
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
+    public static Script[] ListScripts()
     {
         lock (_scripts)
         {
-            return new List<Script>(_scripts);
+            return _scripts.ToArray();
         }
     }
 
     public static Script ExecutingScript { get; private set; }
-
-    public static IntPtr Import(string entryPoint)
-        => NativeLibrary.GetExport(CoreModule, entryPoint);
 
     public static void PauseKeyEvents(bool pause)
     {
@@ -115,20 +126,17 @@ public static unsafe class Core
         lock (_scripts)
         {
             var type = script.Name;
-            if ((script.GetAttribute(nameof(ScriptAttributes.SingleInstance)) as bool?) != false
-                && _scripts.Any(x => x.Name == type))
+            var attri = script.Attributes;
+            if (attri.SingleInstance && _scripts.Any(x => x.Name == type))
                 throw new InvalidOperationException($"A script with the same type has already been registered");
 
             if (_scripts.Any(x => ReferenceEquals(x, script)))
                 throw new InvalidOperationException($"Same script object has already been registered");
 
             _scripts.Add(script);
-
-            var noThread = script.GetAttribute(nameof(ScriptAttributes.NoScriptThread));
-            script.Start(noThread == null || !(bool)noThread);
+            script.Start(!attri.NoScriptThread);
         }
     }
-
 
     /// <summary>
     /// Don't use
@@ -145,7 +153,7 @@ public static unsafe class Core
 
                 var script = _scripts[i];
 
-                if (script.Continue > GetTickCount64())
+                if (script.Continue > GetTickCount64() || script.IsAborted)
                     continue;
 
                 _toExecute = null;
@@ -159,15 +167,24 @@ public static unsafe class Core
                     nextTask:
                         finishedInTime = SignalAndWait(script.ContinueEvent, script.WaitEvent, 5000);
 
-                        if (!finishedInTime)
+                        if (!finishedInTime && !Debugger.IsAttached)
                         {
                             throw new TimeoutException("Script execution has timed out after 5 seconds.");
                         }
-                        if (_toExecute != null)
+                        if (!script.IsAborted)
                         {
-                            _toExecute.Run();
-                            goto nextTask;
+                            if (_toExecute != null)
+                            {
+                                _toExecute.Run();
+                                goto nextTask;
+                            }
                         }
+                        else
+                        {
+                            var error = script.Error;
+                            Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{script.Name}~h~\"!~n~~n~~r~" + error.GetType().Name + "~s~ " + error.StackTrace.Split('\n').FirstOrDefault().Trim());
+                        }
+                        _toExecute = null;
                     }
                     else
                     {
@@ -214,15 +231,31 @@ public static unsafe class Core
         }
     }
 
-    public static void OnInit(HMODULE currentModule)
+    public static void OnInit(IntPtr lparams)
     {
+#if NATIVEAOT
+        CurrentModule = lparams;
+        DoImport(NativeLibrary.Load(Environment.GetEnvironmentVariable("SHVDNC_ASI_PATH") ?? "ScriptHookVDotNetCore.asi"));
+#else
+        var asiModule = lparams;
+        if (asiModule != default)
+        {
+            DoImport(asiModule);
+        }
+#endif
+
         _mainThread = GetCurrentThreadId();
         GameTls = GetTls();
-        CurrentModule = currentModule;
         if (AsiVersion < ScriptingApiVersion)
         {
             MessageBoxA(default, $"Current ScriptHookVDotNetCore version is {AsiVersion}, while {ScriptingApiVersion} or higher is required. Update ScriptHookVDotNetCore if you experience random crashes", "Warning", default);
         }
+#if !NATIVEAOT
+        if (MainAssembly != null)
+            FindAndRegisterAllScripts();
+#endif
+        // Initialize NativeMemory
+        RuntimeHelpers.RunClassConstructor(typeof(NativeMemory).TypeHandle);
     }
 
     /// <summary>
@@ -230,13 +263,15 @@ public static unsafe class Core
     /// </summary>
     public static void OnUnload(HMODULE currentModule)
     {
+#if NATIVEAOT
         CurrentModule = currentModule;
+#endif
         DisposeScripts();
         _scripts = null;
         KeyboardState = null;
         GTA.Console.OnUnload();
         Marshaller.OnUnload();
-        NativeLibrary.Free(CoreModule);
+        NativeLibrary.Free(AsiModule);
         for (int i = 0; i < 20; i++)
         {
             GC.Collect();
@@ -262,15 +297,15 @@ public static unsafe class Core
     /// <exception cref="InvalidOperationException"></exception>
     public static void ExecuteTask<T>(ref T task) where T : IScriptTask
     {
-        if (IsMainThread())
+        if (GetTls() == GameTls)
         {
-            task.Run();
+            task?.Run();
             return;
         }
 
         var script = ExecutingScript;
-        if (script?.IsUsingThread != true)
-            throw new InvalidOperationException("No script is currently executing");
+        if (script?.ScriptThread != Thread.CurrentThread)
+            throw new InvalidOperationException("Cannot execute task from non-script thread");
 
         _toExecute = task;
         SignalAndWait(script.WaitEvent, script.ContinueEvent);
@@ -289,4 +324,86 @@ public static unsafe class Core
         return toWaitOn.Wait(timeout);
     }
 
+    public static void TryBreakToDebugger()
+    {
+        if (Debugger.IsAttached)
+            Debugger.Break();
+    }
+
+
+
+    /// <summary>
+    /// Helper method to determine whether a file is a managed assembly
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <returns></returns>
+    internal static bool IsManagedAssembly(string fileName)
+    {
+        try
+        {
+
+            using Stream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+            using BinaryReader binaryReader = new(fileStream);
+            if (fileStream.Length < 64)
+            {
+                return false;
+            }
+
+            //PE Header starts @ 0x3C (60). Its a 4 byte header.
+            fileStream.Position = 0x3C;
+            uint peHeaderPointer = binaryReader.ReadUInt32();
+            if (peHeaderPointer == 0)
+            {
+                peHeaderPointer = 0x80;
+            }
+
+            // Ensure there is at least enough room for the following structures:
+            //     24 byte PE Signature & Header
+            //     28 byte Standard Fields         (24 bytes for PE32+)
+            //     68 byte NT Fields               (88 bytes for PE32+)
+            // >= 128 byte Data Dictionary Table
+            if (peHeaderPointer > fileStream.Length - 256)
+            {
+                return false;
+            }
+
+            // Check the PE signature.  Should equal 'PE\0\0'.
+            fileStream.Position = peHeaderPointer;
+            uint peHeaderSignature = binaryReader.ReadUInt32();
+            if (peHeaderSignature != 0x00004550)
+            {
+                return false;
+            }
+
+            // skip over the PEHeader fields
+            fileStream.Position += 20;
+
+            const ushort PE32 = 0x10b;
+            const ushort PE32Plus = 0x20b;
+
+            // Read PE magic number from Standard Fields to determine format.
+            var peFormat = binaryReader.ReadUInt16();
+            if (peFormat != PE32 && peFormat != PE32Plus)
+            {
+                return false;
+            }
+
+            // Read the 15th Data Dictionary RVA field which contains the CLI header RVA.
+            // When this is non-zero then the file contains CLI data otherwise not.
+            ushort dataDictionaryStart = (ushort)(peHeaderPointer + (peFormat == PE32 ? 232 : 248));
+            fileStream.Position = dataDictionaryStart;
+
+            uint cliHeaderRva = binaryReader.ReadUInt32();
+            if (cliHeaderRva == 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

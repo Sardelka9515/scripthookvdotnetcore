@@ -66,7 +66,7 @@ namespace Updater
                 }
             }
 
-            var dest = Combine("src", "ScriptHookVDotNetCore", "CodeDom");
+            var dest = Combine("src", "ScriptHookVDotNetCore", "Upstream");
             if (Directory.Exists(dest))
             {
                 try

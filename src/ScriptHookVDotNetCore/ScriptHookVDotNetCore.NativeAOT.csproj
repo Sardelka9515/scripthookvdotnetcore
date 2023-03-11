@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>SHVDN</RootNamespace>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<NoWarn>CS1591;CA2211</NoWarn>
+		<OutDir>$(SolutionDir)bin\obj</OutDir>
+		<TargetFramework>net7.0</TargetFramework>
+		<IntermediateOutputPath>$(BaseIntermediateOutputPath)NativeAOT\$(Configuration)\</IntermediateOutputPath>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<LangVersion>preview</LangVersion>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageOutputPath>$(SolutionDir)bin\obj</PackageOutputPath>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<Title>ScriptHookVDotNetCore</Title>
+		<RepositoryUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</RepositoryUrl>
+		<Copyright>Copyright © 2022 Sardelka9515</Copyright>
+		<Description>ScriptHookV for .NET Core (NativeAOT)</Description>
+		<Authors>Sardelka</Authors>
+		<IncludeSymbols>True</IncludeSymbols>
+		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
+		<SHVDNC_VERSION Condition="'$(SHVDNC_VERSION)' == ''">1.0.0.0</SHVDNC_VERSION>
+		<Version>$(SHVDNC_VERSION)</Version>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
+		<DebugType>embedded</DebugType>
+		<DefineConstants>$(DefineConstants);NATIVEAOT</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
+		<None Include="$(SolutionDir)bin\obj\ScriptHookVDotNetCore.NativeAOT.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="PluginLoader/**/*" />
+		<Compile Remove="BaseScript/**/*" />
+		<Compile Remove="Core.CLR.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="ScriptHookVDotNetCore.runtimeconfig.json" />
+	</ItemGroup>
+</Project>

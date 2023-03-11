@@ -14,13 +14,10 @@ namespace GTA
     /// </summary>
     public static unsafe class Console
     {
-        private static readonly HMODULE BaseScript = NativeLibrary.Load(BASE_SCRIPT_NAME);
         private static HashSet<Type> _registeredTypes = new();
         private static List<ConsoleCommand> _registeredCommands = new(); // Keep reference to registered commands lest it get GC'd
-        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Import("ExecuteConsoleCommand");
-        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Import("RegisterConsoleCommand");
-        public static readonly delegate* unmanaged<char*, char*, void> PrintConsoleMessage = (delegate* unmanaged<char*, char*, void>)Import("PrintConsoleMessage");
-        public static IntPtr Import(string name) => NativeLibrary.GetExport(BaseScript, name);
+        public static readonly delegate* unmanaged<char*, void> ExecuteConsoleCommand = (delegate* unmanaged<char*, void>)Core.GetPtr(Core.KEY_CORECLR_CONSOLE_EXEC_FUNC);
+        public static readonly delegate* unmanaged<IntPtr, char*, char*, char*, char*, void> RegisterConsoleCommand = (delegate* unmanaged<IntPtr, char*, char*, char*, char*, void>)Core.GetPtr(Core.KEY_CORECLR_CONSOLE_REG_FUNC);
 
         /// <summary>
         /// Search and register all static method marked with <see cref="ConsoleCommand"/> attribute in this type
@@ -82,47 +79,67 @@ namespace GTA
                 }
             }
         }
-
-        public static void Print(ReadOnlySpan<char> prefix, ReadOnlySpan<char> msg, params object[] args)
+        public static void Print(uint level, ReadOnlySpan<char> msg, params object[] args)
         {
             if (args != null && args.Length > 0)
             {
                 msg = string.Format(msg.ToString(), args);
             }
-            fixed (char* pp = prefix, pm = msg)
-            {
-                PrintConsoleMessage(pp, pm);
-            }
 
-            if (GetConsoleWindow() != default)
+            // Will be forwarded to in-game console through registered log handlers
+            switch (level)
             {
-                System.Console.WriteLine($"{prefix} {msg}");
+                case L_INF: Logger.Info(msg); break;
+                case L_ERR: Logger.Error(msg); break;
+                case L_WRN: Logger.Warn(msg); break;
             }
         }
-
         /// <summary>
         /// Writes an info message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintInfo(ReadOnlySpan<char> msg, params object[] args) => Print("[~b~INFO~w~] ", msg, args);
+        public static void PrintInfo(ReadOnlySpan<char> msg, params object[] args) => Print(L_INF, msg, args);
 
         /// <summary>
         /// Writes an error message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintError(ReadOnlySpan<char> msg, params object[] args) => Print("[~r~ERROR~w~] ", msg, args);
+        public static void PrintError(ReadOnlySpan<char> msg, params object[] args) => Print(L_ERR, msg, args);
 
         /// <summary>
         /// Writes a warning message to the console.
         /// </summary>
         /// <param name="msg">The composite format string.</param>
         /// <param name="args">The formatting arguments.</param>
-        public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print("[~o~WARNING~w~] ", msg, args);
+        public static void PrintWarning(ReadOnlySpan<char> msg, params object[] args) => Print(L_WRN, msg, args);
+
+#if !NATIVEAOT
+        delegate void RegisterCommandDelegate(string help, MethodInfo method, object target);
+        delegate void UnregisterCommandDelegate(string name);
+
+        static readonly RegisterCommandDelegate _registerCommand
+            = (RegisterCommandDelegate)Core.MainAssembly?
+            .GetType(typeof(SHVDN.Console).FullName)
+            .GetMethod(nameof(SHVDN.Console.RegisterCommandManaged),
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .CreateDelegate(typeof(RegisterCommandDelegate))
+            ?? SHVDN.Console.RegisterCommandManaged;
+
+        static readonly UnregisterCommandDelegate _unregisterCommand
+            = (UnregisterCommandDelegate)Core.MainAssembly?
+            .GetType(typeof(SHVDN.Console).FullName)
+            .GetMethod(nameof(SHVDN.Console.UnregisterCommand),
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .CreateDelegate(typeof(UnregisterCommandDelegate))
+            ?? SHVDN.Console.UnregisterCommand;
+#endif
 
         static void RegisterCommand(ConsoleCommand command)
         {
+#if NATIVEAOT
+
             var wrapper = (int argc, char** argv) =>
             {
                 try
@@ -151,6 +168,9 @@ namespace GTA
                 RegisterConsoleCommand(Marshal.GetFunctionPointerForDelegate(wrapper), pName, pParm, pHelp, pAssm);
             }
             command._wrapper = wrapper;
+#else
+            _registerCommand(command.Help, command.Method, command.Target);
+#endif
             lock (_registeredCommands)
             {
                 _registeredCommands.Add(command);
@@ -171,13 +191,23 @@ namespace GTA
         {
             try
             {
-                NativeLibrary.Free(BaseScript);
+#if !NATIVEAOT
+                foreach (var cmd in _registeredCommands)
+                {
+                    _unregisterCommand(cmd.Name);
+                }
+#endif
+                _registeredTypes.Clear();
+                _registeredCommands.Clear();
             }
-            catch { }
+            catch (Exception ex) { Logger.Error(ex.Message); }
+
             _registeredTypes = null;
             _registeredCommands = null;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
     public class ConsoleCommand : Attribute
     {
         public ConsoleCommand(string help) { Help = help; }

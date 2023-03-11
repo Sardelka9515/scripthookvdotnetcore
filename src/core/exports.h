@@ -6,16 +6,25 @@
 #pragma once
 typedef LPVOID(WINAPI* CallBackFunc)(LPVOID);
 typedef VOID(WINAPI* LogHandler)(uint64_t time, uint32_t level, LPCSTR msg);
-
+const LPCSTR KEY_PTRRELOADED = "SHVDNC.ASI.PtrReloaded";
+const LPCSTR KEY_CORECLR_INITFUNC = "SHVDNC.CoreCLR.InitFuncAddr";
+const LPCSTR KEY_CORECLR_TICKFUNC = "SHVDNC.CoreCLR.TickFuncAddr";
+const LPCSTR KEY_CORECLR_KBHFUNC = "SHVDNC.CoreCLR.KeyboardFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_EXEC_FUNC = "SHVDN.CoreCLR.ExecuteConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_REG_FUNC = "SHVDN.CoreCLR.RegisterConsoleCommandFuncAddr";
+const LPCSTR KEY_CORECLR_CONSOLE_PRINT_FUNC = "SHVDN.CoreCLR.PrintConsoleMessageFuncAddr";
+const LPCSTR KEY_CONFIGPTR = "SHVDN.ASI.PtrConfig";
+inline WCHAR AsiPath[MAX_PATH];
 inline vector<AotLoader*> Modules = {};
 inline mutex ModulesMutex;
 inline HMODULE CurrentModule;
 inline queue<Job> JobQueue;
 inline mutex JobMutex;
-inline map<string, uint64_t> PtrMap;
+inline unordered_map<string, LPVOID> PtrMap;
 inline mutex PtrMapMutex;
 inline vector<LogHandler> LogHandlers = {};
 inline mutex LogHandlersMutex;
+inline wstring BaseDirectory;
 #pragma region Internal
 
 static inline HMODULE LoadModuleInternal(LPCWSTR path) {
@@ -138,11 +147,6 @@ DllExport void ScheduleUnloadAll() {
 	j.Type = J_UNLOAD_ALL;
 	ScheduleTask(j);
 }
-DllExport void ScheduleReload() {
-	Job j = {};
-	j.Type = J_RELOAD;
-	ScheduleTask(j);
-}
 // Obsolete
 DllExport void ScheduleCallback(VoidFunc callback) {
 	Job j = {};
@@ -181,6 +185,10 @@ DllExport int32_t ListModules(HMODULE* buf, int32_t bufSize) {
 
 #pragma region Logger
 
+DllExport void LogTrace(LPCSTR msg) {
+	trace(msg);
+}
+
 DllExport void LogDebug(LPCSTR msg) {
 	debug(msg);
 }
@@ -198,22 +206,34 @@ DllExport void LogError(LPCSTR msg) {
 	error(msg);
 }
 
+DllExport void LogCritical(LPCSTR msg) {
+	critical(msg);
+}
+
+
+DllExport void LogTraceW(LPCWSTR msg) {
+	trace(PWTS(msg));
+}
 
 DllExport void LogDebugW(LPCWSTR msg) {
-	LogDebug(PWTS(msg));
+	debug(PWTS(msg));
 }
 
 
 DllExport void LogInfoW(LPCWSTR msg) {
-	LogInfo(PWTS(msg));
+	info(PWTS(msg));
 }
 
 DllExport void LogWarnW(LPCWSTR msg) {
-	LogWarn(PWTS(msg));
+	warn(PWTS(msg));
 }
 
 DllExport void LogErrorW(LPCWSTR msg) {
-	LogError(PWTS(msg));
+	error(PWTS(msg));
+}
+
+DllExport void LogCriticalW(LPCWSTR msg) {
+	critical(PWTS(msg));
 }
 
 #pragma endregion
@@ -221,18 +241,18 @@ DllExport void LogErrorW(LPCWSTR msg) {
 // Internal function, called when the game loads a save
 static void PtrMapProcessReload() {
 	LOCK(PtrMapMutex);
-	erase_if(PtrMap, [](pair<string, uint64_t> ptrPair) {
+	erase_if(PtrMap, [](pair<string, LPVOID> ptrPair) {
 		return ptrPair.first.rfind("SHVDN.", 0) == 0;
 		});
 }
 
 
-DllExport uint64_t GetPtr(LPCSTR key) {
+DllExport LPVOID GetPtr(LPCSTR key) {
 	LOCK(PtrMapMutex);
 	auto i_ptr = PtrMap.find(string(key));
 	return i_ptr == PtrMap.end() ? NULL : i_ptr->second;
 }
-DllExport void SetPtr(LPCSTR key, uint64_t value) {
+DllExport void SetPtr(LPCSTR key, LPVOID value) {
 	LOCK(PtrMapMutex);
 	PtrMap[key] = value;
 }

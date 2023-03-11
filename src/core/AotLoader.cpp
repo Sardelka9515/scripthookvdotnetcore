@@ -23,23 +23,29 @@ FLSALLOC FlsAllocOrg = NULL;
 ADDVECEXHAND AddVecExHandOrg = NULL;
 #pragma endregion
 #pragma region Static
-
+vector<LPVOID> Hooks;
+void CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID* ppTrampoline) {
+	MH_Check(MH_CreateHook(pTarget, pDetour, ppTrampoline));
+	MH_Check(MH_EnableHook(pTarget));
+	Hooks.push_back(pTarget);
+}
 void AotLoader::Shutdown() {
-	// MH_Check(MH_DisableHook(&FlsAlloc));
-	MH_Check(MH_DisableHook(&GetModuleHandleExW));
-	MH_Check(MH_RemoveHook(&GetModuleHandleExW));
-	MH_Check(MH_RemoveHook(&FlsAlloc));
+	if (Hooks.size() == 0)
+		return;
+
+	for (const auto& pTarget : Hooks) {
+		MH_Check(MH_DisableHook(pTarget));
+		MH_Check(MH_RemoveHook(pTarget));
+	}
+	Hooks.clear();
 	MH_Check(MH_Uninitialize());
 }
 
 void AotLoader::Init() {
 	MH_Check(MH_Initialize());
-	MH_Check(MH_CreateHook(&GetModuleHandleExW, &GetModuleHandleExWHook, (LPVOID*)&GetModuleHandleExWOrg));
-	MH_Check(MH_CreateHook(&FlsAlloc, &FlsAllocHook, (LPVOID*)&FlsAllocOrg));
-	MH_Check(MH_CreateHook(&AddVectoredExceptionHandler, &AddVectoredExceptionHandlerHook, (LPVOID*)&AddVecExHandOrg));
-	MH_Check(MH_EnableHook(&GetModuleHandleExW));
-	MH_Check(MH_EnableHook(&FlsAlloc));
-	MH_Check(MH_EnableHook(&AddVectoredExceptionHandler));
+	CreateHook(&GetModuleHandleExW, &GetModuleHandleExWHook, (LPVOID*)&GetModuleHandleExWOrg);
+	CreateHook(&FlsAlloc, &FlsAllocHook, (LPVOID*)&FlsAllocOrg);
+	CreateHook(&AddVectoredExceptionHandler, &AddVectoredExceptionHandlerHook, (LPVOID*)&AddVecExHandOrg);
 }
 void AotLoader::FreeFls() {
 	auto predicate = [this](pair<DWORD, PFLS_CALLBACK_FUNCTION> fls) {

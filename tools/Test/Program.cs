@@ -46,7 +46,6 @@ namespace Test
                 dic.Free();
                 dic2.Clear();
             }
-            return;
         }
     }
 }

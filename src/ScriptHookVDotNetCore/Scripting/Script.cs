@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -8,20 +10,27 @@ using GTA.UI;
 namespace GTA;
 class NullTask : IScriptTask
 {
+    public static NullTask Null = null;
     public void Run() { }
 }
 public unsafe abstract class Script
 {
     private bool _aborted = false;
-
-    /// <summary>
-    /// Unmanaged thread id of the script thread
-    /// </summary>
-    internal uint ThreadId;
+    internal Thread ScriptThread;
     internal SemaphoreSlim WaitEvent = null;
     internal SemaphoreSlim ContinueEvent = null;
     internal ulong Continue = 0;
     internal ConcurrentQueue<Tuple<bool, KeyEventArgs>> KeyboardEvents = new();
+    internal LPVOID ScriptTlsOrg;
+
+    /// <summary>
+    /// Get the error that caused this script to be aborted, or <see langword="null"/> if none
+    /// </summary>
+    public Exception Error { get; private set; }
+
+    public readonly ScriptAttributes Attributes;
+
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
     public Type Name { get; private set; }
 
     /// <summary>
@@ -62,12 +71,28 @@ public unsafe abstract class Script
     /// <summary>
     /// Gets whether a dedicated thread is hosting the execution of this script.
     /// </summary>
-    public bool IsUsingThread => ThreadId != default;
+    public bool IsUsingThread => ScriptThread != null;
+
+    /// <summary>
+    /// Determine whether this script has been aborted due to an unhandled exception or manual termination
+    /// </summary>
+    [ReflectionEntry(Place = EntryPlace.ScriptAssemblies)]
+    public bool IsAborted => _aborted;
+
+    public readonly string FilePath;
 
     public Script()
     {
+#if NATIVEAOT
+        char* buf = stackalloc char[256];
+        GetModuleFileNameW(Core.CurrentModule, buf, 256);
+        Debug.Assert(Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER);
+        FilePath = Marshal.PtrToStringUni((IntPtr)buf);
+#else
+        FilePath = Core.ScriptAssemblies?.FirstOrDefault(x => x.Value == GetType().Assembly).Key;
+#endif
         Name = GetType();
-        _ = SHVDN.NativeMemory.ArmorOffset; // Initialize NativeMemory
+        Attributes = GetType().GetCustomAttribute<ScriptAttributes>() ?? new();
     }
 
     internal void DoTick()
@@ -95,13 +120,15 @@ public unsafe abstract class Script
             {
                 WaitEvent = new(0);
                 ContinueEvent = new(0);
-                CreateThread(default, 0, Marshal.GetFunctionPointerForDelegate(MainLoop), null, 0, out ThreadId);
+
+                ScriptThread = new Thread(new ThreadStart(MainLoop));
+                ScriptThread.Start();
             }
             else
             {
                 OnStart();
             }
-            Logger.Info($"Started script {Name}, thread:{ThreadId}.");
+            Logger.Info($"Started script {Name}, thread:{(ScriptThread == null ? "null" : ScriptThread.ManagedThreadId)}.");
         }
         catch (Exception ex)
         {
@@ -144,8 +171,7 @@ public unsafe abstract class Script
             throw new InvalidOperationException("Cannot yield execution when not running in script thread");
 
         script.ThrowIfAborted();
-        NullTask yieldTask = null;
-        Core.ExecuteTask(ref yieldTask);
+        Core.ExecuteTask(ref NullTask.Null);
     }
 
     /// <summary>
@@ -174,10 +200,11 @@ public unsafe abstract class Script
     /// <summary>
     /// Override this method only if you want to manually control the script execution flow, you're responsible for the yielding and exception handling yourself.
     /// </summary>
-    protected virtual int MainLoop(IntPtr lparam)
+    protected virtual void MainLoop()
     {
         try
         {
+            ScriptTlsOrg = Core.GetTls();
             ContinueEvent.Wait();
             OnStart();
             Yield(this);
@@ -197,7 +224,6 @@ public unsafe abstract class Script
         {
             HandleException(ex);
         }
-        return 0;
     }
 
     /// <summary>
@@ -206,12 +232,13 @@ public unsafe abstract class Script
     /// <param name="ex"></param>
     internal void HandleException(Exception ex)
     {
+        Error = ex;
         Logger.Error($"Script {Name} was terminated as an unhandled exception has been caught:\n" + ex.ToString());
         if (Core.GameTls == Core.GetTls())
         {
             Notification.Show($"~r~Unhandled exception~s~ in script \"~h~{Name}~h~\"!~n~~n~~r~" + ex.GetType().Name + "~s~ " + ex.StackTrace.Split('\n').FirstOrDefault().Trim());
         }
-        var supportUrl = GetAttribute(nameof(ScriptAttributes.SupportURL));
+        var supportUrl = Attributes.SupportURL;
         if (supportUrl != null)
         {
             Logger.Error($"Please check the following site for support on the issue: {supportUrl}");
@@ -220,14 +247,6 @@ public unsafe abstract class Script
         {
             Abort(new AbortedEventArgs() { Exception = ex, IsUnloading = false });
         }
-    }
-
-    public object GetAttribute(string name) => GetAttribute(typeof(ScriptAttributes), name);
-
-    public object GetAttribute(Type attrType, string name)
-    {
-        var attribute = Name.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == attrType);
-        return (attribute?.NamedArguments.FirstOrDefault(x => x.MemberName == name))?.TypedValue.Value;
     }
 
     public void Pause()
@@ -301,30 +320,26 @@ public unsafe abstract class Script
         catch (Exception ex)
         {
             Logger.Error($"Error during script abortion:\n {ex}");
+            Core.TryBreakToDebugger();
         }
         finally
         {
             Continue = ulong.MaxValue;
             _aborted = true;
-            if (IsUsingThread)
+            if (ScriptThread?.IsAlive == true)
             {
-                var hThread = OpenThread(0x00100000, FALSE, ThreadId);
-                if (hThread != default)
+                ContinueEvent.Release();
+
+                if (this == Core.ExecutingScript)
+                    WaitEvent.Release();
+
+                if (ScriptThread != Thread.CurrentThread && !ScriptThread.Join(5000))
                 {
-                    ContinueEvent.Release();
-                    if (WaitForSingleObject(hThread, 5000) != WAIT_OBJECT_0)
-                    {
-                        Logger.Error($"Failed to join script thread: {Name}, crash expected after module unload");
-                    }
-                    else
-                    {
-                        Logger.Debug($"Thread stopped: {Name}");
-                    }
-                    CloseHandle(hThread);
+                    Logger.Error($"Failed to join script thread: {Name}, instability is expected after module unload");
                 }
                 else
                 {
-                    Logger.Error("Failed to open script thread");
+                    Logger.Debug($"Thread stopped: {Name}");
                 }
             }
         }

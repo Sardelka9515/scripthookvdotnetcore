@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pch.h"
-
+#include "exports.h"
 // Provided by the AppHost NuGet package and installed as an SDK pack
 #include "nethost.h"
 
@@ -18,19 +18,16 @@ namespace
 {
 	// Globals to hold hostfxr exports
 	hostfxr_initialize_for_runtime_config_fn init_fptr;
+	hostfxr_set_runtime_property_value_fn set_prop_fptr;
 	hostfxr_get_runtime_delegate_fn get_delegate_fptr;
 	hostfxr_close_fn close_fptr;
-
 	// Forward declarations
 	bool load_hostfxr();
 	load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* assembly);
 }
 
-int StartNetHost()
+int CoreCLRInit(HMODULE asiModule)
 {
-
-	wstring root_path = filesystem::current_path().wstring() + L"\\";
-	debug(".NET root is {}", WTS(root_path));
 
 	//
 	// STEP 1: Load HostFxr and get exported hosting functions
@@ -45,7 +42,7 @@ int StartNetHost()
 	//
 	// STEP 2: Initialize and start the .NET Core runtime
 	//
-	const wstring config_path = root_path + L"DotNetLib.runtimeconfig.json";
+	const wstring config_path = BaseDirectory + L"\\ScriptHookVDotNetCore.runtimeconfig.json";
 	load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 	load_assembly_and_get_function_pointer = get_dotnet_load_assembly(config_path.c_str());
 	assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
@@ -53,80 +50,35 @@ int StartNetHost()
 	//
 	// STEP 3: Load managed assembly and get function pointer to a managed method
 	//
-	const wstring dotnetlib_path = root_path + L"DotNetLib.dll";
-	const char_t* dotnet_type = L"DotNetLib.Lib, DotNetLib";
-	const char_t* dotnet_type_method = L"Hello";
+	const wstring dotnetlib_path = BaseDirectory + L"\\ScriptHookVDotNetCore.dll";
+	const char_t* dotnet_type = L"SHVDN.Core, ScriptHookVDotNetCore";
+	const char_t* dotnet_type_method = L"CLR_EntryPoint";
 	// <SnippetLoadAndGet>
 	// Function pointer to managed delegate
-	component_entry_point_fn hello = nullptr;
+	component_entry_point_fn clrEntryFunc = nullptr;
 	int rc = load_assembly_and_get_function_pointer(
 		dotnetlib_path.c_str(),
 		dotnet_type,
 		dotnet_type_method,
 		nullptr /*delegate_type_name*/,
 		nullptr,
-		(void**)&hello);
+		(void**)&clrEntryFunc);
 	// </SnippetLoadAndGet>
-	assert(rc == 0 && hello != nullptr && "Failure: load_assembly_and_get_function_pointer()");
+	assert(rc == 0 && clrEntryFunc != nullptr && "Failure: load_assembly_and_get_function_pointer()");
 
 	//
 	// STEP 4: Run managed code
 	//
-	struct lib_args
-	{
-		const char_t* message;
-		int number;
-	};
-	for (int i = 0; i < 3; ++i)
-	{
-		// <SnippetCallManaged>
-		lib_args args
-		{
-			L"from host!",
-			i
-		};
+	clrEntryFunc(asiModule, sizeof(HMODULE));
 
-		hello(&args, sizeof(args));
-		// </SnippetCallManaged>
-	}
-
-#ifdef NET5_0
-	// Function pointer to managed delegate with non-default signature
-	typedef void (CORECLR_DELEGATE_CALLTYPE* custom_entry_point_fn)(lib_args args);
-	custom_entry_point_fn custom = nullptr;
-	rc = load_assembly_and_get_function_pointer(
-		dotnetlib_path.c_str(),
-		dotnet_type,
-		STR("CustomEntryPointUnmanaged") /*method_name*/,
-		UNMANAGEDCALLERSONLY_METHOD,
-		nullptr,
-		(void**)&custom);
-	assert(rc == 0 && custom != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-#else
-	// Function pointer to managed delegate with non-default signature
-	typedef void (CORECLR_DELEGATE_CALLTYPE* custom_entry_point_fn)(lib_args args);
-	custom_entry_point_fn custom = nullptr;
-	rc = load_assembly_and_get_function_pointer(
-		dotnetlib_path.c_str(),
-		dotnet_type,
-		L"CustomEntryPoint" /*method_name*/,
-		L"DotNetLib.Lib+CustomEntryPointDelegate, DotNetLib" /*delegate_type_name*/,
-		nullptr,
-		(void**)&custom);
-	assert(rc == 0 && custom != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-#endif
-
-	lib_args args
-	{
-		L"from host!",
-		-1
-	};
-	custom(args);
+	assert(CoreCLR_DoInit = (VoidFunc)GetPtr(KEY_CORECLR_INITFUNC));
+	assert(CoreCLR_DoTick = (VoidFunc)GetPtr(KEY_CORECLR_TICKFUNC));
+	assert(CoreCLR_DoKeyboard = (KeyboardFunc)GetPtr(KEY_CORECLR_KBHFUNC));
 
 	return EXIT_SUCCESS;
 }
 
-/********************************************************************************************
+/******************************************	**************************************************
  * Function used to load and activate .NET Core
  ********************************************************************************************/
 
@@ -163,10 +115,11 @@ namespace
 		// Load hostfxr and get desired exports
 		void* lib = load_library(buffer);
 		init_fptr = (hostfxr_initialize_for_runtime_config_fn)get_export(lib, "hostfxr_initialize_for_runtime_config");
+		set_prop_fptr = (hostfxr_set_runtime_property_value_fn)get_export(lib, "hostfxr_set_runtime_property_value");
 		get_delegate_fptr = (hostfxr_get_runtime_delegate_fn)get_export(lib, "hostfxr_get_runtime_delegate");
 		close_fptr = (hostfxr_close_fn)get_export(lib, "hostfxr_close");
 
-		return (init_fptr && get_delegate_fptr && close_fptr);
+		return (init_fptr && set_prop_fptr && get_delegate_fptr && close_fptr);
 	}
 	// </SnippetLoadHostFxr>
 
@@ -177,13 +130,24 @@ namespace
 		// Load .NET Core
 		void* load_assembly_and_get_function_pointer = nullptr;
 		hostfxr_handle cxt = nullptr;
-		int rc = init_fptr(config_path, nullptr, &cxt);
+
+		TCHAR szExePath[MAX_PATH];
+		GetModuleFileName(NULL, szExePath, MAX_PATH);
+		hostfxr_initialize_parameters params = { 0 };
+		params.size = sizeof(hostfxr_initialize_parameters);
+		params.host_path = szExePath;
+
+		int rc = init_fptr(config_path, &params, &cxt);
 		if (rc != 0 || cxt == nullptr)
 		{
 			std::cerr << "Init failed: " << std::hex << std::showbase << rc << std::endl;
 			close_fptr(cxt);
 			return nullptr;
 		}
+
+		// Set AppContext.BaseDirectory
+		rc = set_prop_fptr(cxt, L"APP_CONTEXT_BASE_DIRECTORY", BaseDirectory.c_str());
+		assert(rc == 0 && "set APP_CONTEXT_BASE_DIRECTORY failed");
 
 		// Get the load assembly function pointer
 		rc = get_delegate_fptr(

@@ -4,6 +4,7 @@
 #include "Pattern.h"
 #include "natives.h"
 #include "Scripts.h"
+#include "nativehost.h"
 
 static bool Initialized = false;
 
@@ -21,8 +22,6 @@ LPVOID DoJob(Job* pj) {
 	}
 	case J_UNLOAD_ALL:
 		return (LPVOID)UnloadAllModules();
-	case J_RELOAD:
-		return (LPVOID)(UnloadAllModules() && LoadModuleW(BASE_SCRIPT_NAME));
 	case J_CALLBACK:
 		return ((CallBackFunc)pj->Parameter)(pj->ParameterEx);
 	}
@@ -47,38 +46,28 @@ static void OnPresent(void* swapChain) {
 	}
 }
 
-static void KeyboardMessage(unsigned long keycode, bool keydown, bool ctrl, bool shift, bool alt) {
-	if (!keydown) {
-		if (keycode == UNLOAD_KEY) {
-			ScheduleUnloadAll();
-		}
-		if (keycode == RELOAD_KEY) {
-			ScheduleReload();
-		}
-	}
-}
-
 static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, BOOL isWithAlt, BOOL wasDownBefore, BOOL isUpNow)
 {
-	KeyboardMessage(
+	{
+		LOCK(ModulesMutex);
+		for (const auto pScript : Modules) {
+			if (pScript->KeyboardFunc) {
+				try {
+					pScript->KeyboardFunc(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
+				}
+				catch (exception ex) {
+					auto scriptName = pScript->ModulePath.substr(pScript->ModulePath.find_last_of(L"/\\") + 1);
+					error("KeyboardHandler[{0}]: {1}", WTS(scriptName), ex.what());
+				}
+			}
+		}
+	}
+	CoreCLR_DoKeyboard(
 		key,
 		!isUpNow,
 		(GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
 		(GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
 		isWithAlt != FALSE);
-
-	LOCK(ModulesMutex);
-	for (const auto pScript : Modules) {
-		if (pScript->KeyboardFunc) {
-			try {
-				pScript->KeyboardFunc(key, repeats, scanCode, isExtended, isWithAlt, wasDownBefore, isUpNow);
-			}
-			catch (exception ex) {
-				auto scriptName = pScript->ModulePath.substr(pScript->ModulePath.find_last_of(L"/\\") + 1);
-				error("KeyboardHandler[{0}]: {1}", WTS(scriptName), ex.what());
-			}
-		}
-	}
 }
 
 static void Init() {
@@ -86,15 +75,9 @@ static void Init() {
 	AotLoader::Init();
 	info("API hook created");
 	auto hInfo = FindResource(CurrentModule, MAKEINTRESOURCE(BASE_SCRIPT_RES), MAKEINTRESOURCE(BASE_SCRIPT_RES));
-	if (!hInfo) {
-		FATAL("Failed to find base script in current module");
-		return;
-	}
+	assert(hInfo);
 	auto hBS = LoadResource(CurrentModule, hInfo);
-	if (!hBS) {
-		FATAL("Failed to load base script resource");
-		return;
-	}
+	assert(hBS);
 
 	info("Loading base script module");
 	PtrBaseScript = LockResource(hBS);
@@ -109,24 +92,21 @@ static void Init() {
 		}
 		catch (exception ex) {
 			error(ex.what());
-			if (!fs::exists(BASE_SCRIPT_NAME))
-				FATAL(string("Failure writing base script: ") + string(ex.what()));
+			assert(fs::exists(BASE_SCRIPT_NAME));
 		}
 	}
 	else {
 		info("Symlink detected, base script will not be overwritten");
 	}
-
-#ifndef DEBUG
-	ScheduleLoad(BASE_SCRIPT_NAME);
-#endif
 	Initialized = true;
 	return;
 }
-PVOID ScriptFiber;
+bool Reloaded;
 void ScriptMain() {
-	ScriptFiber = GetCurrentFiber();
 	Init();
+reload:
+	Reloaded = false;
+	CoreCLR_DoInit();
 	while (true) {
 
 		// execute scheduled jobs
@@ -148,40 +128,56 @@ void ScriptMain() {
 		catch (exception ex) {
 			error(format("Failed to execute queued job: {}", ex.what()));
 		}
+		try {
 
-		// Tick fibers
-		Script::TickAll();
+			// Tick fibers
+			Script::TickAll();
 
-		// Tick modules
-		{
-			LOCK(ModulesMutex);
-			for (auto pM : Modules) {
-				if (pM->TickFunc != NULL) {
-					pM->TickFunc(GetCurrentFiber());
+			// Tick CoreCLR
+			CoreCLR_DoTick();
+
+			// Tick modules
+			{
+				LOCK(ModulesMutex);
+				for (auto pM : Modules) {
+					if (pM->TickFunc != NULL) {
+						pM->TickFunc(GetCurrentFiber());
+					}
 				}
 			}
 		}
-		scriptWait(0);
-			}
+		catch (exception ex) {
+			error("Tick error: {}", ex.what());
 		}
+		if (Reloaded)
+			goto reload;
+		scriptWait(0);
+	}
+}
 DWORD Background(LPVOID lParam) {
+
+	GetModuleFileName(CurrentModule, AsiPath, MAX_PATH);
+	assert(GetLastError() != ERROR_INSUFFICIENT_BUFFER);
+	SetEnvironmentVariable(L"SHVDNC_ASI_PATH", AsiPath);
+	auto pathString = wstring(AsiPath);
+	BaseDirectory = pathString.substr(0, pathString.rfind(L"\\"));
 
 	// Parse and expose config struct
 #ifndef DEBUG
 	ReloadCoreConfig();
 #endif // !DEBUG
-	SetPtr("Config", (uint64_t)&Config);
+	SetPtr(KEY_CONFIGPTR, &Config);
 
 	// Memory stuff
 	if (Config.SkipLegalScreen) {
 		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
 		if (p_legalNotice) {
 			memset(p_legalNotice, 0x90, 2);
-		}
+	}
 		else {
 			warn("Can't find pattern for legal notice");
 		}
-	}
+}
 
 
 	if (Config.AllocDebugConsole && !GetConsoleWindow()) {
@@ -219,6 +215,14 @@ DWORD Background(LPVOID lParam) {
 	set_default_logger(Logger);
 	flush_every(chrono::seconds(3));
 	info("Logging system initilized");
+
+	// Set up well-know properties
+	SetPtr(KEY_PTRRELOADED, &Reloaded);
+
+	info("Starting CoreCLR");
+	CoreCLRInit(CurrentModule);
+	info("CoreCLR startup complete");
+
 	return 0;
 }
 
@@ -227,10 +231,12 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	LPVOID lpReserved
 )
 {
-	CurrentModule = hModule;
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH: {
+		// Pin asi module
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)DllMain, &CurrentModule);
+		assert(CurrentModule == hModule);
 		CreateThread(NULL, NULL, &Background, NULL, NULL, NULL);
 
 		presentCallbackRegister(OnPresent);

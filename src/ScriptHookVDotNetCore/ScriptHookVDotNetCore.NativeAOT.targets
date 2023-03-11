@@ -1,0 +1,8 @@
+﻿<Project>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SolutionDir)' != '*Undefined*'">
+		<Exec Command="dotnet publish &quot;$(ProjectPath)&quot; -o &quot;$(OutDir)\native&quot;  -p:PublishAOT=true -r win-x64 " />
+	</Target>
+	<PropertyGroup>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	</PropertyGroup>
+</Project>

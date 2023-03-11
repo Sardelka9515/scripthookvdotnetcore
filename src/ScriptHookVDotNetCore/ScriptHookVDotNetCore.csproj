@@ -1,19 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+		<RootNamespace>SHVDN</RootNamespace>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<NoWarn>CS1591;CA2211</NoWarn>
-		<OutDir>$(SolutionDir)bin\obj</OutDir>
-		<OutputPath>$(SolutionDir)bin\obj</OutputPath>
+		<OutDir>$(SolutionDir)bin</OutDir>
 		<TargetFramework>net7.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<LangVersion>preview</LangVersion>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageOutputPath>$(SolutionDir)bin\obj</PackageOutputPath>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<Title>ScriptHookVDotNetCore</Title>
 		<RepositoryUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</RepositoryUrl>
 		<Copyright>Copyright © 2022 Sardelka9515</Copyright>
-		<Description>ScriptHookV for .NET Core using NativeAOT technology</Description>
+		<Description>ScriptHookV for .NET Core (CoreCLR)</Description>
 		<Authors>Sardelka</Authors>
 		<IncludeSymbols>True</IncludeSymbols>
 		<PackageProjectUrl>https://github.com/Sardelka9515/scripthookvdotnetcore</PackageProjectUrl>
@@ -24,7 +28,35 @@
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
-		<None Include="$(TargetName).targets" Pack="true" PackagePath="build" />
-		<None Include="$(SolutionDir)bin\obj\ScriptHookVDotNetCore.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+		<None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Reference Include="Microsoft.CodeAnalysis" PrivateAssets="All">
+		  <Private>false</Private>
+		  <HintPath>..\..\resources\Microsoft.CodeAnalysis.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="All">
+		  <Private>false</Private>
+		  <HintPath>..\..\resources\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="ScriptHookVDotNetCore.runtimeconfig.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 </Project>
