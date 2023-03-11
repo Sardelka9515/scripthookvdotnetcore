@@ -75,15 +75,9 @@ static void Init() {
 	AotLoader::Init();
 	info("API hook created");
 	auto hInfo = FindResource(CurrentModule, MAKEINTRESOURCE(BASE_SCRIPT_RES), MAKEINTRESOURCE(BASE_SCRIPT_RES));
-	if (!hInfo) {
-		FATAL("Failed to find base script in current module");
-		return;
-	}
+	assert(hInfo);
 	auto hBS = LoadResource(CurrentModule, hInfo);
-	if (!hBS) {
-		FATAL("Failed to load base script resource");
-		return;
-	}
+	assert(hBS);
 
 	info("Loading base script module");
 	PtrBaseScript = LockResource(hBS);
@@ -98,8 +92,7 @@ static void Init() {
 		}
 		catch (exception ex) {
 			error(ex.what());
-			if (!fs::exists(BASE_SCRIPT_NAME))
-				FATAL(string("Failure writing base script: ") + string(ex.what()));
+			assert(fs::exists(BASE_SCRIPT_NAME));
 		}
 	}
 	else {
@@ -180,11 +173,11 @@ DWORD Background(LPVOID lParam) {
 		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
 		if (p_legalNotice) {
 			memset(p_legalNotice, 0x90, 2);
-		}
+	}
 		else {
 			warn("Can't find pattern for legal notice");
 		}
-	}
+}
 
 
 	if (Config.AllocDebugConsole && !GetConsoleWindow()) {
