@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Text.RegularExpressions;
 
 [assembly: InternalsVisibleTo("ConsoleInput")]
 
@@ -41,10 +42,18 @@ static unsafe class ConsoleInput
     static MemoryStream CompileInput(string expression)
     {
         var references = _frameworkAssemblies
-            .Select(x => MetadataReference.CreateFromFile(x))
-            .Append(MetadataReference.CreateFromFile(typeof(Core).Assembly.Location));
+            .Append(typeof(Core).Assembly.Location)
+            .Select(x => MetadataReference.CreateFromFile(x));
 
-        var source = SourceText.From(string.Format(Template, expression, string.Join('\n', _commands.Select(x => x.Value.Code))));
+        var source = SourceText.From(string.Format(Template, expression
+            , string.Join('\n',
+            _commands.Values.Select(x =>
+            {
+                // Add commands to source only if used in expression
+                if (Regex.IsMatch(expression, @$"(^|\n|\W+){x.Name}\("))
+                    return x.Code;
+                return string.Empty;
+            }))));
         // Logger.Debug($"Source:\n" + source);
         var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp10);
         var parsedSyntaxTree = SyntaxFactory.ParseSyntaxTree(source, options);
@@ -60,7 +69,9 @@ static unsafe class ConsoleInput
         var peStream = new MemoryStream();
         var result = compilation.Emit(peStream);
 
-        foreach (var diagnostic in result.Diagnostics.Where(x => x.IsWarningAsError || x.Severity == DiagnosticSeverity.Error))
+        foreach (var diagnostic in result.Diagnostics
+            .Where(x =>
+            x.IsWarningAsError || x.Severity == DiagnosticSeverity.Error))
         {
             Logger.Error($"{diagnostic.Id}: {diagnostic.GetMessage()}");
         }
