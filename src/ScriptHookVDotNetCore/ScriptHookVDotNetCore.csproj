@@ -28,10 +28,17 @@
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+		<None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />
+	  <Reference Include="Microsoft.CodeAnalysis" PrivateAssets="All">
+		  <Private>false</Private>
+		  <HintPath>..\..\resources\Microsoft.CodeAnalysis.dll</HintPath>
+	  </Reference>
+	  <Reference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="All">
+		  <Private>false</Private>
+		  <HintPath>..\..\resources\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
