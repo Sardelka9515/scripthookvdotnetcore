@@ -90,13 +90,11 @@ public static unsafe partial class Core
 
             else if (key == Core.Config->UnloadKey)
             {
-                UnloadModule();
-                Core.CLR_UnloadAll();
+                Unload();
             }
             else if (key == Core.Config->ReloadKey)
             {
-                LoadModule();
-                Core.CLR_ReloadAll();
+                Load();
             }
         }
 
@@ -119,25 +117,12 @@ public static unsafe partial class Core
             SHVDN.Console.Clear();
         }
 
-        [ConsoleCommand("List all loaded modules")]
-        public static void ListModules()
-        {
-            HMODULE* modus = stackalloc HMODULE[256];
-            var cModu = Core.ListModules(modus, 256);
-            SHVDN.Console.PrintInfo("List of loaded modules:");
-            char* path = stackalloc char[256];
-            for (int i = 0; i < cModu; i++)
-            {
-                var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
-                SHVDN.Console.PrintInfo($"    {String.Format("0x{0:X}", modus[i])} : {(fSucess ? Path.GetFileName(new string(path)) : "error")}");
-            }
-        }
-
-        [ConsoleCommand("Get object count of specified type, possible types are: ped,vehicle,prop,projectile")]
-        public static void GetObjectCount(string type)
+        [ConsoleCommand("Get object count of specified type: all,ped,vehicle,prop,projectile")]
+        public static void GetObjectCount(string type = "all")
         {
             var count = type switch
             {
+                "all" => NativeMemory.GetObjectCount(),
                 "ped" => World.PedCount,
                 "vehicle" => World.VehicleCount,
                 "prop" => World.PropCount,
@@ -145,73 +130,6 @@ public static unsafe partial class Core
                 _ => throw new ArgumentException($"Type not found: {type}"),
             };
             SHVDN.Console.PrintInfo(count.ToString());
-        }
-
-        [ConsoleCommand("Request a module to be loaded, or all modules in CoreScripts folder if ~b~path~s~ is null")]
-        public static void LoadModule(string path = null)
-        {
-            if (path == null)
-            {
-                UnloadModule();
-                Directory.CreateDirectory("CoreScripts");
-                foreach (var script in Directory.GetFiles("CoreScripts", "*.dll").Where(x => !Core.IsManagedAssembly(x)))
-                {
-                    fixed (char* ptr = script)
-                    {
-                        Core.ScheduleLoad(ptr);
-                        SHVDN.Console.PrintInfo($"Module {Path.GetFileName(script)} scheduled for loading");
-                    }
-                }
-            }
-            else
-            {
-                path = File.Exists(path) ? path : Path.Combine("CoreScripts", path);
-
-                if (!File.Exists(path))
-                    throw new FileNotFoundException("Module not found", path);
-
-                fixed (char* p = path)
-                {
-                    Core.ScheduleLoad(p);
-                    SHVDN.Console.PrintInfo($"Module {path} scheduled for loading");
-                }
-            }
-        }
-
-        [ConsoleCommand("Request a module to be unloaded, or all modules if ~b~filename~s~ is null")]
-        public static void UnloadModule(string filename = null)
-        {
-            HMODULE* modus = stackalloc HMODULE[256];
-            var cModu = Core.ListModules(modus, 256);
-            char* path = stackalloc char[256];
-
-            if (filename == null)
-            {
-                for (int i = 0; i < cModu; i++)
-                {
-                    var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
-                    var name = Path.GetFileName(new string(path));
-                    if (fSucess && name.ToLower() != BASE_SCRIPT_NAME.ToLower())
-                    {
-                        Core.ScheduleUnload(path);
-                        SHVDN.Console.PrintInfo($"Module {name} scheduled for unloading");
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < cModu; i++)
-                {
-                    var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
-                    if (fSucess && Path.GetFileName(new string(path)).ToLower() == filename.ToLower())
-                    {
-                        Core.ScheduleUnload(path);
-                        SHVDN.Console.PrintInfo($"Module {filename} scheduled for unloading");
-                        return;
-                    }
-                }
-                throw new FileNotFoundException($"Specified module was not found: " + filename);
-            }
         }
 
         [ConsoleCommand("Reload the ini configuration file")]
@@ -254,27 +172,61 @@ SkipLegalScreen=true";
             Core.ReloadCoreConfig();
         }
 
-        [ConsoleCommand("Load all scripts in the managed assmblies inside specified directory")]
-        public static void LoadScripts(string directory = null)
+        [ConsoleCommand("Load all scripts from specified path, be it managed script directory ot NativeAOT module")]
+        public static void Load(string path = null)
         {
-            if (directory == null)
+            if (path == null)
+            {
+                LoadModule(path);
                 Core.CLR_ReloadAll();
+            }
+            else if (Directory.Exists(path))
+            {
+                Core.CLR_Load(Path.GetFullPath(path));
+            }
             else
-                Core.CLR_Load(directory);
+            {
+                LoadModule(path);
+            }
         }
 
-        [ConsoleCommand("Unload all script assemblies inside the specified directory")]
-        public static void UnloadScripts(string directory = null)
+        [ConsoleCommand("Unoad all scripts from specified path, be it managed script directory ot NativeAOT module")]
+        public static void Unload(string path = null)
         {
-            if (directory == null)
+            if (path == null)
+            {
+                UnloadModule(path);
                 Core.CLR_UnloadAll();
+            }
+            else if (Directory.Exists(path))
+            {
+                Core.CLR_Unload(Path.GetFullPath(path));
+            }
             else
-                Core.CLR_Unload(directory);
+            {
+                UnloadModule(path);
+            }
         }
 
-        [ConsoleCommand("List all managed scripts")]
+        [ConsoleCommand("List all scripts")]
         public static void ListScripts()
         {
+            SHVDN.Console.PrintInfo("~c~List of loaded scripts");
+            HMODULE* modus = stackalloc HMODULE[256];
+            var cModu = Core.ListModules(modus, 256);
+            if (cModu > 0)
+            {
+                SHVDN.Console.PrintInfo("~h~[NativeAOT]");
+                char* path = stackalloc char[256];
+                for (int i = 0; i < cModu; i++)
+                {
+                    var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
+                    SHVDN.Console.PrintInfo($"  {String.Format("0x{0:X}", modus[i])} : {(fSucess ? Path.GetFileName(new string(path)) : "error")}");
+                }
+                SHVDN.Console.PrintInfo(" ");
+            }
+
+            SHVDN.Console.PrintInfo("~h~[CoreCLR]");
             foreach (var dir in Core.ListScriptDirectories())
             {
                 try
@@ -283,18 +235,18 @@ SkipLegalScreen=true";
                     if (!scripts.Any())
                         continue;
 
-                    Console.PrintInfo($"~c~ Scripts in {dir}");
+                    Console.PrintInfo(dir);
                     string assemblyName = null;
                     foreach (var script in scripts)
                     {
                         var name = script.GetType().Assembly.GetName().Name;
                         if (name != assemblyName)
                         {
-                            Console.PrintInfo($"[{name}]");
+                            Console.PrintInfo($"    ~c~[{name}]");
                             assemblyName = name;
                         }
                         bool running = !script.IsAborted;
-                        Console.PrintInfo($"    ~h~{script.Name} {(running ? "~g~Running~w~" : "~o~Aborted~w~")}");
+                        Console.PrintInfo($"        ~h~{script.Name} {(running ? "~g~Running~w~" : "~o~Aborted~w~")}");
                     }
                 }
                 catch (Exception ex)
@@ -302,9 +254,75 @@ SkipLegalScreen=true";
                     Console.PrintError(ex.ToString());
                 }
             }
+            SHVDN.Console.PrintInfo(" ");
         }
 
         #endregion
 
+
+        private static void LoadModule(string path = null)
+        {
+            if (path == null)
+            {
+                UnloadModule();
+                Directory.CreateDirectory("CoreScripts");
+                foreach (var script in Directory.GetFiles("CoreScripts", "*.dll").Where(x => !Core.IsManagedAssembly(x)))
+                {
+                    fixed (char* ptr = script)
+                    {
+                        Core.ScheduleLoad(ptr);
+                        SHVDN.Console.PrintInfo($"Module {Path.GetFileName(script)} scheduled for loading");
+                    }
+                }
+            }
+            else
+            {
+                path = File.Exists(path) ? path : Path.Combine("CoreScripts", path);
+
+                if (!File.Exists(path))
+                    throw new FileNotFoundException("Module not found", path);
+
+                fixed (char* p = path)
+                {
+                    Core.ScheduleLoad(p);
+                    SHVDN.Console.PrintInfo($"Module {path} scheduled for loading");
+                }
+            }
+        }
+
+        private static void UnloadModule(string filename = null)
+        {
+            HMODULE* modus = stackalloc HMODULE[256];
+            var cModu = Core.ListModules(modus, 256);
+            char* path = stackalloc char[256];
+
+            if (filename == null)
+            {
+                for (int i = 0; i < cModu; i++)
+                {
+                    var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
+                    var name = Path.GetFileName(new string(path));
+                    if (fSucess && name.ToLower() != BASE_SCRIPT_NAME.ToLower())
+                    {
+                        Core.ScheduleUnload(path);
+                        SHVDN.Console.PrintInfo($"Module {name} scheduled for unloading");
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < cModu; i++)
+                {
+                    var fSucess = GetModuleFileNameW(modus[i], path, 256) != 0;
+                    if (fSucess && Path.GetFileName(new string(path)).ToLower() == filename.ToLower())
+                    {
+                        Core.ScheduleUnload(path);
+                        SHVDN.Console.PrintInfo($"Module {filename} scheduled for unloading");
+                        return;
+                    }
+                }
+                throw new FileNotFoundException($"Specified module was not found: " + filename);
+            }
+        }
     }
 }

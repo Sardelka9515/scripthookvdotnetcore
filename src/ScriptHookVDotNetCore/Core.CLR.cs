@@ -54,10 +54,7 @@ namespace SHVDN
                 GTA.Console.RegisterCommands(typeof(BaseScript));
                 GTA.Console.RegisterCommands(typeof(BaseScript), _baseScript);
             }
-
-            // Reload NativeAot modules and managed scripts
-            BaseScript.LoadModule();
-            CLR_ReloadAll();
+            BaseScript.Load();
         }
 
         [UnmanagedCallersOnly]
