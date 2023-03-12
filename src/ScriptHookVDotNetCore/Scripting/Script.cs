@@ -86,7 +86,7 @@ public unsafe abstract class Script
 #if NATIVEAOT
         char* buf = stackalloc char[256];
         GetModuleFileNameW(Core.CurrentModule, buf, 256);
-        Debug.Assert(Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER);
+        Assert(Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER);
         FilePath = Marshal.PtrToStringUni((IntPtr)buf);
 #else
         FilePath = Core.ScriptAssemblies?.FirstOrDefault(x => x.Value == GetType().Assembly).Key;

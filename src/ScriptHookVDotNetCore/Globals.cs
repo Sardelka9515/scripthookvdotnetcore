@@ -15,6 +15,8 @@ global using static SHVDN.Globals;
 global using static GTA.Native.Function;
 global using static SHVDN.Marshaller;
 global using NativeVector3 = GTA.Math.Vector3;
+using System.Diagnostics;
+using GTA.NaturalMotion;
 
 namespace SHVDN;
 
@@ -52,4 +54,38 @@ public class Globals
     public const DWORD INFINITE = 0xFFFFFFFF;
 
     public const DWORD ERROR_INSUFFICIENT_BUFFER = 122;
+
+    /// <summary>
+    /// Assert a condition, both in Debug and Release build
+    /// </summary>
+    /// <param name="condition"></param>
+    /// <param name="msg"></param>
+    public static unsafe void Assert(bool condition, string msg = null)
+    {
+        if (!condition)
+        {
+            if (Debugger.IsAttached)
+            {
+                Debugger.Break();
+            }
+            else
+            {
+                var result = MessageBoxA(default, $"Assertion failed: {(msg ?? "Unspecified")}, \n press retry to break to debugger", "Error", 0x00000002);
+                switch (result)
+                {
+                    case 3:
+                        Environment.Exit(-1);
+                        break;
+                    case 4:
+                        if (Debugger.IsAttached)
+                            Debugger.Break();
+                        else
+                            Environment.Exit(-1);
+                        break;
+                    case 5:
+                        break;
+                }
+            }
+        }
+    }
 }

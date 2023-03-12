@@ -24,7 +24,7 @@ namespace SHVDN
         // Function that gets called from main thread by the c++ native host during startup
         static int CLR_EntryPoint(IntPtr asiModule, int cbArg)
         {
-            Debug.Assert(cbArg == sizeof(HMODULE));
+            Assert(cbArg == sizeof(HMODULE));
             DoImport(asiModule);
 
             IntPtr funcPtr;
@@ -77,25 +77,33 @@ namespace SHVDN
         [UnmanagedCallersOnly]
         static void CLR_DoTick()
         {
-            while (_taskQueue.TryDequeue(out var task))
+            try
             {
-                try
+
+                while (_taskQueue.TryDequeue(out var task))
                 {
-                    task();
+                    try
+                    {
+                        task();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error("Error executing queued task: " + ex.ToString());
+                    }
                 }
-                catch (Exception ex)
+
+                DoTick(default);
+                lock (_loaders)
                 {
-                    Logger.Error("Error executing queued task: " + ex.ToString());
+                    foreach (var loader in _loaders)
+                    {
+                        loader.Value.DoTick(default);
+                    }
                 }
             }
-
-            DoTick(default);
-            lock (_loaders)
+            catch (Exception ex)
             {
-                foreach (var loader in _loaders)
-                {
-                    loader.Value.DoTick(default);
-                }
+                Assert(false, ex.ToString());
             }
         }
         internal static void CLR_Load(string dir)
@@ -174,7 +182,7 @@ namespace SHVDN
                     Logger.Error(ex.ToString());
                 }
             }
-            Debug.Assert(CurrentDirectory == null);
+            Assert(CurrentDirectory == null);
         }
 
         // These methods can be invoke using reflection API to control script load/unload
@@ -236,9 +244,9 @@ namespace SHVDN
 
         static void FindAndRegisterAllScripts()
         {
-            Debug.Assert(CurrentDirectory != null);
-            Debug.Assert(ScriptAssemblies != null);
-            Debug.Assert(MainAssembly != null);
+            Assert(CurrentDirectory != null);
+            Assert(ScriptAssemblies != null);
+            Assert(MainAssembly != null);
 
             foreach (var asm in ScriptAssemblies.Values)
             {

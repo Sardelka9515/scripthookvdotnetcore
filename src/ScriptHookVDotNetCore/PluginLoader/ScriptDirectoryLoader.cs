@@ -30,16 +30,16 @@ namespace SHVDN.Loader
             CoreType = ApiAssembly.GetType(typeof(Core).FullName);
 
             var initMethod = getMethod(nameof(Core.OnInit));
-            Debug.Assert(initMethod != null);
+            Assert(initMethod != null);
 
             var unloadMethod = getMethod(nameof(Core.OnUnload));
-            Debug.Assert(unloadMethod != null);
+            Assert(unloadMethod != null);
 
             var tickMethod = getMethod(nameof(Core.DoTick));
-            Debug.Assert(tickMethod != null);
+            Assert(tickMethod != null);
 
             var keyEventMethod = getMethod(nameof(Core.DoKeyEvent));
-            Debug.Assert(keyEventMethod != null);
+            Assert(keyEventMethod != null);
 
             // Caching with delegates
             DoInit = (Action<IntPtr>)Delegate.CreateDelegate(typeof(Action<IntPtr>), initMethod);
@@ -71,7 +71,7 @@ namespace SHVDN.Loader
             void setProp(string name, object value)
             {
                 var prop = CoreType.GetProperty(name, flags);
-                Debug.Assert(prop != null, $"Property {name} not found");
+                Assert(prop != null, $"Property {name} not found");
                 prop.SetValue(null, value);
             }
             MethodInfo getMethod(string name)

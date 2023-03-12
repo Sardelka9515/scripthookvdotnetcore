@@ -161,11 +161,8 @@ DWORD Background(LPVOID lParam) {
 	SetEnvironmentVariable(L"SHVDNC_ASI_PATH", AsiPath);
 	auto pathString = wstring(AsiPath);
 	BaseDirectory = pathString.substr(0, pathString.rfind(L"\\"));
-
-	// Parse and expose config struct
-#ifndef DEBUG
 	ReloadCoreConfig();
-#endif // !DEBUG
+
 	SetPtr(KEY_CONFIGPTR, &Config);
 
 	// Memory stuff
@@ -173,11 +170,11 @@ DWORD Background(LPVOID lParam) {
 		auto p_legalNotice = Pattern::Scan("72 1F E8 ? ? ? ? 8B 0D");
 		if (p_legalNotice) {
 			memset(p_legalNotice, 0x90, 2);
-	}
+		}
 		else {
 			warn("Can't find pattern for legal notice");
 		}
-}
+	}
 
 
 	if (Config.AllocDebugConsole && !GetConsoleWindow()) {

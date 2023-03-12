@@ -26,6 +26,7 @@
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
 		<DebugType>embedded</DebugType>
+		<Optimize>false</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="ScriptHookVDotNetCore.NativeAOT.targets" />

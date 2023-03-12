@@ -140,7 +140,6 @@ public static unsafe partial class Core
 UnloadKey=End
 ReloadKey=Home
 MaxUnloadRetries=256
-ConsoleKey=F6
 AllocDebugConsole=false
 SkipLegalScreen=true";
             if (!File.Exists(CONFIG_PATH)) File.WriteAllText(CONFIG_PATH, Default);
