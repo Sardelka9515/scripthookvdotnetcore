@@ -70,7 +70,9 @@ public class Globals
             }
             else
             {
-                var result = MessageBoxA(default, $"Assertion failed: {(msg ?? "Unspecified")}, \n press retry to break to debugger", "Error", 0x00000002);
+                var result = MessageBoxA(default, $"Assertion failed: {(msg ?? "Unspecified")}," +
+                    $"\n Stack trace: {Environment.StackTrace}" +
+                    $"\n press retry to break to debugger", "Error", 0x00000002);
                 switch (result)
                 {
                     case 3:

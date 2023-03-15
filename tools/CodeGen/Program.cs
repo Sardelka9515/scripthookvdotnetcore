@@ -7,7 +7,8 @@ namespace CodeGen;
 internal static class Program
 {
     public static GenOptions Options = GenOptions.All;
-    public static readonly string Destination = Path.Combine("src", "ScriptHookVDotNetCore", "Scripting","Generated");
+    public static readonly string Destination = Path.Combine("src", "ScriptHookVDotNetCore", "Scripting", "Generated");
+    const string NativeDataPath = "NativeData.json";
     private static void Main(string[] args)
     {
 
@@ -24,12 +25,21 @@ internal static class Program
 
         Console.WriteLine("Generating with configuration: " + Options);
 
-        Console.WriteLine("Downloading natives...");
         string nativeData;
-        using (var wc = new HttpClient())
+        if (!File.Exists(NativeDataPath))
         {
-            nativeData =
-                wc.GetStringAsync("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json").GetAwaiter().GetResult();
+
+            Console.WriteLine("Downloading natives...");
+            using (var wc = new HttpClient())
+            {
+                nativeData =
+                    wc.GetStringAsync("https://raw.githubusercontent.com/alloc8or/gta5-nativedb-data/master/natives.json").GetAwaiter().GetResult();
+                File.WriteAllText(NativeDataPath, nativeData);
+            }
+        }
+        else
+        {
+            nativeData = File.ReadAllText(NativeDataPath);
         }
 
 
