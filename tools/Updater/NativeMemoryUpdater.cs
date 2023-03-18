@@ -23,7 +23,6 @@ namespace Updater
         static Dictionary<string, string> Fixes = new()
         {
             {"public static unsafe class NativeMemory","public static unsafe partial class NativeMemory" },
-            { "unmanaged[Stdcall]","unmanaged[SuppressGCTransition]"},
             {findPatternCodetoReplace,"" }
         };
 

@@ -126,33 +126,33 @@ namespace SHVDN
 
 			// Get relative address and add it to the instruction address.
 			address = FindPattern("\x74\x21\x48\x8B\x48\x20\x48\x85\xC9\x74\x18\x48\x8B\xD6\xE8", "xxxxxxxxxxxxxxx") - 10;
-			GetPtfxAddressFunc = (delegate* unmanaged[SuppressGCTransition]<int, ulong>)(
+			GetPtfxAddressFunc = (delegate* unmanaged[Stdcall]<int, ulong>)(
 				new IntPtr(*(int*)(address) + address + 4));
 
 			address = FindPattern("\x85\xED\x74\x0F\x8B\xCD\xE8\x00\x00\x00\x00\x48\x8B\xF8\x48\x85\xC0\x74\x2E", "xxxxxxx????xxxxxxxx");
-			GetScriptEntity = (delegate* unmanaged[SuppressGCTransition]<int, ulong>)(
+			GetScriptEntity = (delegate* unmanaged[Stdcall]<int, ulong>)(
 				new IntPtr(*(int*)(address + 7) + address + 11));
 
 			address = FindPattern("\xB2\x01\xE8\x00\x00\x00\x00\x48\x85\xC0\x74\x1C\x8A\x88", "xxx????xxxxxxx");
-			GetPlayerAddressFunc = (delegate* unmanaged[SuppressGCTransition]<int, ulong>)(
+			GetPlayerAddressFunc = (delegate* unmanaged[Stdcall]<int, ulong>)(
 				new IntPtr(*(int*)(address + 3) + address + 7));
 
 			address = FindPattern("\x48\xF7\xF9\x49\x8B\x48\x08\x48\x63\xD0\xC1\xE0\x08\x0F\xB6\x1C\x11\x03\xD8", "xxxxxxxxxxxxxxxxxxx");
-			CreateGuid = (delegate* unmanaged[SuppressGCTransition]<ulong, int>)(
+			CreateGuid = (delegate* unmanaged[Stdcall]<ulong, int>)(
 				new IntPtr(address - 0x68));
 
 			address = FindPattern("\x48\x8B\xDA\xE8\x00\x00\x00\x00\xF3\x0F\x10\x44\x24", "xxxx????xxxxx");
-			EntityPosFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, float*, ulong>)(
+			EntityPosFunc = (delegate* unmanaged[Stdcall]<ulong, float*, ulong>)(
 				new IntPtr((address - 6)));
 
 			// Find handling data functions
 			address = FindPattern("\x0F\x84\x00\x00\x00\x00\x8B\x8B\x00\x00\x00\x00\xE8\x00\x00\x00\x00\xBA\x09\x00\x00\x00", "xx????xx????x????xxxxx");
-			GetHandlingDataByIndex = (delegate* unmanaged[SuppressGCTransition]<int, ulong>)(
+			GetHandlingDataByIndex = (delegate* unmanaged[Stdcall]<int, ulong>)(
 				new IntPtr(*(int*)(address + 13) + address + 17));
 			handlingIndexOffsetInModelInfo = *(int*)(address + 8);
 
 			address = FindPattern("\x75\x5A\xB2\x01\x48\x8B\xCB\xE8\x00\x00\x00\x00\x41\x8B\xF5\x66\x44\x3B\xAB", "xxxxxxxx????xxxxxxx");
-			GetHandlingDataByHash = (delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong>)(
+			GetHandlingDataByHash = (delegate* unmanaged[Stdcall]<IntPtr, ulong>)(
 				new IntPtr(*(int*)(address - 7) + address - 3));
 
 			// Find entity pools and interior proxy pool
@@ -190,28 +190,28 @@ namespace SHVDN
 
 			// Find euphoria functions
 			address = FindPattern("\x40\x53\x48\x83\xEC\x20\x83\x61\x0C\x00\x44\x89\x41\x08\x49\x63\xC0", "xxxxxxxxxxxxxxxxx");
-			InitMessageMemoryFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, ulong, int, ulong>)(new IntPtr(address));
+			InitMessageMemoryFunc = (delegate* unmanaged[Stdcall]<ulong, ulong, int, ulong>)(new IntPtr(address));
 
 			address = FindPattern("\x41\x83\xFA\xFF\x74\x4A\x48\x85\xD2\x74\x19", "xxxxxxxxxxx") - 0xE;
-			SendNmMessageToPedFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void>)(new IntPtr(address));
+			SendNmMessageToPedFunc = (delegate* unmanaged[Stdcall]<ulong, IntPtr, ulong, void>)(new IntPtr(address));
 
 			address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8B\xF8", "xxxx?xxxxxxxxxxxxxxx");
-			SetNmParameterInt = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, int, byte>)(new IntPtr(address));
+			SetNmParameterInt = (delegate* unmanaged[Stdcall]<ulong, IntPtr, int, byte>)(new IntPtr(address));
 
 			address = FindPattern("\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x41\x8A\xF8", "xxxx?xxxxxxxxxxxxxxx");
-			SetNmParameterBool = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, bool, byte>)(new IntPtr(address));
+			SetNmParameterBool = (delegate* unmanaged[Stdcall]<ulong, IntPtr, bool, byte>)(new IntPtr(address));
 
 			address = FindPattern("\x40\x53\x48\x83\xEC\x30\x48\x8B\xD9\x48\x63\x49\x0C", "xxxxxxxxxxxxx");
-			SetNmParameterFloat = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, byte>)(new IntPtr(address));
+			SetNmParameterFloat = (delegate* unmanaged[Stdcall]<ulong, IntPtr, float, byte>)(new IntPtr(address));
 
 			address = FindPattern("\x57\x48\x83\xEC\x20\x48\x8B\xD9\x48\x63\x49\x0C\x49\x8B\xE8", "xxxxxxxxxxxxxxx") - 15;
-			SetNmParameterString = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, IntPtr, byte>)(new IntPtr(address));
+			SetNmParameterString = (delegate* unmanaged[Stdcall]<ulong, IntPtr, IntPtr, byte>)(new IntPtr(address));
 
 			address = FindPattern("\x40\x53\x48\x83\xEC\x40\x48\x8B\xD9\x48\x63\x49\x0C", "xxxxxxxxxxxxx");
-			SetNmParameterVector = (delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, float, float, byte>)(new IntPtr(address));
+			SetNmParameterVector = (delegate* unmanaged[Stdcall]<ulong, IntPtr, float, float, float, byte>)(new IntPtr(address));
 
 			address = FindPattern("\x83\x79\x10\xFF\x7E\x1D\x48\x63\x41\x10", "xxxxxxxxxx");
-			GetActiveTaskFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, CTask*>)(new IntPtr(address));
+			GetActiveTaskFunc = (delegate* unmanaged[Stdcall]<ulong, CTask*>)(new IntPtr(address));
 
 			address = FindPattern("\x75\xEF\x48\x8B\x5C\x24\x30\xB8\x00\x00\x00\x00", "xxxxxxxx????");
 			if (address != null)
@@ -243,12 +243,12 @@ namespace SHVDN
 			{
 				var doesTextLabelExistFuncAddr = (byte*)(*(int*)(address + 17) + address + 21);
 				var getLabelTextByHashFuncAddr = (long)(*(int*)(doesTextLabelExistFuncAddr + 28) + doesTextLabelExistFuncAddr + 32);
-				GetLabelTextByHashFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int, ulong>)(new IntPtr(getLabelTextByHashFuncAddr));
+				GetLabelTextByHashFunc = (delegate* unmanaged[Stdcall]<ulong, int, ulong>)(new IntPtr(getLabelTextByHashFuncAddr));
 			}
 
 			address = FindPattern("\x8A\x4C\x24\x60\x8B\x50\x10\x44\x8A\xCE", "xxxxxxxxxx");
 			CheckpointPoolAddress = (ulong*)(*(int*)(address + 17) + address + 21);
-			GetCGameScriptHandlerAddressFunc = (delegate* unmanaged[SuppressGCTransition]<ulong>)(new IntPtr(*(int*)(address - 19) + address - 15));
+			GetCGameScriptHandlerAddressFunc = (delegate* unmanaged[Stdcall]<ulong>)(new IntPtr(*(int*)(address - 19) + address - 15));
 
 			address = FindPattern("\x4C\x8D\x05\x00\x00\x00\x00\x0F\xB7\xC1", "xxx????xxx");
 			RadarBlipPoolAddress = (ulong*)(*(int*)(address + 3) + address + 7);
@@ -262,7 +262,7 @@ namespace SHVDN
 			CenterRadarBlipHandleAddress = (int*)(*(int*)(address + 10) + address + 14);
 
 			address = FindPattern("\x33\xDB\xE8\x00\x00\x00\x00\x48\x85\xC0\x74\x07\x48\x8B\x40\x20\x8B\x58\x18", "xxx????xxxxxxxxxxxx");
-			GetLocalPlayerPedAddressFunc = (delegate* unmanaged[SuppressGCTransition]<ulong>)(new IntPtr(*(int*)(address + 3) + address + 7));
+			GetLocalPlayerPedAddressFunc = (delegate* unmanaged[Stdcall]<ulong>)(new IntPtr(*(int*)(address + 3) + address + 7));
 
 			address = FindPattern("\x4C\x8D\x05\x00\x00\x00\x00\x74\x07\xB8\x00\x00\x00\x00\xEB\x2D\x33\xC0", "xxx????xxx????xxxx");
 			waypointInfoArrayStartAddress = (ulong*)(*(int*)(address + 3) + address + 7);
@@ -276,12 +276,12 @@ namespace SHVDN
 			address = FindPattern("\x48\x8D\x4C\x24\x20\x41\xB8\x02\x00\x00\x00\xE8\x00\x00\x00\x00\xF3", "xxxxxxxxxxxx????x");
 			if (address != null)
 			{
-				GetRotationFromMatrixFunc = (delegate* unmanaged[SuppressGCTransition]<float*, ulong, int, float*>)(new IntPtr(*(int*)(address + 12) + address + 16));
+				GetRotationFromMatrixFunc = (delegate* unmanaged[Stdcall]<float*, ulong, int, float*>)(new IntPtr(*(int*)(address + 12) + address + 16));
 			}
 			address = FindPattern("\xF3\x0F\x11\x4D\x38\xF3\x0F\x11\x45\x3C\xE8\x00\x00\x00\x00", "xxxxxxxxxxx????");
 			if (address != null)
 			{
-				GetQuaternionFromMatrixFunc = (delegate* unmanaged[SuppressGCTransition]<float*, ulong, int>)(new IntPtr(*(int*)(address + 11) + address + 15));
+				GetQuaternionFromMatrixFunc = (delegate* unmanaged[Stdcall]<float*, ulong, int>)(new IntPtr(*(int*)(address + 11) + address + 15));
 			}
 
 			address = FindPattern("\x48\x8B\x42\x20\x48\x85\xC0\x74\x09\xF3\x0F\x10\x80", "xxxxxxxxxxxxx");
@@ -642,7 +642,7 @@ namespace SHVDN
 			address = FindPattern("\x74\x21\x8B\xD7\x48\x8B\xCB\xE8\x00\x00\x00\x00\x48\x8B\xC8\xE8\x00\x00\x00\x00", "xxxxxxxx????xxxx????");
 			if (address != null)
 			{
-				FixVehicleWheelFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, void>)(new IntPtr(*(int*)(address + 16) + address + 20));
+				FixVehicleWheelFunc = (delegate* unmanaged[Stdcall]<IntPtr, void>)(new IntPtr(*(int*)(address + 16) + address + 20));
 				address = FindPattern("\x80\xA1\x00\x00\x00\x00\xFD", "xx????x", new IntPtr(address + 20));
 				ShouldShowOnlyVehicleTiresWithPositiveHealthOffset = *(int*)(address + 2);
 			}
@@ -650,18 +650,18 @@ namespace SHVDN
 			address = FindPattern("\x4C\x8B\x81\x28\x01\x00\x00\x0F\x29\x70\xE8\x0F\x29\x78\xD8", "xxxxxxxxxxxxxxx");
 			if (address != null)
 			{
-				PunctureVehicleTireNewFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void>)(new IntPtr((long)(address - 0x10)));
+				PunctureVehicleTireNewFunc = (delegate* unmanaged[Stdcall]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void>)(new IntPtr((long)(address - 0x10)));
 				address = FindPattern("\x48\x83\xEC\x50\x48\x8B\x81\x00\x00\x00\x00\x48\x8B\xF1\xF6\x80", "xxxxxxx????xxxxx");
-				BurstVehicleTireOnRimNewFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, void>)(new IntPtr((long)(address - 0xB)));
+				BurstVehicleTireOnRimNewFunc = (delegate* unmanaged[Stdcall]<IntPtr, void>)(new IntPtr((long)(address - 0xB)));
 			}
 			else
 			{
 				address = FindPattern("\x41\xF6\x81\x00\x00\x00\x00\x20\x0F\x29\x70\xE8\x0F\x29\x78\xD8\x49\x8B\xF9", "xxx????xxxxxxxxxxxx");
 				if (address != null)
 				{
-					PunctureVehicleTireOldFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void>)(new IntPtr((long)(address - 0x14)));
+					PunctureVehicleTireOldFunc = (delegate* unmanaged[Stdcall]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void>)(new IntPtr((long)(address - 0x14)));
 					address = FindPattern("\x48\x83\xEC\x50\xF6\x82\x00\x00\x00\x00\x20\x48\x8B\xF2\x48\x8B\xE9", "xxxxxx????xxxxxxx");
-					BurstVehicleTireOnRimOldFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, IntPtr, void>)(new IntPtr((long)(address - 0x10)));
+					BurstVehicleTireOnRimOldFunc = (delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void>)(new IntPtr((long)(address - 0x10)));
 				}
 			}
 
@@ -807,14 +807,14 @@ namespace SHVDN
 			address = FindPattern("\x39\x70\x10\x75\x17\x40\x84\xED\x74\x09\x33\xD2\xE8", "xxxxxxxxxxxxx");
 			if (address != null)
 			{
-				ExplodeProjectileFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, int, void>)(new IntPtr(*(int*)(address + 13) + address + 17));
+				ExplodeProjectileFunc = (delegate* unmanaged[Stdcall]<IntPtr, int, void>)(new IntPtr(*(int*)(address + 13) + address + 17));
 			}
 
 			address = FindPattern("\x0F\xBE\x5E\x06\x48\x8B\xCF\xFF\x50\x00\x8B\xD3\x48\x8B\xC8\xE8\x00\x00\x00\x00\x8B\x4E\x00", "xxxxxxxxx?xxxxxx????xx?");
 			if (address != null)
 			{
 				getFragInstVFuncOffset = *(sbyte*)(address + 9);
-				detachFragmentPartByIndexFunc = (delegate* unmanaged[SuppressGCTransition]<FragInst*, int, FragInst*>)(new IntPtr(*(int*)(address + 16) + address + 20));
+				detachFragmentPartByIndexFunc = (delegate* unmanaged[Stdcall]<FragInst*, int, FragInst*>)(new IntPtr(*(int*)(address + 16) + address + 20));
 			}
 			address = FindPattern("\x74\x56\x48\x8B\x0D\x00\x00\x00\x00\x41\x0F\xB7\xD0\x45\x33\xC9\x45\x33\xC0", "xxxxx????xxxxxxxxxx");
 			if (address != null)
@@ -1299,7 +1299,7 @@ namespace SHVDN
 		}
 
 		static ulong GetLabelTextByHashAddress;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, int, ulong> GetLabelTextByHashFunc;
+		static delegate* unmanaged[Stdcall]<ulong, int, ulong> GetLabelTextByHashFunc;
 
 		public static string GetGXTEntryByHash(int entryLabelHash)
 		{
@@ -1558,8 +1558,8 @@ namespace SHVDN
 
 		#region -- CEntity Functions --
 
-		static delegate* unmanaged[SuppressGCTransition]<float*, ulong, int, float*> GetRotationFromMatrixFunc;
-		static delegate* unmanaged[SuppressGCTransition]<float*, ulong, int> GetQuaternionFromMatrixFunc;
+		static delegate* unmanaged[Stdcall]<float*, ulong, int, float*> GetRotationFromMatrixFunc;
+		static delegate* unmanaged[Stdcall]<float*, ulong, int> GetQuaternionFromMatrixFunc;
 
 		public static void GetRotationFromMatrix(float* returnRotationArray, IntPtr matrixAddress, int rotationOrder = 2)
 		{
@@ -1596,11 +1596,11 @@ namespace SHVDN
 			#region Fields
 			IntPtr entityAddress;
 			// return value will be the address of the temporary 4 float storage
-			delegate* unmanaged[SuppressGCTransition]<IntPtr, float*, void> setAngularVelocityDelegate;
+			delegate* unmanaged[Stdcall]<IntPtr, float*, void> setAngularVelocityDelegate;
 			float x, y, z;
 			#endregion
 
-			internal SetEntityAngularVelocityTask(IntPtr entityAddress, delegate* unmanaged[SuppressGCTransition]<IntPtr, float*, void> vFuncDelegate, float x, float y, float z)
+			internal SetEntityAngularVelocityTask(IntPtr entityAddress, delegate* unmanaged[Stdcall]<IntPtr, float*, void> vFuncDelegate, float x, float y, float z)
 			{
 				this.entityAddress = entityAddress;
 				this.setAngularVelocityDelegate = vFuncDelegate;
@@ -1623,7 +1623,7 @@ namespace SHVDN
 		public static float* GetEntityAngularVelocity(IntPtr entityAddress)
 		{
 			var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)GetAngularVelocityVFuncOfEntityOffset);
-			var getEntityAngularVelocity = (delegate* unmanaged[SuppressGCTransition]<IntPtr, float*>)(vFuncAddr);
+			var getEntityAngularVelocity = (delegate* unmanaged[Stdcall]<IntPtr, float*>)(vFuncAddr);
 
 			return getEntityAngularVelocity(entityAddress);
 		}
@@ -1631,7 +1631,7 @@ namespace SHVDN
 		public static void SetEntityAngularVelocity(IntPtr entityAddress, float x, float y, float z)
 		{
 			var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)SetAngularVelocityVFuncOfEntityOffset);
-			var setEntityAngularVelocityDelegate = (delegate* unmanaged[SuppressGCTransition]<IntPtr, float*, void>)(vFuncAddr);
+			var setEntityAngularVelocityDelegate = (delegate* unmanaged[Stdcall]<IntPtr, float*, void>)(vFuncAddr);
 
 			var task = new SetEntityAngularVelocityTask(entityAddress, setEntityAngularVelocityDelegate, x, y, z);
 			ScriptDomain.CurrentDomain.ExecuteTask(ref task);
@@ -1872,11 +1872,11 @@ namespace SHVDN
 		#region -- Vehicle Wheel Data --
 
 
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, void> FixVehicleWheelFunc;
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc;
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc;
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, void> BurstVehicleTireOnRimNewFunc;
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, void> FixVehicleWheelFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, ulong, float, ulong, ulong, int, byte, bool, void> PunctureVehicleTireNewFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, ulong, float, IntPtr, ulong, ulong, int, byte, bool, void> PunctureVehicleTireOldFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, void> BurstVehicleTireOnRimNewFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void> BurstVehicleTireOnRimOldFunc;
 
 		public static int VehicleWheelSteeringLimitMultiplierOffset { get; }
 
@@ -2347,8 +2347,8 @@ namespace SHVDN
 		public static ReadOnlyCollection<int> PedModels { get; }
 
 
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, ulong> GetHandlingDataByHash;
-		static delegate* unmanaged[SuppressGCTransition]<int, ulong> GetHandlingDataByIndex;
+		static delegate* unmanaged[Stdcall]<IntPtr, ulong> GetHandlingDataByHash;
+		static delegate* unmanaged[Stdcall]<int, ulong> GetHandlingDataByIndex;
 
 		public static IntPtr GetHandlingDataByModelHash(int modelHash)
 		{
@@ -2576,9 +2576,9 @@ namespace SHVDN
 		static int* ProjectileCountAddress;
 
 		// if the entity is a ped and they are in a vehicle, the vehicle position will be returned instead (just like GET_ENTITY_COORDS does)
-		static delegate* unmanaged[SuppressGCTransition]<ulong, float*, ulong> EntityPosFunc;
+		static delegate* unmanaged[Stdcall]<ulong, float*, ulong> EntityPosFunc;
 		// should be rage::fwScriptGuid::CreateGuid
-		static delegate* unmanaged[SuppressGCTransition]<ulong, int> CreateGuid;
+		static delegate* unmanaged[Stdcall]<ulong, int> CreateGuid;
 
 		internal struct FwScriptGuidPoolTask : IScriptTask
 		{
@@ -3362,7 +3362,7 @@ namespace SHVDN
 
 		static ulong* CheckpointPoolAddress;
 
-		static delegate* unmanaged[SuppressGCTransition]<ulong> GetCGameScriptHandlerAddressFunc;
+		static delegate* unmanaged[Stdcall]<ulong> GetCGameScriptHandlerAddressFunc;
 
 		public static int[] GetCheckpointHandles()
 		{
@@ -3388,7 +3388,7 @@ namespace SHVDN
 
 		static ulong* waypointInfoArrayStartAddress;
 		static ulong* waypointInfoArrayEndAddress;
-		static delegate* unmanaged[SuppressGCTransition]<ulong> GetLocalPlayerPedAddressFunc;
+		static delegate* unmanaged[Stdcall]<ulong> GetLocalPlayerPedAddressFunc;
 
 		public static int GetWaypointBlip()
 		{
@@ -3421,10 +3421,10 @@ namespace SHVDN
 
 		#region -- Pool Addresses --
 
-		static delegate* unmanaged[SuppressGCTransition]<int, ulong> GetPtfxAddressFunc;
+		static delegate* unmanaged[Stdcall]<int, ulong> GetPtfxAddressFunc;
 		// should be CGameScriptHandler::GetScriptEntity
-		static delegate* unmanaged[SuppressGCTransition]<int, ulong> GetScriptEntity;
-		static delegate* unmanaged[SuppressGCTransition]<int, ulong> GetPlayerAddressFunc;
+		static delegate* unmanaged[Stdcall]<int, ulong> GetScriptEntity;
+		static delegate* unmanaged[Stdcall]<int, ulong> GetPlayerAddressFunc;
 
 		public static IntPtr GetPtfxAddress(int handle)
 		{
@@ -3477,7 +3477,7 @@ namespace SHVDN
 
 		#region -- Projectile Functions --
 
-		static delegate* unmanaged[SuppressGCTransition]<IntPtr, int, void> ExplodeProjectileFunc;
+		static delegate* unmanaged[Stdcall]<IntPtr, int, void> ExplodeProjectileFunc;
 
 		public static void ExplodeProjectile(IntPtr projectileAddress)
 		{
@@ -3614,7 +3614,7 @@ namespace SHVDN
 				{
 					// The function is for the game version b2802 or later ones.
 					// This one directly returns a hash value (not a pointer value) unlike the previous function.
-					var GetClassNameHashFunc = (delegate* unmanaged[SuppressGCTransition]<uint>)(vTable[2]);
+					var GetClassNameHashFunc = (delegate* unmanaged[Stdcall]<uint>)(vTable[2]);
 					return GetClassNameHashFunc();
 				}
 				else
@@ -3622,7 +3622,7 @@ namespace SHVDN
 					// The function is for game versions prior to b2802.
 					// The function uses rax and rdx registers in newer versions prior to b2802 (probably since b2189), and it uses only rax register in older versions.
 					// The function returns the address where the class name hash is in all versions prior to (the address will be the outVal address in newer versions).
-					var GetClassNameAddressHashFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, uint*, uint*>)(vTable[2]);
+					var GetClassNameAddressHashFunc = (delegate* unmanaged[Stdcall]<ulong, uint*, uint*>)(vTable[2]);
 
 					uint outVal = 0;
 					var returnValueAddress = GetClassNameAddressHashFunc(0, &outVal);
@@ -3865,7 +3865,7 @@ namespace SHVDN
 		#region -- Fragment Object for Entity --
 
 		static int getFragInstVFuncOffset;
-		static delegate* unmanaged[SuppressGCTransition]<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc;
+		static delegate* unmanaged[Stdcall]<FragInst*, int, FragInst*> detachFragmentPartByIndexFunc;
 		static ulong** phSimulatorInstPtr;
 		static int colliderCapacityOffset;
 		static int colliderCountOffset;
@@ -4234,7 +4234,7 @@ namespace SHVDN
 		private static FragInst* GetFragInstAddressOfEntity(IntPtr entityAddress)
 		{
 			var vFuncAddr = *(ulong*)(*(ulong*)entityAddress.ToPointer() + (uint)getFragInstVFuncOffset);
-			var getFragInstFunc = (delegate* unmanaged[SuppressGCTransition]<IntPtr, FragInst*>)(vFuncAddr);
+			var getFragInstFunc = (delegate* unmanaged[Stdcall]<IntPtr, FragInst*>)(vFuncAddr);
 
 			return getFragInstFunc(entityAddress);
 		}
@@ -4251,15 +4251,15 @@ namespace SHVDN
 		#region -- NaturalMotion Euphoria --
 
 		// These CNmParameter functions can also be called as virtual functions for your information
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, int, byte> SetNmParameterInt;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, bool, byte> SetNmParameterBool;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, byte> SetNmParameterFloat;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, IntPtr, byte> SetNmParameterString;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, float, float, float, byte> SetNmParameterVector;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, int, byte> SetNmParameterInt;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, bool, byte> SetNmParameterBool;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, float, byte> SetNmParameterFloat;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, IntPtr, byte> SetNmParameterString;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, float, float, float, byte> SetNmParameterVector;
 
-		static delegate* unmanaged[SuppressGCTransition]<ulong, ulong, int, ulong> InitMessageMemoryFunc;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, IntPtr, ulong, void> SendNmMessageToPedFunc;
-		static delegate* unmanaged[SuppressGCTransition]<ulong, CTask*> GetActiveTaskFunc;
+		static delegate* unmanaged[Stdcall]<ulong, ulong, int, ulong> InitMessageMemoryFunc;
+		static delegate* unmanaged[Stdcall]<ulong, IntPtr, ulong, void> SendNmMessageToPedFunc;
+		static delegate* unmanaged[Stdcall]<ulong, CTask*> GetActiveTaskFunc;
 
 		static int fragInstNMGtaOffset;
 		static int cTaskNMScriptControlTypeIndex;
@@ -4286,7 +4286,7 @@ namespace SHVDN
 			if (phInstGtaAddress == fragInstNMGtaAddress && !IsPedInjured((byte*)pedAddress))
 			{
 				// This virtual function will return -1 if phInstGta is not a NM one
-				var fragInstNMGtaGetUnkValVFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int>)(new IntPtr((long)*(ulong*)(*(ulong*)fragInstNMGtaAddress + fragInstNMGtaGetUnkValVFuncOffset)));
+				var fragInstNMGtaGetUnkValVFunc = (delegate* unmanaged[Stdcall]<ulong, int>)(new IntPtr((long)*(ulong*)(*(ulong*)fragInstNMGtaAddress + fragInstNMGtaGetUnkValVFuncOffset)));
 				if (fragInstNMGtaGetUnkValVFunc(fragInstNMGtaAddress) != -1)
 				{
 					var PedIntelligenceAddr = *(ulong*)(pedAddress + PedIntelligenceOffset);
@@ -4304,7 +4304,7 @@ namespace SHVDN
 							var eventAddress = *(ulong*)((byte*)PedIntelligenceAddr + CEventStackOffset + 8 * ((i + *(int*)((byte*)PedIntelligenceAddr + (CEventCountOffset - 4)) + 1) % 16));
 							if (eventAddress != 0)
 							{
-								var getEventTypeIndexVirtualFunc = (delegate* unmanaged[SuppressGCTransition]<ulong, int>)(*(ulong*)(*(ulong*)eventAddress + getEventTypeIndexVFuncOffset));
+								var getEventTypeIndexVirtualFunc = (delegate* unmanaged[Stdcall]<ulong, int>)(*(ulong*)(*(ulong*)eventAddress + getEventTypeIndexVFuncOffset));
 								if (getEventTypeIndexVirtualFunc(eventAddress) == cEventSwitch2NMTypeIndex)
 								{
 									var taskInEvent = *(CTask**)(eventAddress + 0x28);

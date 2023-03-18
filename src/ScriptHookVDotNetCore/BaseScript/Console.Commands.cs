@@ -285,7 +285,9 @@ namespace SHVDN
     public static void {Name}({ParametersStr})
     {{
         var cmd = SHVDN.Console.GetCommandObject(""{Name}"");
-		cmd.ManagedHandler.Invoke(cmd.ManagedTarget, new object[] {{{toPass}}});
+		var result = cmd.ManagedHandler.Invoke(cmd.ManagedTarget, new object[] {{{toPass}}});
+        if(result != null)
+            SHVDN.Console.PrintInfo($""[Return Value]: {{result}}"");
     }}";
 
             }

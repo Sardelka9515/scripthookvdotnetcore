@@ -62,7 +62,7 @@ static unsafe class ConsoleInput
             references: references,
             options: new CSharpCompilationOptions(
                 outputKind: OutputKind.DynamicallyLinkedLibrary,
-                optimizationLevel: OptimizationLevel.Debug,
+                optimizationLevel: Core.BaseScript.OptimizeConsoleExpression ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default,
                 allowUnsafe: true));
 

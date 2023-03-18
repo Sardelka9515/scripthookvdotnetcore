@@ -256,6 +256,15 @@ SkipLegalScreen=true";
             SHVDN.Console.PrintInfo(" ");
         }
 
+        public static bool OptimizeConsoleExpression = false;
+
+        [GTA.ConsoleCommand("Set whether or not to enable optimization when compiling next console expression")]
+        public static void SetOptimize(bool toggle)
+        {
+            OptimizeConsoleExpression = toggle;
+            Logger.Debug($"Optimization {(toggle ? "enabled" : "disabled")} for console input");
+        }
+
         #endregion
 
 

@@ -12,56 +12,11 @@ public interface INativeValue
 
 public unsafe struct NativeCallTask : IScriptTask
 {
-    public NativeCallTask(ulong hash, InputArgument* ptrArgs, int argCount)
-    {
-        Hash = hash;
-        PtrArgs = ptrArgs;
-        ArgsCount = argCount;
-    }
-    public ulong Hash;
-    public InputArgument* PtrArgs;
-    public int ArgsCount;
+    public static NativeCallTask Default;
     public ulong* Result;
     public void Run()
     {
-        NativeInit(Hash);
-        for (int i = 0; i < ArgsCount; i++)
-        {
-            NativePush64(PtrArgs[i]);
-        }
         Result = NativeCall();
-    }
-    public override string ToString()
-    {
-        return $"{(Hash)Hash},{(ulong)PtrArgs},{ArgsCount},{(ulong)Result}";
-    }
-}
-
-/// <summary>
-/// Push arguments that are placed in reverse order. <see cref="PtrArgLast"/> points to the last argument 
-/// </summary>
-/// <remarks>Example memory layout: [arg2][arg1][arg0], <see cref="PtrArgLast"/> points to arg2</remarks>
-public unsafe class ReversedNativeCallTask : IScriptTask
-{
-    public ReversedNativeCallTask(ulong hash, InputArgument* ptrArgLast, int argCount)
-    {
-        Hash = hash;
-        PtrArgLast = ptrArgLast;
-        ArgsCount = argCount;
-    }
-    public ulong Hash;
-    public InputArgument* PtrArgLast;
-    public int ArgsCount;
-    public ulong* Result;
-    public void Run()
-    {
-        NativeInit(Hash);
-        while (ArgsCount > 0) { NativePush64(PtrArgLast[--ArgsCount]); }
-        Result = NativeCall();
-    }
-    public override string ToString()
-    {
-        return $"{(Hash)Hash},{(ulong)PtrArgLast},{ArgsCount},{(ulong)Result}";
     }
 }
 
@@ -182,22 +137,30 @@ public static unsafe partial class Function
     /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
     public static void Call(Hash hash, params InputArgument[] args)
     {
+        NativeInit((ulong)hash);
         fixed (InputArgument* pArgs = args)
         {
-            var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
-            Core.ExecuteTask(ref task);
+            for (int i = 0; i < args.Length; i++)
+            {
+                NativePush64(pArgs[i]);
+            }
         }
+        Core.ExecuteTask(ref NativeCallTask.Default);
     }
 
     /// <remarks>When calling with this overload, arguments are subjected to heap allocation, which may cause GC pressure when used frequently.</remarks>
     public static T Call<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T>(Hash hash, params InputArgument[] args)
     {
+        NativeInit((ulong)hash);
         fixed (InputArgument* pArgs = args)
         {
-            var task = new NativeCallTask((ulong)hash, pArgs, args.Length);
-            Core.ExecuteTask(ref task);
-            return ConvertFromNative<T>(task.Result);
+            for (int i = 0; i < args.Length; i++)
+            {
+                NativePush64(pArgs[i]);
+            }
         }
+        Core.ExecuteTask(ref NativeCallTask.Default);
+        return ConvertFromNative<T>(NativeCallTask.Default.Result);
     }
     #endregion
 

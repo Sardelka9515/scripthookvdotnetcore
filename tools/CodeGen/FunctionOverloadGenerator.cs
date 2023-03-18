@@ -52,12 +52,11 @@ class FunctionOverloadGenerator : Generator
         //     debug = $@"MessageBoxA(0, $""{ps}"", """", 0);";
         // }
         var pArgs = argCount > 0 ? $"&arg0" : "null";
+
         var execTask = $@"
-        var task = new NativeCallTask((ulong)hash, {pArgs}, {argCount});
-        Core.ExecuteTask(ref task);
+        Core.ExecuteTask(ref NativeCallTask.Default);
 ";
-        var call = ret ? "return ConvertFromNative<T>(task.Result);" : "";
-        var thread = $"{execTask}{call}";
+        var call = ret ? "return ConvertFromNative<T>(NativeCallTask.Default.Result);" : "";
 
 
         string push = "";
@@ -65,10 +64,9 @@ class FunctionOverloadGenerator : Generator
         {
             push += $"NativePush64(arg{i});\n";
         }
-        var callDirect = ret ? "return ConvertFromNative<T>(NativeCall());" : "NativeCall();";
-        var noThread = $"NativeInit((ulong)hash);\n{push}{callDirect}";
         sb.AppendLine($@"{{
-        {thread}
+        NativeInit((ulong)hash);
+        {push}{execTask}{call}
 }}");
     }
 }
