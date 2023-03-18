@@ -63,9 +63,12 @@ namespace SHVDN
             try
             {
                 DoKeyEvent(key, keydown, ctrl, shift, alt);
-                foreach (var l in _loaders)
+                lock (_loaders)
                 {
-                    l.Value.DoKeyEvent(key, keydown, ctrl, shift, alt);
+                    foreach (var l in _loaders)
+                    {
+                        l.Value.DoKeyEvent(key, keydown, ctrl, shift, alt);
+                    }
                 }
             }
             catch (Exception ex)
