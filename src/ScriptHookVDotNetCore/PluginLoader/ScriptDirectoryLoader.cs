@@ -106,6 +106,11 @@ namespace SHVDN.Loader
             if (!File.Exists(mainAssemblyPath) || alwaysCopy)
                 File.Copy(typeof(Core).Assembly.Location, mainAssemblyPath, true);
 
+            var dirApiVer = Version.Parse(FileVersionInfo.GetVersionInfo(mainAssemblyPath).FileVersion ?? "0.0.0.0");
+            if (dirApiVer > Core.ScriptingApiVersion)
+                Logger.Warn($"Higher api version detected in directory \"{folderPath}\". " +
+                    $"\nCurrently using {Core.ScriptingApiVersion}, consider upgrading to {dirApiVer} or higher instead");
+
             // Don't use shared type to allow different version of API assembly to be loaded at the same time
             return new(mainAssemblyPath)
             {
