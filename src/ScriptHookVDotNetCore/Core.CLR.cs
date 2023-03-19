@@ -157,7 +157,10 @@ namespace SHVDN
             static bool canLoadFromThisDir(string dir)
             {
                 dir = Path.GetFullPath(dir);
-                return !_loaders.ContainsKey(dir) && Directory.GetFiles(dir, "*.dll").Any(IsManagedAssembly);
+                return !_loaders.ContainsKey(dir)
+                    && Directory.GetFiles(dir, "*.dll")
+                    .Any(x => IsManagedAssembly(x)
+                    && Path.GetFileNameWithoutExtension(x) != typeof(Core).Assembly.GetName().Name);
             }
 
             CLR_UnloadAll();
