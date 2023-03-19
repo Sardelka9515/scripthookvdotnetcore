@@ -34,7 +34,7 @@ int CoreCLRInit(HMODULE asiModule)
 	//
 	if (!load_hostfxr())
 	{
-		assert(false && "Failure: load_hostfxr()");
+		assert(false && "Failure: load_hostfxr()\nPlease make sure you have .NET 7 runtime installed");
 		return EXIT_FAILURE;
 	}
 
