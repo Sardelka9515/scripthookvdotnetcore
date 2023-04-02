@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "exports.h"
 #include "resource.h"
 #include "Pattern.h"
@@ -30,6 +30,7 @@ LPVOID DoJob(Job* pj) {
 shared_ptr<spdlog::logger> Logger;
 LPVOID PtrBaseScript;
 SIZE_T BaseScriptSize;
+HANDLE BackgroundInitThread;
 
 static void OnPresent(void* swapChain) {
 	LOCK(ModulesMutex);
@@ -62,16 +63,21 @@ static void OnKeyboard(DWORD key, WORD repeats, BYTE scanCode, BOOL isExtended, 
 			}
 		}
 	}
-	CoreCLR_DoKeyboard(
-		key,
-		!isUpNow,
-		(GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
-		(GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
-		isWithAlt != FALSE);
+	if (CoreCLR_DoKeyboard) {
+		CoreCLR_DoKeyboard(
+			key,
+			!isUpNow,
+			(GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0,
+			(GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0,
+			isWithAlt != FALSE);
+	}
 }
 
 static void Init() {
 	if (Initialized) return; // Gets called everytime after game loaded
+	// Ensure background initialization has finished
+	while (WaitForSingleObject(BackgroundInitThread, 0) != WAIT_OBJECT_0)
+		ScriptWait(0);
 	AotLoader::Init();
 	info("API hook created");
 	auto hInfo = FindResource(CurrentModule, MAKEINTRESOURCE(BASE_SCRIPT_RES), MAKEINTRESOURCE(BASE_SCRIPT_RES));
@@ -154,7 +160,7 @@ reload:
 		scriptWait(0);
 	}
 }
-DWORD Background(LPVOID lParam) {
+DWORD BackgroundInit(LPVOID lParam) {
 
 	GetModuleFileName(CurrentModule, AsiPath, MAX_PATH);
 	assert(GetLastError() != ERROR_INSUFFICIENT_BUFFER);
@@ -176,9 +182,8 @@ DWORD Background(LPVOID lParam) {
 		}
 	}
 
-
+	Sleep(10000); // 💩💩💩
 	if (Config.AllocDebugConsole && !GetConsoleWindow()) {
-		Sleep(10000); // Wait for the game window to open otherwise the console will be closed for some reason
 		AllocConsole();
 		SetConsoleTitle(L"GTAV debug console");
 		FILE* s;
@@ -219,7 +224,6 @@ DWORD Background(LPVOID lParam) {
 	info("Starting CoreCLR");
 	CoreCLRInit(CurrentModule);
 	info("CoreCLR startup complete");
-
 	return 0;
 }
 
@@ -234,7 +238,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		// Pin asi module
 		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)DllMain, &CurrentModule);
 		assert(CurrentModule == hModule);
-		CreateThread(NULL, NULL, &Background, NULL, NULL, NULL);
+		BackgroundInitThread = CreateThread(NULL, NULL, &BackgroundInit, NULL, NULL, NULL);
 
 		presentCallbackRegister(OnPresent);
 		keyboardHandlerRegister(OnKeyboard);
